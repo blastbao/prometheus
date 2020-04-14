@@ -25,13 +25,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/relabel"
-	"github.com/prometheus/prometheus/pkg/textparse"
-	"github.com/prometheus/prometheus/pkg/value"
-	"github.com/prometheus/prometheus/storage"
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/relabel"
+	"github.com/blastbao/prometheus/pkg/textparse"
+	"github.com/blastbao/prometheus/pkg/value"
+	"github.com/blastbao/prometheus/storage"
 )
 
 // TargetHealth describes the health state of a target.

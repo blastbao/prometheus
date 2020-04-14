@@ -19,7 +19,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 type pair struct {

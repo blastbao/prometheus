@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
 )
 
 const (

@@ -161,7 +161,7 @@ The following features have been removed from PromQL:
 - `count_scalar` function - use cases are better handled by `absent()` or correct
   propagation of labels in operations.
 
-See [issue #3060](https://github.com/prometheus/prometheus/issues/3060) for more
+See [issue #3060](https://github.com/blastbao/prometheus/issues/3060) for more
 details.
 
 ## Miscellaneous
@@ -169,7 +169,7 @@ details.
 ### Prometheus non-root user
 
 The Prometheus Docker image is now built to [run Prometheus
-as a non-root user](https://github.com/prometheus/prometheus/pull/2859). If you
+as a non-root user](https://github.com/blastbao/prometheus/pull/2859). If you
 want the Prometheus UI/API to listen on a low port number (say, port 80), you'll
 need to override it. For Kubernetes, you would use the following YAML:
 

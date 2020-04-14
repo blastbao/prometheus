@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
 )
 
 // Tree returns a string of the tree structure of the given node.

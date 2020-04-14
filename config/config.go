@@ -27,9 +27,9 @@ import (
 	"github.com/prometheus/common/model"
 	yaml "gopkg.in/yaml.v2"
 
-	sd_config "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/relabel"
+	sd_config "github.com/blastbao/prometheus/discovery/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/relabel"
 )
 
 var (
@@ -357,33 +357,66 @@ func (c *GlobalConfig) isZero() bool {
 
 // ScrapeConfig configures a scraping unit for Prometheus.
 type ScrapeConfig struct {
+
+	// 作业名称
+	//
 	// The job name to which the job label is set by default.
 	JobName string `yaml:"job_name"`
+
+	// 同名 label ，是否覆盖处理
+	//
 	// Indicator whether the scraped metrics should remain unmodified.
 	HonorLabels bool `yaml:"honor_labels,omitempty"`
 	// Indicator whether the scraped timestamps should be respected.
 	HonorTimestamps bool `yaml:"honor_timestamps"`
+
+	// 采集目标 url 参数
+	//
 	// A set of query parameters with which the target is scraped.
 	Params url.Values `yaml:"params,omitempty"`
+
+	// 采集周期
+	//
 	// How frequently to scrape the targets of this scrape config.
 	ScrapeInterval model.Duration `yaml:"scrape_interval,omitempty"`
+
+	// 采集超时时间
+	//
 	// The timeout for scraping targets of this config.
 	ScrapeTimeout model.Duration `yaml:"scrape_timeout,omitempty"`
+
+	// 目标 URL 路径
+	//
 	// The HTTP resource path on which to fetch metrics from targets.
 	MetricsPath string `yaml:"metrics_path,omitempty"`
+
+	// 目标 URL 协议类型
+	//
 	// The URL scheme with which to fetch metrics from targets.
 	Scheme string `yaml:"scheme,omitempty"`
+
+	// 采样率限制
+	//
 	// More than this many samples post metric-relabelling will cause the scrape to fail.
 	SampleLimit uint `yaml:"sample_limit,omitempty"`
+
 
 	// We cannot do proper Go type embedding below as the parser will then parse
 	// values arbitrarily into the overflow maps of further-down types.
 
+	// 服务发现配置
 	ServiceDiscoveryConfig sd_config.ServiceDiscoveryConfig `yaml:",inline"`
+
+	// 客户端 http client 配置
 	HTTPClientConfig       config_util.HTTPClientConfig     `yaml:",inline"`
 
+	// 目标重置规则
+	//
 	// List of target relabel configurations.
 	RelabelConfigs []*relabel.Config `yaml:"relabel_configs,omitempty"`
+
+	// 指标重置规则
+	//
 	// List of metric relabel configurations.
 	MetricRelabelConfigs []*relabel.Config `yaml:"metric_relabel_configs,omitempty"`
 }

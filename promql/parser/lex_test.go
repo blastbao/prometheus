@@ -16,7 +16,7 @@ package parser
 import (
 	"testing"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 type testCase struct {
@@ -156,7 +156,7 @@ var tests = []struct {
 				expected: []Item{{STRING, 0, "`test\\.expression`"}},
 			},
 			{
-				// See https://github.com/prometheus/prometheus/issues/939.
+				// See https://github.com/blastbao/prometheus/issues/939.
 				input: ".٩",
 				fail:  true,
 			},

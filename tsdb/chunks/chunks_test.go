@@ -16,7 +16,7 @@ package chunks
 import (
 	"testing"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestReaderWithInvalidBuffer(t *testing.T) {

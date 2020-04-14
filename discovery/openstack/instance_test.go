@@ -19,8 +19,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 type OpenstackSDInstanceTestSuite struct {

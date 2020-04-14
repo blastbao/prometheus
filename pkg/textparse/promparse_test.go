@@ -21,10 +21,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestPromParse(t *testing.T) {

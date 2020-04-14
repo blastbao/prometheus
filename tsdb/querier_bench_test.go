@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 // Make entries ~50B in size, to emulate real-world high cardinality.

@@ -19,13 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/timestamp"
+	"github.com/blastbao/prometheus/promql"
+	"github.com/blastbao/prometheus/promql/parser"
+	"github.com/blastbao/prometheus/util/teststorage"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/promql"
-	"github.com/prometheus/prometheus/promql/parser"
-	"github.com/prometheus/prometheus/util/teststorage"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestAlertingRuleHTMLSnippet(t *testing.T) {

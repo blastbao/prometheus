@@ -16,7 +16,7 @@ package tsdbutil
 import (
 	"math"
 
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
 )
 
 // BufferedSeriesIterator wraps an iterator with a look-back buffer.

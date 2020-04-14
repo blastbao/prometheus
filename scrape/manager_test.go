@@ -23,11 +23,11 @@ import (
 	"github.com/prometheus/common/model"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/relabel"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/relabel"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestPopulateLabels(t *testing.T) {

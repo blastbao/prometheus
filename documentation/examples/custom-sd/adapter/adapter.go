@@ -24,11 +24,11 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/blastbao/prometheus/discovery"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/discovery"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
 type customSD struct {

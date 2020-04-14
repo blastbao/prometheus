@@ -26,13 +26,13 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/relabel"
+	"github.com/blastbao/prometheus/prompb"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/tsdb/wal"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/relabel"
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/tsdb/wal"
 )
 
 const (

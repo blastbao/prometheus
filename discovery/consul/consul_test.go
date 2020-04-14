@@ -22,10 +22,10 @@ import (
 	"net/http/httptest"
 	"net/url"
 
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestConfiguredService(t *testing.T) {

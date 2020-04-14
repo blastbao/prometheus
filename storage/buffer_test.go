@@ -17,8 +17,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/tsdb/tsdbutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestSampleRing(t *testing.T) {

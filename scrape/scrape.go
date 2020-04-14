@@ -36,15 +36,15 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/version"
 
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/pool"
-	"github.com/prometheus/prometheus/pkg/relabel"
-	"github.com/prometheus/prometheus/pkg/textparse"
-	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/pkg/value"
-	"github.com/prometheus/prometheus/storage"
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/pool"
+	"github.com/blastbao/prometheus/pkg/relabel"
+	"github.com/blastbao/prometheus/pkg/textparse"
+	"github.com/blastbao/prometheus/pkg/timestamp"
+	"github.com/blastbao/prometheus/pkg/value"
+	"github.com/blastbao/prometheus/storage"
 )
 
 var errNameLabelMandatory = fmt.Errorf("missing metric name (%s label)", labels.MetricName)
@@ -157,23 +157,67 @@ func init() {
 }
 
 // scrapePool manages scrapes for sets of targets.
+//
+// [!]
+// 在 prometheus 中，一个 job 对应一个 scrapePool 实例。
+//
+//
+// scrapePool 有以下函数：
+// 	func (sp *scrapePool) stop()
+//	func (sp *scrapePool) reload(cfg *config.ScrapeConfig)
+//	func (sp scrapePool) Sync(tgs []targetgroup.Group) (tActive []Target, tDropped []Target)
+//	func (sp scrapePool) sync(targets []Target)
+//
+// 其中最重要的函数是 sync() 函数。
+//
+// sync() 会根据入参 targets 列表与原有的 targets 列表比对，
+// 	如果有新添加的 targets，会创建新的 targetScraper 和 loop，并且启动新的 loop 。
+//  如果有已失效的 targets，会  stop 这部分 targets 并从列表中删除。
+//
+// 如何理解 loop 呢？
+// 	prometheus 是拉模型，需要定时到监控目标上拉取相应的数据，loop 就是管理何时进行拉取操作的。
+// 	每个 loop 都是用一个 goroutine 来 run 的，在 loop 内可以控制何时进行 scraper 操作。
+//
+//
+//
+//
 type scrapePool struct {
+
 	appendable storage.Appendable
 	logger     log.Logger
 
+	// 读写锁
 	mtx    sync.RWMutex
+
+	// 抓取配置
 	config *config.ScrapeConfig
+
+	// http client
 	client *http.Client
-	// Targets and loops must always be synchronized to have the same
-	// set of hashes.
+
+
+	// Targets and loops must always be synchronized to have the same set of hashes.
+
+	// 正在运行的 targets
 	activeTargets  map[uint64]*Target
+
+	// 无效的 targets
 	droppedTargets []*Target
+
+	// 所有运行的 loop
 	loops          map[uint64]loop
+
+	// 取消
 	cancel         context.CancelFunc
 
-	// Constructor for new scrape loops. This is settable for testing convenience.
+	// 创建loop
+	//
+	// Constructor for new scrape loops.
+	// This is settable for testing convenience.
 	newLoop func(scrapeLoopOptions) loop
 }
+
+
 
 type scrapeLoopOptions struct {
 	target          *Target
@@ -190,19 +234,25 @@ const maxAheadTime = 10 * time.Minute
 type labelsMutator func(labels.Labels) labels.Labels
 
 func newScrapePool(cfg *config.ScrapeConfig, app storage.Appendable, jitterSeed uint64, logger log.Logger) (*scrapePool, error) {
+
+	// increase counter metric
 	targetScrapePools.Inc()
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
 
+	// 创建 http client ，用于执行数据抓取
 	client, err := config_util.NewClientFromConfig(cfg.HTTPClientConfig, cfg.JobName, false)
 	if err != nil {
 		targetScrapePoolsFailed.Inc()
 		return nil, errors.Wrap(err, "error creating HTTP client")
 	}
 
+
+	// 设置 buffers
 	buffers := pool.New(1e3, 100e6, 3, func(sz int) interface{} { return make([]byte, 0, sz) })
 
+	// 设置 scrapePool 的一些基础属性
 	ctx, cancel := context.WithCancel(context.Background())
 	sp := &scrapePool{
 		cancel:        cancel,
@@ -213,7 +263,11 @@ func newScrapePool(cfg *config.ScrapeConfig, app storage.Appendable, jitterSeed 
 		loops:         map[uint64]loop{},
 		logger:        logger,
 	}
+
+	// newLoop 用于生层 loop ，主要处理对应的 target ，可以理解为，每个 target 对应一个 loop 。
 	sp.newLoop = func(opts scrapeLoopOptions) loop {
+
+
 		// Update the targets retrieval function for metadata to a new scrape cache.
 		cache := opts.cache
 		if cache == nil {
@@ -236,6 +290,8 @@ func newScrapePool(cfg *config.ScrapeConfig, app storage.Appendable, jitterSeed 
 			opts.honorTimestamps,
 		)
 	}
+
+
 
 	return sp, nil
 }
@@ -280,8 +336,9 @@ func (sp *scrapePool) stop() {
 	sp.client.CloseIdleConnections()
 }
 
-// reload the scrape pool with the given scrape configuration. The target state is preserved
-// but all scrape loops are restarted with the new scrape configuration.
+// reload the scrape pool with the given scrape configuration.
+//
+// The target state is preserved but all scrape loops are restarted with the new scrape configuration.
 // This method returns after all scrape loops that were stopped have stopped scraping.
 func (sp *scrapePool) reload(cfg *config.ScrapeConfig) error {
 	targetScrapePoolReloads.Inc()
@@ -386,27 +443,51 @@ func (sp *scrapePool) Sync(tgs []*targetgroup.Group) {
 // sync takes a list of potentially duplicated targets, deduplicates them, starts
 // scrape loops for new targets, and stops scrape loops for disappeared targets.
 // It returns after all stopped scrape loops terminated.
+//
+// 译:
+// （1）对 targets 去重
+// （2）为新增的 target 启动 scrape loop
+// （3）为消失的 target 停止 scrape loop。
+//
 func (sp *scrapePool) sync(targets []*Target) {
+
+	// 加解锁
 	sp.mtx.Lock()
 	defer sp.mtx.Unlock()
 
 	var (
+		// target 唯一标记
 		uniqueTargets   = map[uint64]struct{}{}
+		// 采集周期
 		interval        = time.Duration(sp.config.ScrapeInterval)
+		// 采集超时时间
 		timeout         = time.Duration(sp.config.ScrapeTimeout)
 		limit           = int(sp.config.SampleLimit)
+		// 重复 lable 是否覆盖
 		honorLabels     = sp.config.HonorLabels
 		honorTimestamps = sp.config.HonorTimestamps
 		mrc             = sp.config.MetricRelabelConfigs
 	)
 
+	// 遍历所有 targets
 	for _, t := range targets {
+
+		// 变量拷贝 [tips] 同名赋值
 		t := t
+		// 生成 hash 作为 target 唯一标识
 		hash := t.hash()
+		// 保存
 		uniqueTargets[hash] = struct{}{}
 
+		// 判断该 target 是否已经在运行。如果没有，则运行该 target 对应的 loop ，将该 loop 加入 activeTargets 中。
 		if _, ok := sp.activeTargets[hash]; !ok {
-			s := &targetScraper{Target: t, client: sp.client, timeout: timeout}
+
+			s := &targetScraper{
+				Target: t,
+				client: sp.client,
+				timeout: timeout,
+			}
+
 			l := sp.newLoop(scrapeLoopOptions{
 				target:          t,
 				scraper:         s,
@@ -907,7 +988,24 @@ func newScrapeLoop(ctx context.Context,
 	return sl
 }
 
+
+
+
+
+
+
+
+
+下面的这个函数便是loop的核心run方法。可以看到，大致逻辑是在应该触发scrape操作的时候，触发scraper.scrape函数，进行数据抓取操作。并且将抓取到的数据交给append函数进行存储操作。在scrape前，为了尽量提高性能，prometheus运用了go library中的sync.Pool机制来复用对象。可以看到prometheus对sync.Pool进行了简单的封装,封装后的Pool在pkg/pool package中。我们可以把这个封装过得pool理解成重用byte slice的地方。在每一次scrape前，都会向Pool申请和上一次scrape结果一样大小的byte slice,并封装成byte buffer供scraper.scrape填写上抓取到的数据。
+
+
+
+
 func (sl *scrapeLoop) run(interval, timeout time.Duration, errc chan<- error) {
+
+
+
+
 	select {
 	case <-time.After(sl.scraper.offset(interval, sl.jitterSeed)):
 		// Continue after a scraping offset.
@@ -916,10 +1014,19 @@ func (sl *scrapeLoop) run(interval, timeout time.Duration, errc chan<- error) {
 		return
 	}
 
+
+
+
+
 	var last time.Time
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+
+
+
+
+
 
 mainLoop:
 	for {
@@ -1004,6 +1111,14 @@ mainLoop:
 		sl.endOfRunStaleness(last, ticker, interval)
 	}
 }
+
+
+
+
+
+
+
+
 
 func (sl *scrapeLoop) endOfRunStaleness(last time.Time, ticker *time.Ticker, interval time.Duration) {
 	// Scraping has stopped. We want to write stale markers but

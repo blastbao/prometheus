@@ -29,9 +29,9 @@ import (
 	"testing"
 	"time"
 
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 type reader interface {

@@ -25,8 +25,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 // makeDiscovery creates a kubernetes.Discovery instance for testing.

@@ -16,7 +16,7 @@ package labels
 import (
 	"testing"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestLabels_MatchLabels(t *testing.T) {

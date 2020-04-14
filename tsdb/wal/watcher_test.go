@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 var defaultRetryInterval = 100 * time.Millisecond

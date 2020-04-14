@@ -20,14 +20,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 )
 
 type fanout struct {

@@ -45,23 +45,23 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"k8s.io/klog"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/discovery"
+	sd_config "github.com/blastbao/prometheus/discovery/config"
+	"github.com/blastbao/prometheus/notifier"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/logging"
+	"github.com/blastbao/prometheus/pkg/relabel"
+	prom_runtime "github.com/blastbao/prometheus/pkg/runtime"
+	"github.com/blastbao/prometheus/promql"
+	"github.com/blastbao/prometheus/rules"
+	"github.com/blastbao/prometheus/scrape"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/storage/remote"
+	"github.com/blastbao/prometheus/tsdb"
+	"github.com/blastbao/prometheus/util/strutil"
+	"github.com/blastbao/prometheus/web"
 	promlogflag "github.com/prometheus/common/promlog/flag"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
-	sd_config "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/notifier"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/logging"
-	"github.com/prometheus/prometheus/pkg/relabel"
-	prom_runtime "github.com/prometheus/prometheus/pkg/runtime"
-	"github.com/prometheus/prometheus/promql"
-	"github.com/prometheus/prometheus/rules"
-	"github.com/prometheus/prometheus/scrape"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/storage/remote"
-	"github.com/prometheus/prometheus/tsdb"
-	"github.com/prometheus/prometheus/util/strutil"
-	"github.com/prometheus/prometheus/web"
 )
 
 var (
@@ -552,25 +552,38 @@ func main() {
 		)
 	}
 	{
+
 		// Scrape manager.
+		//
+		// 添加 ScrapeManager 到 run.Group 中，后面在 g.Run 时被启动。
+
 		g.Add(
+
 			func() error {
-				// When the scrape manager receives a new targets list
-				// it needs to read a valid config for each job.
-				// It depends on the config being in sync with the discovery manager so
-				// we wait until the config is fully loaded.
+				// When the scrape manager receives a new targets list it needs to read a valid config for each job.
+				// It depends on the config being in sync with the discovery manager so we wait until the config is fully loaded.
+				//
+				// 当 ScrapeManager 收到一组新的数据采集目标列表(targets)时，它需要为每个 job 读取一个有效的配置。
+				// 需要等待 Discovery Manager 的配置同步完成信号，才能进行配置读取。
+
+				// 等待所有配置都准备好
 				<-reloadReady.C
 
+				// 启动 ScrapeManager，阻塞式
 				err := scrapeManager.Run(discoveryManagerScrape.SyncCh())
+
 				level.Info(logger).Log("msg", "Scrape manager stopped")
 				return err
 			},
+
+			// 失败处理
 			func(err error) {
 				// Scrape manager needs to be stopped before closing the local TSDB
 				// so that it doesn't try to write samples to a closed storage.
 				level.Info(logger).Log("msg", "Stopping scrape manager...")
 				scrapeManager.Stop()
 			},
+
 		)
 	}
 	{

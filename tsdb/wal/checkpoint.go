@@ -25,11 +25,11 @@ import (
 	"strconv"
 	"strings"
 
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
+	"github.com/blastbao/prometheus/tsdb/fileutil"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
 	"github.com/pkg/errors"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
-	"github.com/prometheus/prometheus/tsdb/fileutil"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
 )
 
 // CheckpointStats returns stats about a created checkpoint.

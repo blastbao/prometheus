@@ -24,12 +24,12 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	"github.com/blastbao/prometheus/tsdb/encoding"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	"github.com/prometheus/prometheus/tsdb/encoding"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 type series struct {

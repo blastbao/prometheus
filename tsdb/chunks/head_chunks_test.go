@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestHeadReadWriter_WriteChunk_Chunk_IterateChunks(t *testing.T) {

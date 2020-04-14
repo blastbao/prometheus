@@ -24,7 +24,7 @@ a Prometheus server, install and run Prometheus's `promtool` command-line
 utility tool:
 
 ```bash
-go get github.com/prometheus/prometheus/cmd/promtool
+go get github.com/blastbao/prometheus/cmd/promtool
 promtool check rules /path/to/example.rules.yml
 ```
 

@@ -22,17 +22,17 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
+	"github.com/blastbao/prometheus/tsdb/fileutil"
+	"github.com/blastbao/prometheus/tsdb/index"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
-	"github.com/prometheus/prometheus/tsdb/fileutil"
-	"github.com/prometheus/prometheus/tsdb/index"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
 )
 
 // IndexWriter serializes the index for a block of series data.

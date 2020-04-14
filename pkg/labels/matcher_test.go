@@ -16,7 +16,7 @@ package labels
 import (
 	"testing"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func mustNewMatcher(t *testing.T, mType MatchType, value string) *Matcher {

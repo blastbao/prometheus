@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 type counter int

@@ -19,10 +19,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/tsdbutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestMergeStringSlices(t *testing.T) {

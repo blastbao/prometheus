@@ -30,21 +30,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	"github.com/blastbao/prometheus/tsdb/fileutil"
+	"github.com/blastbao/prometheus/tsdb/index"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
+	"github.com/blastbao/prometheus/tsdb/tsdbutil"
+	"github.com/blastbao/prometheus/tsdb/wal"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	prom_testutil "github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	"github.com/prometheus/prometheus/tsdb/fileutil"
-	"github.com/prometheus/prometheus/tsdb/index"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
-	"github.com/prometheus/prometheus/tsdb/wal"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func openTestDB(t testing.TB, opts *Options, rngs []int64) (db *DB, close func()) {
@@ -510,7 +510,7 @@ func TestDB_Snapshot(t *testing.T) {
 
 // TestDB_Snapshot_ChunksOutsideOfCompactedRange ensures that a snapshot removes chunks samples
 // that are outside the set block time range.
-// See https://github.com/prometheus/prometheus/issues/5105
+// See https://github.com/blastbao/prometheus/issues/5105
 func TestDB_Snapshot_ChunksOutsideOfCompactedRange(t *testing.T) {
 	db, closeFn := openTestDB(t, nil, nil)
 	defer closeFn()
@@ -2816,7 +2816,7 @@ func TestChunkWriter_ReadAfterWrite(t *testing.T) {
 }
 
 // TestChunkReader_ConcurrentReads checks that the chunk result can be read concurrently.
-// Regression test for https://github.com/prometheus/prometheus/pull/6514.
+// Regression test for https://github.com/blastbao/prometheus/pull/6514.
 func TestChunkReader_ConcurrentReads(t *testing.T) {
 	chks := []chunks.Meta{
 		tsdbutil.ChunkFromSamples([]tsdbutil.Sample{sample{1, 1}}),

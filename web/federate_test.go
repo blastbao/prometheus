@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/promql"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/promql"
 )
 
 var scenarios = map[string]struct {

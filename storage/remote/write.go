@@ -18,14 +18,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb/wal"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb/wal"
 )
 
 var (

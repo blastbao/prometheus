@@ -17,9 +17,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
 )
 
 var remoteReadQueries = prometheus.NewGaugeVec(

@@ -30,13 +30,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/rulefmt"
-	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/promql"
-	"github.com/prometheus/prometheus/promql/parser"
-	"github.com/prometheus/prometheus/template"
-	"github.com/prometheus/prometheus/util/strutil"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/rulefmt"
+	"github.com/blastbao/prometheus/pkg/timestamp"
+	"github.com/blastbao/prometheus/promql"
+	"github.com/blastbao/prometheus/promql/parser"
+	"github.com/blastbao/prometheus/template"
+	"github.com/blastbao/prometheus/util/strutil"
 )
 
 const (

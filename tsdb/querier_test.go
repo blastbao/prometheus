@@ -25,15 +25,15 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	"github.com/blastbao/prometheus/tsdb/index"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
+	"github.com/blastbao/prometheus/tsdb/tsdbutil"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	"github.com/prometheus/prometheus/tsdb/index"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
-	"github.com/prometheus/prometheus/tsdb/tsdbutil"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 type mockSeriesSet struct {
@@ -1726,7 +1726,7 @@ func BenchmarkQuerySeek(b *testing.B) {
 	}
 }
 
-// Refer to https://github.com/prometheus/prometheus/issues/2651.
+// Refer to https://github.com/blastbao/prometheus/issues/2651.
 func BenchmarkSetMatcher(b *testing.B) {
 	cases := []struct {
 		numBlocks                   int
@@ -1856,7 +1856,7 @@ func BenchmarkSetMatcher(b *testing.B) {
 	}
 }
 
-// Refer to https://github.com/prometheus/prometheus/issues/2651.
+// Refer to https://github.com/blastbao/prometheus/issues/2651.
 func TestFindSetMatches(t *testing.T) {
 	cases := []struct {
 		pattern string
@@ -2096,7 +2096,7 @@ func TestPostingsForMatchers(t *testing.T) {
 			},
 		},
 		// Set optimization for Regex.
-		// Refer to https://github.com/prometheus/prometheus/issues/2651.
+		// Refer to https://github.com/blastbao/prometheus/issues/2651.
 		{
 			matchers: []*labels.Matcher{labels.MustNewMatcher(labels.MatchRegexp, "n", "1|2")},
 			exp: []labels.Labels{

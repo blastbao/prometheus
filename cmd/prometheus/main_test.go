@@ -25,13 +25,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/notifier"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/rules"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/notifier"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/rules"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 var promPath = os.Args[0]

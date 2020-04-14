@@ -19,8 +19,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/blastbao/prometheus/pkg/labels"
 	"github.com/go-kit/kit/log"
-	"github.com/prometheus/prometheus/pkg/labels"
 )
 
 var ErrInvalidTimes = fmt.Errorf("max time is lesser than min time")

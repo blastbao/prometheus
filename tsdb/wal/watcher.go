@@ -25,12 +25,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/timestamp"
+	"github.com/blastbao/prometheus/tsdb/record"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/tsdb/record"
 )
 
 const (

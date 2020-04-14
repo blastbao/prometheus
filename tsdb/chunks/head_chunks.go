@@ -28,10 +28,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
+	"github.com/blastbao/prometheus/tsdb/fileutil"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
-	"github.com/prometheus/prometheus/tsdb/fileutil"
 )
 
 // Head chunk file header fields constants.

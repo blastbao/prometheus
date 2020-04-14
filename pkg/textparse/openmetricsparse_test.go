@@ -17,9 +17,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/prometheus/prometheus/pkg/exemplar"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/pkg/exemplar"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestOpenMetricsParse(t *testing.T) {

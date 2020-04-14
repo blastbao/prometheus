@@ -13,7 +13,7 @@
 
 package exemplar
 
-import "github.com/prometheus/prometheus/pkg/labels"
+import "github.com/blastbao/prometheus/pkg/labels"
 
 // Exemplar is additional information associated with a time series.
 type Exemplar struct {

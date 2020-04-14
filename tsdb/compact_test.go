@@ -24,14 +24,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	"github.com/blastbao/prometheus/tsdb/fileutil"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
 	prom_testutil "github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	"github.com/prometheus/prometheus/tsdb/fileutil"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestSplitByRange(t *testing.T) {
@@ -137,7 +137,7 @@ func TestSplitByRange(t *testing.T) {
 	}
 }
 
-// See https://github.com/prometheus/prometheus/issues/3064
+// See https://github.com/blastbao/prometheus/issues/3064
 func TestNoPanicFor0Tombstones(t *testing.T) {
 	metas := []dirMeta{
 		{

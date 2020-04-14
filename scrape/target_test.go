@@ -28,8 +28,8 @@ import (
 
 	"github.com/prometheus/common/model"
 
+	"github.com/blastbao/prometheus/pkg/labels"
 	config_util "github.com/prometheus/common/config"
-	"github.com/prometheus/prometheus/pkg/labels"
 )
 
 const (

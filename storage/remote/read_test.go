@@ -22,12 +22,12 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/prompb"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/util/testutil"
 	config_util "github.com/prometheus/common/config"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestNoDuplicateReadConfigs(t *testing.T) {

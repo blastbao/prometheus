@@ -26,12 +26,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
+	"github.com/blastbao/prometheus/tsdb/wal"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/go-kit/kit/log"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
-	"github.com/prometheus/prometheus/tsdb/wal"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestSegmentWAL_cut(t *testing.T) {

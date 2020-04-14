@@ -24,15 +24,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/config"
+	sd_config "github.com/blastbao/prometheus/discovery/config"
+	"github.com/blastbao/prometheus/discovery/consul"
+	"github.com/blastbao/prometheus/discovery/file"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	common_config "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	sd_config "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/consul"
-	"github.com/prometheus/prometheus/discovery/file"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"gopkg.in/yaml.v2"
 )
 

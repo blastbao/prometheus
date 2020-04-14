@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/util/strutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gophercloud/gophercloud"
@@ -27,8 +29,6 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/util/strutil"
 )
 
 const (

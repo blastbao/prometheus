@@ -24,12 +24,12 @@ import (
 
 	"github.com/go-kit/kit/log"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/logging"
+	"github.com/blastbao/prometheus/storage"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/logging"
-	"github.com/prometheus/prometheus/storage"
 )
 
 // String constants for instrumentation.

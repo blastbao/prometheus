@@ -27,11 +27,11 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/discovery/targetgroup"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
 )
 
 var targetMetadataCache = newMetadataMetricsCollector()
@@ -100,7 +100,13 @@ func (mc *MetadataMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
+
+
 // NewManager is the Manager constructor
+//
+
+
+
 func NewManager(logger log.Logger, app storage.Appendable) *Manager {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -117,6 +123,21 @@ func NewManager(logger log.Logger, app storage.Appendable) *Manager {
 
 	return m
 }
+
+
+
+
+// Manager 负责维护 scrape pools，并且管理着 scrape 组件的生命周期。
+//
+// Manager 主要有以下函数：
+//
+// 	func (m *Manager) Run(tsets <-chan map[string][]targetgroup.Group) error
+//	func (m *Manager) Stop()
+//	func (m *Manager) ApplyConfig(cfg *config.Config) error
+//
+
+
+
 
 // Manager maintains a set of scrape pools and manages start/stop cycles
 // when receiving new target groups form the discovery manager.
@@ -136,33 +157,70 @@ type Manager struct {
 
 // Run receives and saves target set updates and triggers the scraping loops reloading.
 // Reloading happens in the background so that it doesn't block receiving targets updates.
+//
+// 译:
+//
+// Run 接收并保存 target set 的最新配置，并触发 scraping loops 的重新加载（reloading）。
+// reloading 是在后台进行的，这样便不会阻塞接收新的配置更新。
+//
+// 名词解释:
+//	target set: 数据采集目标集合
+//
+//
+// 说明:
+//
+// 	Run() 函数由 main.go 中启动的 scrape manager goroutine 来调用。
+// 	Run() 函数需要传入 discover 组件中的 SyncCh channel ，Run() 会监听 SyncCh channel，
+//  一旦 SyncCh channel 有 message ，就会触发 manager 的 reload 函数。
+//
+//  在 reload() 函数中，会遍历 message 的数据，根据 jobName(tsetName) 从 scrapePools 中找，
+//  如果找不到，则新建一个 scrapePool，如果 jobName(tsetName) 在 scrapeConfig 里面找不到，
+//  那么就会打印一下错误信息。每一个 job(tset) 会创建一个对应的 scrapePool 实例。
+//
+//  reload() 函数最后会调用 sp.Sync(tgroup) 来更新 scrapePool 的信息。
+//  通过 sync() 函数，就可以得出哪些 target 仍然是 active 的， 哪些 target 已经失效了。
+//
+
 func (m *Manager) Run(tsets <-chan map[string][]*targetgroup.Group) error {
+
+	// 监听 m.triggerReload 信号，执行后台 reload() 操作。
 	go m.reloader()
+
 	for {
 		select {
+		// 监听 target set updates 事件
 		case ts := <-tsets:
+
+			// 1. 更新 m.targetSets 成员变量
 			m.updateTsets(ts)
 
+			// 2. 触发 m.reload() 重新加载
 			select {
 			case m.triggerReload <- struct{}{}:
-			default:
+			default: // 若管道满则立即返回，不阻塞
 			}
 
+		// 关闭信号
 		case <-m.graceShut:
 			return nil
 		}
 	}
 }
 
+
+// 监听 m.triggerReload 信号，执行后台 reload() 操作。
 func (m *Manager) reloader() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
+		// 关闭信号
 		case <-m.graceShut:
 			return
+		// 定时器，用于确保 reloading 最小间隔为 5s
 		case <-ticker.C:
+			// 监听 reloading 信号，执行 reload() 操作
 			select {
 			case <-m.triggerReload:
 				m.reload()
@@ -173,37 +231,65 @@ func (m *Manager) reloader() {
 	}
 }
 
+
+// 执行 reload() 操作
 func (m *Manager) reload() {
+	// 加锁
 	m.mtxScrape.Lock()
 	var wg sync.WaitGroup
+
+	// 遍历 targetSets，确保每个 targetSet 存在对应的 scrapePool 。
 	for setName, groups := range m.targetSets {
+
+		// 1. 检查该 targetSet 是否存在 scrapePool ，不存在则创建
 		if _, ok := m.scrapePools[setName]; !ok {
+			// 1.1 取出该 targetSet 的抓取配置，若不存在，则打印错误并跳过
 			scrapeConfig, ok := m.scrapeConfigs[setName]
 			if !ok {
 				level.Error(m.logger).Log("msg", "error reloading target set", "err", "invalid config id:"+setName)
 				continue
 			}
+			// 1.2 创建该 targetSet 的 scrapePool
 			sp, err := newScrapePool(scrapeConfig, m.append, m.jitterSeed, log.With(m.logger, "scrape_pool", setName))
 			if err != nil {
 				level.Error(m.logger).Log("msg", "error creating new scrape pool", "err", err, "scrape_pool", setName)
 				continue
 			}
+			// 1.3 保存
 			m.scrapePools[setName] = sp
 		}
 
+
+		// 2.
+		//
+		// m.scrapePools[setName] 中存储着 targetSet 的 scrapePool
+		// groups 中储着 targetSet 的
+
+
+
+
 		wg.Add(1)
+
 		// Run the sync in parallel as these take a while and at high load can't catch up.
+		//
+		// 并行运行，提升性能。
 		go func(sp *scrapePool, groups []*targetgroup.Group) {
 			sp.Sync(groups)
 			wg.Done()
 		}(m.scrapePools[setName], groups)
 
 	}
+
+	// 释放锁
 	m.mtxScrape.Unlock()
+
+	// 阻塞，等待所有协程退出
 	wg.Wait()
 }
 
 // setJitterSeed calculates a global jitterSeed per server relying on extra label set.
+//
+// setJitterSeed 根据额外的标签集计算每台服务器的全局 jitterSeed 。
 func (m *Manager) setJitterSeed(labels labels.Labels) error {
 	h := fnv.New64a()
 	hostname, err := getFqdn()
@@ -235,26 +321,50 @@ func (m *Manager) updateTsets(tsets map[string][]*targetgroup.Group) {
 }
 
 // ApplyConfig resets the manager's target providers and job configurations as defined by the new cfg.
+//
+// 译:
+// 	ApplyConfig 按照新 cfg 重置 manager 的 job 配置。
+//
+// 名词解释:
+// 	target providers: 指标提供者
+// 	job configurations: 指标抓取作业配置
+//
+// 说明:
+//
+// 	ApplyConfig() 函数是 prometheus 启动时或者 reload 配置文件时用到的。
+// 	ApplyConfig() 会关闭并删除掉 reload 前存在的，但是新的 reload 配置文件没有的 job 所对应的 scrapePool 实例。
+//
 func (m *Manager) ApplyConfig(cfg *config.Config) error {
+
 	m.mtxScrape.Lock()
 	defer m.mtxScrape.Unlock()
 
+	// 初始化 map 结构，用于保存 job 的配置
 	c := make(map[string]*config.ScrapeConfig)
 	for _, scfg := range cfg.ScrapeConfigs {
 		c[scfg.JobName] = scfg
 	}
 	m.scrapeConfigs = c
 
+	// [?] 设置所有时间序列和警告与外部通信时用的外部标签 external_labels
 	if err := m.setJitterSeed(cfg.GlobalConfig.ExternalLabels); err != nil {
 		return err
 	}
 
 	// Cleanup and reload pool if the configuration has changed.
+	//
+	// 如果配置已经更改，清理历史配置，重新加载到池子中
 	var failed bool
+
+	// 遍历当前已缓存的抓取 job
 	for name, sp := range m.scrapePools {
+
+		// 如果当前 job 不存在，则删除
 		if cfg, ok := m.scrapeConfigs[name]; !ok {
 			sp.stop()
 			delete(m.scrapePools, name)
+
+		// 如果配置变更，启动 reload 重新加载
 		} else if !reflect.DeepEqual(sp.config, cfg) {
 			err := sp.reload(cfg)
 			if err != nil {
@@ -264,6 +374,7 @@ func (m *Manager) ApplyConfig(cfg *config.Config) error {
 		}
 	}
 
+	// 失败 return
 	if failed {
 		return errors.New("failed to apply the new configuration")
 	}

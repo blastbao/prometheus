@@ -24,12 +24,12 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/blastbao/prometheus/tsdb/encoding"
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
+	"github.com/blastbao/prometheus/tsdb/fileutil"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/tsdb/encoding"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
-	"github.com/prometheus/prometheus/tsdb/fileutil"
 )
 
 const TombstonesFilename = "tombstones"

@@ -65,7 +65,7 @@ installed in order to build the frontend assets.
 You can directly use the `go` tool to download and install the `prometheus`
 and `promtool` binaries into your `GOPATH`:
 
-    $ go get github.com/prometheus/prometheus/cmd/...
+    $ go get github.com/blastbao/prometheus/cmd/...
     $ prometheus --config.file=your_config.yml
 
 *However*, when using `go get` to build Prometheus, Prometheus will expect to be able to
@@ -74,7 +74,7 @@ read its web assets from local filesystem directories under `web/ui/static` and
 from the root of the cloned repository. Note also that these directories do not include the
 new experimental React UI unless it has been built explicitly using `make assets` or `make build`.
 
-An example of the above configuration file can be found [here.](https://github.com/prometheus/prometheus/blob/master/documentation/examples/prometheus.yml)
+An example of the above configuration file can be found [here.](https://github.com/blastbao/prometheus/blob/master/documentation/examples/prometheus.yml)
 
 You can also clone the repository yourself and build using `make build`, which will compile in
 the web assets so that Prometheus can be run from anywhere:
@@ -97,7 +97,7 @@ The Makefile provides several targets:
 
 ## React UI Development
 
-For more information on building, running, and developing on the new React-based UI, see the React app's [README.md](https://github.com/prometheus/prometheus/blob/master/web/ui/react-app/README.md).
+For more information on building, running, and developing on the new React-based UI, see the React app's [README.md](https://github.com/blastbao/prometheus/blob/master/web/ui/react-app/README.md).
 
 ## More information
 
@@ -107,11 +107,11 @@ For more information on building, running, and developing on the new React-based
 
 ## Contributing
 
-Refer to [CONTRIBUTING.md](https://github.com/prometheus/prometheus/blob/master/CONTRIBUTING.md)
+Refer to [CONTRIBUTING.md](https://github.com/blastbao/prometheus/blob/master/CONTRIBUTING.md)
 
 ## License
 
-Apache License 2.0, see [LICENSE](https://github.com/prometheus/prometheus/blob/master/LICENSE).
+Apache License 2.0, see [LICENSE](https://github.com/blastbao/prometheus/blob/master/LICENSE).
 
 
 [hub]: https://hub.docker.com/r/prom/prometheus/

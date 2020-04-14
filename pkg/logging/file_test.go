@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 func TestJSONFileLogger_basic(t *testing.T) {

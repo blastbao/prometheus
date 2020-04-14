@@ -17,11 +17,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/util/teststorage"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/util/teststorage"
-	"github.com/prometheus/prometheus/util/testutil"
 
 	"testing"
 )

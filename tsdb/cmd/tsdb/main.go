@@ -31,13 +31,13 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

@@ -26,14 +26,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/notifier"
+	"github.com/blastbao/prometheus/rules"
+	"github.com/blastbao/prometheus/scrape"
+	"github.com/blastbao/prometheus/tsdb"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/prometheus/client_golang/prometheus"
 	prom_testutil "github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/notifier"
-	"github.com/prometheus/prometheus/rules"
-	"github.com/prometheus/prometheus/scrape"
-	"github.com/prometheus/prometheus/tsdb"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestMain(m *testing.M) {

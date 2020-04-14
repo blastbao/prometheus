@@ -18,14 +18,14 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/blastbao/prometheus/tsdb/chunks"
+	tsdb_errors "github.com/blastbao/prometheus/tsdb/errors"
+	"github.com/blastbao/prometheus/tsdb/index"
+	"github.com/blastbao/prometheus/tsdb/tombstones"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb/chunkenc"
-	"github.com/prometheus/prometheus/tsdb/chunks"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
-	"github.com/prometheus/prometheus/tsdb/index"
-	"github.com/prometheus/prometheus/tsdb/tombstones"
 )
 
 // querier aggregates querying results from time blocks within
@@ -355,8 +355,8 @@ func PostingsForMatchers(ix IndexReader, ms ...*labels.Matcher) (index.Postings,
 		} else { // l=""
 			// If the matchers for a labelname selects an empty value, it selects all
 			// the series which don't have the label name set too. See:
-			// https://github.com/prometheus/prometheus/issues/3575 and
-			// https://github.com/prometheus/prometheus/pull/3578#issuecomment-351653555
+			// https://github.com/blastbao/prometheus/issues/3575 and
+			// https://github.com/blastbao/prometheus/pull/3578#issuecomment-351653555
 			it, err := inversePostingsForMatcher(ix, m)
 			if err != nil {
 				return nil, err

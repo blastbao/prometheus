@@ -22,7 +22,7 @@ Things considered stable for 2.x:
 Things considered unstable for 2.x:
 
 * Any feature listed as experimental or subject to change, including:
-  * The [`holt_winters` PromQL function](https://github.com/prometheus/prometheus/issues/2458)
+  * The [`holt_winters` PromQL function](https://github.com/blastbao/prometheus/issues/2458)
   * Remote read, remote write and the remote read endpoint
   * v2 HTTP and GRPC APIs
 * Service discovery integrations, with the exception of `static_configs` and `file_sd_configs`

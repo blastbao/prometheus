@@ -31,14 +31,14 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/pkg/timestamp"
+	"github.com/blastbao/prometheus/prompb"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/util/testutil"
 	client_testutil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/timestamp"
-	"github.com/prometheus/prometheus/prompb"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 const defaultFlushDeadline = 1 * time.Minute

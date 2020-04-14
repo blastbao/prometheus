@@ -19,9 +19,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/blastbao/prometheus/config"
+	"github.com/blastbao/prometheus/util/testutil"
 	common_config "github.com/prometheus/common/config"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestStorageLifecycle(t *testing.T) {

@@ -22,10 +22,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blastbao/prometheus/pkg/labels"
+	"github.com/blastbao/prometheus/tsdb/record"
+	"github.com/blastbao/prometheus/util/testutil"
 	"github.com/pkg/errors"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/tsdb/record"
-	"github.com/prometheus/prometheus/util/testutil"
 )
 
 func TestLastCheckpoint(t *testing.T) {

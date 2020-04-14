@@ -18,9 +18,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/prometheus/prometheus/storage"
-	"github.com/prometheus/prometheus/tsdb"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb"
+	"github.com/blastbao/prometheus/util/testutil"
 )
 
 // New returns a new storage for testing purposes

@@ -21,8 +21,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/blastbao/prometheus/discovery/targetgroup"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
 var (
