@@ -37,8 +37,9 @@ type Label struct {
 	Name, Value string
 }
 
-// Labels is a sorted set of labels. Order has to be guaranteed upon
-// instantiation.
+// Labels is a sorted set of labels.
+//
+// Order has to be guaranteed upon instantiation.
 type Labels []Label
 
 func (ls Labels) Len() int           { return len(ls) }

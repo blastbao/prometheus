@@ -336,6 +336,7 @@ func main() {
 	level.Info(logger).Log("fd_limits", prom_runtime.FdLimits())
 	level.Info(logger).Log("vm_limits", prom_runtime.VMLimits())
 
+
 	var (
 		localStorage  = &readyStorage{}
 		remoteStorage = remote.NewStorage(log.With(logger, "component", "remote"), prometheus.DefaultRegisterer, localStorage.StartTime, cfg.localStoragePath, time.Duration(cfg.RemoteFlushDeadline))
@@ -354,6 +355,8 @@ func main() {
 		ctxNotify, cancelNotify = context.WithCancel(context.Background())
 		discoveryManagerNotify  = discovery.NewManager(ctxNotify, log.With(logger, "component", "discovery manager notify"), discovery.Name("notify"))
 
+
+		// fanoutStorage 是存储的抽象
 		scrapeManager = scrape.NewManager(log.With(logger, "component", "scrape manager"), fanoutStorage)
 
 		opts = promql.EngineOpts{

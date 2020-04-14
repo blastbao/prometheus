@@ -2,207 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d8f11117-4f0d-4e61-9922-51b7eae6aa76" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.circleci/config.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.circleci/config.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CONTRIBUTING.md" beforeDir="false" afterPath="$PROJECT_DIR$/CONTRIBUTING.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/NOTICE" beforeDir="false" afterPath="$PROJECT_DIR$/NOTICE" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/prometheus/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/prometheus/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/prometheus/main_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/prometheus/main_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/prometheus/query_log_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/prometheus/query_log_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/promtool/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/promtool/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/promtool/unittest.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/promtool/unittest.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/azure/azure.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/azure/azure.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/consul/consul.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/consul/consul.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/consul/consul_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/consul/consul_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/dns/dns.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/dns/dns.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/dns/dns_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/dns/dns_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/ec2/ec2.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/ec2/ec2.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/file/file.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/file/file.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/file/file_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/file/file_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/gce/gce.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/gce/gce.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/endpoints.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/endpoints.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/endpoints_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/endpoints_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/ingress.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/ingress.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/ingress_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/ingress_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/kubernetes.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/kubernetes.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/kubernetes_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/kubernetes_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/node.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/node.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/node_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/node_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/pod.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/pod.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/pod_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/pod_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/kubernetes/service_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/kubernetes/service_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/discovery/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/manager_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/manager_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/marathon/marathon.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/marathon/marathon.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/marathon/marathon_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/marathon/marathon_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/openstack/hypervisor.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/openstack/hypervisor.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/openstack/hypervisor_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/openstack/hypervisor_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/openstack/instance.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/openstack/instance.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/openstack/instance_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/openstack/instance_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/openstack/openstack.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/openstack/openstack.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/refresh/refresh.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/refresh/refresh.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/refresh/refresh_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/refresh/refresh_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/targetgroup/targetgroup_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/targetgroup/targetgroup_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/triton/triton.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/triton/triton.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/triton/triton_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/triton/triton_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/zookeeper/zookeeper.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/zookeeper/zookeeper.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/configuration/recording_rules.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/configuration/recording_rules.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/migration.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/migration.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/querying/api.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/querying/api.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/stability.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/stability.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/storage.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/storage.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/examples/custom-sd/adapter-usage/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/examples/custom-sd/adapter-usage/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/examples/custom-sd/adapter/adapter.go" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/examples/custom-sd/adapter/adapter.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/examples/custom-sd/adapter/adapter_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/examples/custom-sd/adapter/adapter_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/examples/remote_storage/example_write_adapter/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/examples/remote_storage/example_write_adapter/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/examples/remote_storage/remote_storage_adapter/influxdb/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/examples/remote_storage/remote_storage_adapter/influxdb/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/examples/remote_storage/remote_storage_adapter/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/examples/remote_storage/remote_storage_adapter/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/documentation/internal_architecture.md" beforeDir="false" afterPath="$PROJECT_DIR$/documentation/internal_architecture.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notifier/notifier.go" beforeDir="false" afterPath="$PROJECT_DIR$/notifier/notifier.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notifier/notifier_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/notifier/notifier_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/exemplar/exemplar.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/exemplar/exemplar.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/labels/labels_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/labels/labels_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/labels/matcher_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/labels/matcher_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/logging/dedupe_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/logging/dedupe_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/logging/file_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/logging/file_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/relabel/relabel.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/relabel/relabel.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/relabel/relabel_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/relabel/relabel_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/rulefmt/rulefmt.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/rulefmt/rulefmt.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/rulefmt/rulefmt_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/rulefmt/rulefmt_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/discovery/targetgroup/targetgroup.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/targetgroup/targetgroup.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/labels/labels.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/labels/labels.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pkg/textparse/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/textparse/interface.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/textparse/openmetricsparse.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/textparse/openmetricsparse.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/textparse/openmetricsparse_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/textparse/openmetricsparse_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/textparse/promparse.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/textparse/promparse.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/textparse/promparse_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/textparse/promparse_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/bench_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/bench_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/engine.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/engine.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/engine_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/engine_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/functions.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/functions.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/functions_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/functions_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/fuzz.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/fuzz.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/ast.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/ast.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/generated_parser.y" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/generated_parser.y" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/generated_parser.y.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/generated_parser.y.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/lex.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/lex.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/lex_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/lex_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/parse.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/parse.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/parse_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/parse_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/printer.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/printer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/printer_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/printer_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/promql_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/promql_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/quantile.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/quantile.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/query_logger_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/query_logger_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/test_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/test_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/testdata/operators.test" beforeDir="false" afterPath="$PROJECT_DIR$/promql/testdata/operators.test" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/testdata/selectors.test" beforeDir="false" afterPath="$PROJECT_DIR$/promql/testdata/selectors.test" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/value.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/value.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rules/alerting.go" beforeDir="false" afterPath="$PROJECT_DIR$/rules/alerting.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rules/alerting_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rules/alerting_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rules/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/rules/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rules/manager_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rules/manager_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rules/recording.go" beforeDir="false" afterPath="$PROJECT_DIR$/rules/recording.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rules/recording_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/rules/recording_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape/helpers_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/helpers_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape/manager_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/manager_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape/scrape.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/scrape.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/scrape_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape/target.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/target.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape/target_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/target_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/errcheck_excludes.txt" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/errcheck_excludes.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/buffer.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/buffer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/buffer_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/buffer_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/fanout.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/fanout.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/fanout/fanout_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/fanout/fanout_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/fanout_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/fanout_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/generic.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/generic.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/interface.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/noop.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/noop.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/chunked_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/chunked_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/client_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/client_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/codec.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/codec.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/codec_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/codec_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/intern_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/intern_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/queue_manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/queue_manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/queue_manager_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/queue_manager_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/read.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/read.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/read_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/read_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/storage.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/storage.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/storage_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/storage_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/write.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/write.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/remote/write_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/remote/write_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/series.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/series.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/series_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/series_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/template/template.go" beforeDir="false" afterPath="$PROJECT_DIR$/template/template.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/template/template_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/template/template_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/block.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/block.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/block_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/block_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/chunkenc/chunk_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/chunkenc/chunk_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/chunks/chunks.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/chunks/chunks.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/chunks/chunks_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/chunks/chunks_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/chunks/head_chunks.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/chunks/head_chunks.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/chunks/head_chunks_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/chunks/head_chunks_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/cmd/tsdb/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/cmd/tsdb/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/compact.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/compact.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/compact_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/compact_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/db_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/db_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/fileutil/flock_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/fileutil/flock_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/goversion/goversio_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/goversion/goversio_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/head.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/head.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/head_bench_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/head_bench_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/head_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/head_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/index/index.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/index/index.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/index/index_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/index/index_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/index/postings.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/index/postings.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/index/postings_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/index/postings_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/index/postingsstats_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/index/postingsstats_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/mocks_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/mocks_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/querier.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/querier.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/querier_bench_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/querier_bench_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/querier_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/querier_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/record/record.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/record/record.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/record/record_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/record/record_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/repair.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/repair.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/repair_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/repair_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/test/labels_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/test/labels_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/tombstones/tombstones.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/tombstones/tombstones.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/tombstones/tombstones_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/tombstones/tombstones_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/tsdbblockutil.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/tsdbblockutil.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/tsdbutil/buffer.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/tsdbutil/buffer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/tsdbutil/buffer_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/tsdbutil/buffer_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/tsdbutil/chunks.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/tsdbutil/chunks.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/checkpoint.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/checkpoint.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/checkpoint_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/checkpoint_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/reader_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/reader_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/wal.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/wal.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/wal_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/wal_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/watcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/watcher.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal/watcher_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal/watcher_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsdb/wal_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/wal_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/httputil/context.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/httputil/context.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/promlint/promlint_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/promlint/promlint_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/stats/stats_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/stats/stats_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/util/teststorage/storage.go" beforeDir="false" afterPath="$PROJECT_DIR$/util/teststorage/storage.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/api/v1/api.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/api/v1/api.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/api/v1/api_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/api/v1/api_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/api/v2/api.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/api/v2/api.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/federate.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/federate.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/federate_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/federate_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/ui/assets_generate.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/ui/assets_generate.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/web.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/web.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/web_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/web_test.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -211,75 +19,89 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <leaf>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scrape/manager.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1149">
-              <caret line="342" column="36" lean-forward="true" selection-start-line="342" selection-start-column="36" selection-end-line="342" selection-end-column="36" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/discovery/targetgroup/targetgroup.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="23" column="5" selection-start-line="23" selection-start-column="5" selection-end-line="23" selection-end-column="5" />
-            </state>
-          </provider>
-        </entry>
-      </file>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/scrape/scrape.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="795">
-              <caret line="497" column="14" lean-forward="true" selection-start-line="497" selection-start-column="14" selection-end-line="497" selection-end-column="14" />
+            <state relative-caret-position="172">
+              <caret line="1575" column="16" lean-forward="true" selection-start-line="1575" selection-start-column="16" selection-end-line="1575" selection-end-column="16" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cmd/prometheus/query_log_test.go">
+        <entry file="file://$PROJECT_DIR$/storage/interface.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="313">
-              <caret line="96" column="23" selection-start-line="96" selection-start-column="23" selection-end-line="96" selection-end-column="23" />
+            <state relative-caret-position="260">
+              <caret line="135" lean-forward="true" selection-start-line="135" selection-end-line="135" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cmd/prometheus/main.go">
+        <entry file="file://$PROJECT_DIR$/scrape/target.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="815" column="19" lean-forward="true" selection-start-line="815" selection-start-column="19" selection-end-line="815" selection-end-column="19" />
+            <state relative-caret-position="-2415">
+              <caret line="57" column="5" selection-start-line="57" selection-start-column="5" selection-end-line="57" selection-end-column="5" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pkg/pool/pool.go">
+        <entry file="file://$PROJECT_DIR$/scrape/scrape_test.go">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/pkg/value/value.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="318">
-              <caret line="31" column="5" selection-start-line="31" selection-start-column="5" selection-end-line="31" selection-end-column="5" />
+            <state relative-caret-position="425">
+              <caret line="27" column="4" selection-start-line="27" selection-start-column="4" selection-end-line="27" selection-end-column="4" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/vendor/github.com/prometheus/client_golang/prometheus/counter.go">
+        <entry file="file://$PROJECT_DIR$/scrape/manager_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="318">
-              <caret line="39" column="4" selection-start-line="39" selection-start-column="4" selection-end-line="39" selection-end-column="4" />
+            <state relative-caret-position="921">
+              <caret line="360" column="27" selection-start-line="360" selection-start-column="27" selection-end-line="360" selection-end-column="27" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/vendor/github.com/prometheus/common/config/http_config.go">
+        <entry file="file://$PROJECT_DIR$/pkg/textparse/interface.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="311">
-              <caret line="387" column="5" selection-start-line="387" selection-start-column="5" selection-end-line="387" selection-end-column="5" />
+              <caret line="61" selection-start-line="61" selection-end-line="61" selection-end-column="35" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/pkg/textparse/openmetricsparse.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="464">
+              <caret line="162" lean-forward="true" selection-start-line="162" selection-end-line="162" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/pkg/labels/labels.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="311">
+              <caret line="28" column="29" lean-forward="true" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scrape/manager.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="4522">
+              <caret line="285" lean-forward="true" selection-start-line="285" selection-end-line="285" />
             </state>
           </provider>
         </entry>
@@ -288,23 +110,42 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>github.com/prometheus/prometheus/</find>
-      <find>ScrapeConfig</find>
-      <find>reloadReady.C</find>
-      <find>scrapeManager.Run</find>
-      <find>scrapePool</find>
+      <find>scrapePools[setName]</find>
+      <find>Sync</find>
+      <find>Append</find>
+      <find>scrape.NewManager</find>
+      <find>tsets &lt;-</find>
       <find>reload</find>
-      <find>Run</find>
-      <find>reloadConfig</find>
-      <find>ApplyConfig</find>
-      <find>newScrapePool</find>
       <find>run</find>
-      <find>sync</find>
+      <find>getDropped</find>
+      <find>cacheEntry</find>
+      <find>trackStaleness</find>
+      <find>ApplyConfig</find>
+      <find>iterDone</find>
+      <find>scrape</find>
+      <find>append</find>
+      <find>ReadyStorage</find>
+      <find>Appender</find>
+      <find>contentType</find>
+      <find>actors</find>
+      <find>mutateSampleLabels</find>
+      <find>Group</find>
+      <find>scraper</find>
+      <find>timeLimitAppender</find>
+      <find>defTime</find>
+      <find>appErrs</find>
+      <find>ref</find>
+      <find>Metric(l *labels.Labels) string</find>
+      <find>forEachStale</find>
+      <find>targetSets</find>
+      <find>Metric</find>
+      <find>RecordEncoder</find>
     </findStrings>
     <replaceStrings>
       <replace>github.com/blastbao/prometheus/</replace>
     </replaceStrings>
     <dirStrings>
+      <dir>$PROJECT_DIR$/scrape</dir>
       <dir>$PROJECT_DIR$</dir>
     </dirStrings>
   </component>
@@ -321,6 +162,11 @@
         <option value="$PROJECT_DIR$/tsdb/db.go" />
         <option value="$PROJECT_DIR$/config/config.go" />
         <option value="$PROJECT_DIR$/cmd/prometheus/main.go" />
+        <option value="$PROJECT_DIR$/discovery/targetgroup/targetgroup.go" />
+        <option value="$PROJECT_DIR$/discovery/manager.go" />
+        <option value="$PROJECT_DIR$/scrape/target.go" />
+        <option value="$PROJECT_DIR$/pkg/labels/labels.go" />
+        <option value="$PROJECT_DIR$/pkg/textparse/interface.go" />
         <option value="$PROJECT_DIR$/scrape/manager.go" />
         <option value="$PROJECT_DIR$/scrape/scrape.go" />
       </list>
@@ -345,19 +191,7 @@
             <path>
               <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
               <item name="prometheus" type="462c0819:PsiDirectoryNode" />
-              <item name="tsdb" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
-              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
-              <item name="tsdb" type="462c0819:PsiDirectoryNode" />
-              <item name="tsdbutil" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
-              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
-              <item name="tsdb" type="462c0819:PsiDirectoryNode" />
-              <item name="wal" type="462c0819:PsiDirectoryNode" />
+              <item name="scrape" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -391,14 +225,9 @@
     <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Favorites" side_tool="true" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24969475" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25274727" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Docker" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Database Changes" />
-      <window_info anchor="bottom" id="Version Control" />
-      <window_info anchor="bottom" id="Terminal" />
-      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32959184" />
@@ -406,10 +235,16 @@
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="right" id="Database" />
+      <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Version Control" order="8" />
+      <window_info anchor="bottom" id="Database Changes" order="9" />
+      <window_info anchor="bottom" id="TypeScript" order="10" />
+      <window_info anchor="bottom" id="Terminal" order="11" />
+      <window_info anchor="bottom" id="Event Log" order="12" side_tool="true" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="Database" order="3" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -420,20 +255,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="493">
           <caret line="29" column="10" selection-start-line="29" selection-start-column="10" selection-end-line="29" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/block.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="15" selection-start-line="15" selection-end-line="15" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/tombstones/tombstones.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="16" column="21" selection-start-line="16" selection-start-column="21" selection-end-line="16" selection-end-column="21" />
         </state>
       </provider>
     </entry>
@@ -454,45 +275,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/vendor/github.com/oklog/run/group.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="10" column="5" selection-start-line="10" selection-start-column="5" selection-end-line="10" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/discovery/manager.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="361">
-          <caret line="178" column="18" selection-start-line="178" selection-start-column="18" selection-end-line="178" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/discovery/targetgroup/targetgroup.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="23" column="5" selection-start-line="23" selection-start-column="5" selection-end-line="23" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vendor/github.com/prometheus/common/config/http_config.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
-          <caret line="387" column="5" selection-start-line="387" selection-start-column="5" selection-end-line="387" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/vendor/github.com/prometheus/client_golang/prometheus/counter.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="318">
           <caret line="39" column="4" selection-start-line="39" selection-start-column="4" selection-end-line="39" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/pkg/pool/pool.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="318">
-          <caret line="31" column="5" selection-start-line="31" selection-start-column="5" selection-end-line="31" selection-end-column="5" />
         </state>
       </provider>
     </entry>
@@ -503,24 +289,203 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/target_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/cmd/tsdb/main.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-6413" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/index/index.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-25073" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/tsdbutil/buffer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2909" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/block.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="390">
+          <caret line="601" column="5" lean-forward="true" selection-start-line="601" selection-start-column="5" selection-end-line="601" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/tsdbutil/chunks.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/wal/checkpoint.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/chunks/chunks.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-9961" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/tombstones/tombstones.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-4541">
+          <caret line="16" column="21" selection-start-line="16" selection-start-column="21" selection-end-line="16" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vendor/github.com/prometheus/common/config/http_config.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="318">
+          <caret line="124" column="5" selection-start-line="124" selection-start-column="5" selection-end-line="124" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/testdata/ca.cer">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/testdata/ca.key">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/testdata/client.key">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/testdata/server.cer">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.14/libexec/src/builtin/builtin.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="133" column="5" selection-start-line="133" selection-start-column="5" selection-end-line="133" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/cmd/prometheus/main.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="815" column="19" lean-forward="true" selection-start-line="815" selection-start-column="19" selection-end-line="815" selection-end-column="19" />
+        <state relative-caret-position="613">
+          <caret line="343" column="5" lean-forward="true" selection-start-line="343" selection-start-column="5" selection-end-line="343" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.14/libexec/src/bytes/buffer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="53" column="17" selection-start-line="53" selection-start-column="17" selection-end-line="53" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.14/libexec/src/reflect/deepequal.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3196">
+          <caret line="188" column="5" selection-start-line="188" selection-start-column="5" selection-end-line="188" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/discovery/targetgroup/targetgroup.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="35" selection-start-line="35" selection-end-line="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vendor/github.com/oklog/run/group.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="12" column="1" selection-start-line="12" selection-start-column="1" selection-end-line="12" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/pool/pool.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="918">
+          <caret line="58" column="15" selection-start-line="58" selection-start-column="15" selection-end-line="58" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/discovery/manager.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2125">
+          <caret line="150" column="54" selection-start-line="150" selection-start-column="54" selection-end-line="150" selection-end-column="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/timestamp/timestamp.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="18" column="5" selection-start-line="18" selection-start-column="5" selection-end-line="18" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/textparse/promparse.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="318">
+          <caret line="157" column="5" selection-start-line="157" selection-start-column="5" selection-end-line="157" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/value/value.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="425">
+          <caret line="27" column="4" selection-start-line="27" selection-start-column="4" selection-end-line="27" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/textparse/openmetricsparse.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="464">
+          <caret line="162" lean-forward="true" selection-start-line="162" selection-end-line="162" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/textparse/interface.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="61" selection-start-line="61" selection-end-line="61" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/labels/labels.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="28" column="29" lean-forward="true" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/manager_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="921">
+          <caret line="360" column="27" selection-start-line="360" selection-start-column="27" selection-end-line="360" selection-end-column="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/scrape_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/interface.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="260">
+          <caret line="135" lean-forward="true" selection-start-line="135" selection-end-line="135" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/target.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2415">
+          <caret line="57" column="5" selection-start-line="57" selection-start-column="5" selection-end-line="57" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scrape/manager.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1149">
-          <caret line="342" column="36" lean-forward="true" selection-start-line="342" selection-start-column="36" selection-end-line="342" selection-end-column="36" />
+        <state relative-caret-position="4522">
+          <caret line="285" lean-forward="true" selection-start-line="285" selection-end-line="285" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scrape/scrape.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="795">
-          <caret line="497" column="14" lean-forward="true" selection-start-line="497" selection-start-column="14" selection-end-line="497" selection-end-column="14" />
+        <state relative-caret-position="172">
+          <caret line="1575" column="16" lean-forward="true" selection-start-line="1575" selection-start-column="16" selection-end-line="1575" selection-end-column="16" />
         </state>
       </provider>
     </entry>

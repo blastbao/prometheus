@@ -20,16 +20,31 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// Group is a set of targets with a common label set(production , test, staging etc.).
+// Group is a set of targets with a common label set(production, test, staging etc.).
+//
+// Group 是一组具有公共标签集的 targets，公共标签集如（region, env...)
+//
 type Group struct {
-	// Targets is a list of targets identified by a label set. Each target is
-	// uniquely identifiable in the group by its address label.
+
+	// Targets is a list of targets identified by a label set.
+	// Each target is uniquely identifiable in the group by its address label.
+	//
+	// Targets 代表来一组 targets
+	//
+	// 每个 target 是一个 model.LabelSet 对象，这个 model.LabelSet 对象可以唯一代表该 target 。
+	//
+	// 这些 targets 以其 address label 作为在 Group 内的唯一标识，例："__address__": "localhost:9100"。
+	//
 	Targets []model.LabelSet
+
 	// Labels is a set of labels that is common across all targets in the group.
 	Labels model.LabelSet
 
 	// Source is an identifier that describes a group of targets.
-	Source string
+	Source string 	// 全局唯一ID，示例：Source: "0"
+
+
+
 }
 
 func (tg Group) String() string {

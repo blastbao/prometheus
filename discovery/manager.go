@@ -143,22 +143,30 @@ func Name(n string) func(*Manager) {
 // Manager maintains a set of discovery providers and sends each update to a map channel.
 // Targets are grouped by the target set name.
 type Manager struct {
-	logger         log.Logger
-	name           string
-	mtx            sync.RWMutex
-	ctx            context.Context
-	discoverCancel []context.CancelFunc
+
+
+	logger         log.Logger			// 日志
+	name           string				// 用于区分 scrape 和 notify ，因为他们用的同一个 discovery/manager.go
+	mtx            sync.RWMutex 		// 读写锁
+	ctx            context.Context 		// 协同控制，比如系统退出
+	discoverCancel []context.CancelFunc // 处理服务下线
+
 
 	// Some Discoverers(eg. k8s) send only the updates for a given target group
 	// so we use map[tg.Source]*targetgroup.Group to know which group to update.
-	targets map[poolKey]map[string]*targetgroup.Group
-	// providers keeps track of SD providers.
-	providers []*provider
-	// The sync channel sends the updates as a map where the key is the job value from the scrape config.
-	syncCh chan map[string][]*targetgroup.Group
+	targets map[poolKey]map[string]*targetgroup.Group // 发现的服务
 
-	// How long to wait before sending updates to the channel. The variable
-	// should only be modified in unit tests.
+
+	// providers keeps track of SD providers.
+	providers []*provider // providers 的类型可分为 kubernetes、DNS 等
+
+
+	// The sync channel sends the updates as a map where the key is the job value from the scrape config.
+	syncCh chan map[string][]*targetgroup.Group  // 把发现的 Targets 通过管道形式通知给 scrapeManager
+
+
+	// How long to wait before sending updates to the channel.
+	// The variable should only be modified in unit tests.
 	updatert time.Duration
 
 	// The triggerSend channel signals to the manager that new updates have been received from providers.

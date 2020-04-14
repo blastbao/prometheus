@@ -34,24 +34,40 @@ import (
 	"github.com/blastbao/prometheus/storage"
 )
 
+
 // TargetHealth describes the health state of a target.
+//
+// TargetHealth 描述 target 的运行状况。
 type TargetHealth string
 
+
+
 // The possible health states of a target based on the last performed scrape.
+//
+// target 的运行状况基于上次执行的 scrape 的结果。
 const (
 	HealthUnknown TargetHealth = "unknown"
 	HealthGood    TargetHealth = "up"
 	HealthBad     TargetHealth = "down"
 )
 
+
 // Target refers to a singular HTTP or HTTPS endpoint.
+//
+// Target 代表单个 HTTP/HTTPS 的服务端。
 type Target struct {
+
 	// Labels before any processing.
 	discoveredLabels labels.Labels
+
+
 	// Any labels that are added to this target and its metrics.
 	labels labels.Labels
+
+
 	// Additional URL parameters that are part of the target URL.
 	params url.Values
+
 
 	mtx                sync.RWMutex
 	lastError          error
@@ -74,6 +90,7 @@ func NewTarget(labels, discoveredLabels labels.Labels, params url.Values) *Targe
 func (t *Target) String() string {
 	return t.URL().String()
 }
+
 
 type MetricMetadataStore interface {
 	ListMetadata() []MetricMetadata
@@ -316,7 +333,6 @@ func (app *limitAppender) AddFast(ref uint64, t int64, v float64) error {
 
 type timeLimitAppender struct {
 	storage.Appender
-
 	maxTime int64
 }
 

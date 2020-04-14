@@ -49,6 +49,16 @@ type Parser interface {
 
 	// Metric writes the labels of the current sample into the passed labels.
 	// It returns the string from which the metric was parsed.
+	//
+	// 在 prometheus 中，不存在 metric name 的，它被当作一个特殊标签对待，一个 metric 便是一个有序 labels 数组。
+	//
+	//
+
+
+
+
+
+
 	Metric(l *labels.Labels) string
 
 	// Exemplar writes the exemplar of the current sample into the passed
