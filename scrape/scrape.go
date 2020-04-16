@@ -433,6 +433,7 @@ func (sp *scrapePool) Sync(tgs []*targetgroup.Group) {
 
 	sp.droppedTargets = []*Target{}
 
+
 	// 遍历所有 Target Group
 	for _, tg := range tgs {
 
@@ -492,13 +493,17 @@ func (sp *scrapePool) sync(targets []*Target) {
 	defer sp.mtx.Unlock()
 
 	var (
+
 		// targets 去重列表，每次执行 sync() 这个变量都重新创建，用来保存当前生效的所有 targets，移除旧的已失效的 targets
 		uniqueTargets = map[uint64]struct{}{}
+
 		// 采集周期
 		interval = time.Duration(sp.config.ScrapeInterval)
+
 		// 采集超时时间
 		timeout = time.Duration(sp.config.ScrapeTimeout)
 		limit   = int(sp.config.SampleLimit)
+
 		// 重复 lable 是否覆盖
 		honorLabels     = sp.config.HonorLabels
 		honorTimestamps = sp.config.HonorTimestamps
@@ -1575,8 +1580,6 @@ loop:
 
 		if !ok {
 
-
-
 			// [!!!]
 			// 在 prometheus storage 中，metric name 被当作特殊标签 "__name__" 对待，一个 metric 等价于一个有序的 labels 数组。
 			// 这样，对 metric 的操作都统一成对 labels 的处理。这也便解释了，为什么 storage.Add(l labels.Labels, ...) 方法的
@@ -1589,7 +1592,6 @@ loop:
 
 			// 根据 lset 计算当前 metric 的 hash 值
 			hash := lset.Hash()
-
 
 
 			// Hash label set as it is seen local to the target.

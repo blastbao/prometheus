@@ -3,14 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="d8f11117-4f0d-4e61-9922-51b7eae6aa76" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/prometheus/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/prometheus/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/discovery/targetgroup/targetgroup.go" beforeDir="false" afterPath="$PROJECT_DIR$/discovery/targetgroup/targetgroup.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/labels/labels.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/labels/labels.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/textparse/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/textparse/interface.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/manager.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape/scrape.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/scrape.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape/target.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape/target.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/interface.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsdb/chunkenc/chunk.go" beforeDir="false" afterPath="$PROJECT_DIR$/tsdb/chunkenc/chunk.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -21,87 +18,67 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/scrape/scrape.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="172">
-              <caret line="1575" column="16" lean-forward="true" selection-start-line="1575" selection-start-column="16" selection-end-line="1575" selection-end-column="16" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/storage/interface.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="260">
-              <caret line="135" lean-forward="true" selection-start-line="135" selection-end-line="135" />
+            <state relative-caret-position="499">
+              <caret line="52" lean-forward="true" selection-start-line="52" selection-end-line="52" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scrape/target.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2415">
-              <caret line="57" column="5" selection-start-line="57" selection-start-column="5" selection-end-line="57" selection-end-column="5" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scrape/scrape_test.go">
+        <entry file="file://$PROJECT_DIR$/prompb/remote.proto">
           <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pkg/value/value.go">
+        <entry file="file://$PROJECT_DIR$/prompb/rpc.pb.go">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/prompb/rpc.proto">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/prompb/types.proto">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/rules/alerting.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="425">
-              <caret line="27" column="4" selection-start-line="27" selection-start-column="4" selection-end-line="27" selection-end-column="4" />
-            </state>
+            <state relative-caret-position="-7114" />
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scrape/manager_test.go">
+        <entry file="file://$PROJECT_DIR$/storage/buffer.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="921">
-              <caret line="360" column="27" selection-start-line="360" selection-start-column="27" selection-end-line="360" selection-end-column="27" />
-            </state>
+            <state relative-caret-position="-4014" />
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pkg/textparse/interface.go">
+        <entry file="file://$PROJECT_DIR$/storage/fanout.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="311">
-              <caret line="61" selection-start-line="61" selection-end-line="61" selection-end-column="35" />
-            </state>
+            <state relative-caret-position="-293" />
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pkg/textparse/openmetricsparse.go">
+        <entry file="file://$PROJECT_DIR$/storage/remote/chunked.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="464">
-              <caret line="162" lean-forward="true" selection-start-line="162" selection-end-line="162" />
-            </state>
+            <state relative-caret-position="-1450" />
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pkg/labels/labels.go">
+        <entry file="file://$PROJECT_DIR$/storage/remote/codec.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="311">
-              <caret line="28" column="29" lean-forward="true" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/scrape/manager.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4522">
-              <caret line="285" lean-forward="true" selection-start-line="285" selection-end-line="285" />
+            <state relative-caret-position="408">
+              <caret line="39" lean-forward="true" selection-start-line="39" selection-end-line="39" />
             </state>
           </provider>
         </entry>
@@ -110,13 +87,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>scrapePools[setName]</find>
-      <find>Sync</find>
-      <find>Append</find>
-      <find>scrape.NewManager</find>
-      <find>tsets &lt;-</find>
-      <find>reload</find>
-      <find>run</find>
       <find>getDropped</find>
       <find>cacheEntry</find>
       <find>trackStaleness</find>
@@ -140,13 +110,22 @@
       <find>targetSets</find>
       <find>Metric</find>
       <find>RecordEncoder</find>
+      <find>Series</find>
+      <find>At</find>
+      <find>At()</find>
+      <find>SeriesIterator</find>
+      <find>evictChunkDescs</find>
+      <find>Querier</find>
+      <find>Storage</find>
     </findStrings>
     <replaceStrings>
       <replace>github.com/blastbao/prometheus/</replace>
     </replaceStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/scrape</dir>
+      <dir>$PROJECT_DIR$/promql</dir>
       <dir>$PROJECT_DIR$</dir>
+      <dir>$PROJECT_DIR$/storage</dir>
     </dirStrings>
   </component>
   <component name="GOROOT" path="/usr/local/Cellar/go/1.14/libexec" />
@@ -164,11 +143,13 @@
         <option value="$PROJECT_DIR$/cmd/prometheus/main.go" />
         <option value="$PROJECT_DIR$/discovery/targetgroup/targetgroup.go" />
         <option value="$PROJECT_DIR$/discovery/manager.go" />
-        <option value="$PROJECT_DIR$/scrape/target.go" />
         <option value="$PROJECT_DIR$/pkg/labels/labels.go" />
         <option value="$PROJECT_DIR$/pkg/textparse/interface.go" />
         <option value="$PROJECT_DIR$/scrape/manager.go" />
         <option value="$PROJECT_DIR$/scrape/scrape.go" />
+        <option value="$PROJECT_DIR$/tsdb/chunkenc/chunk.go" />
+        <option value="$PROJECT_DIR$/storage/interface.go" />
+        <option value="$PROJECT_DIR$/scrape/target.go" />
       </list>
     </option>
   </component>
@@ -191,7 +172,32 @@
             <path>
               <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
               <item name="prometheus" type="462c0819:PsiDirectoryNode" />
-              <item name="scrape" type="462c0819:PsiDirectoryNode" />
+              <item name=".github" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
+              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
+              <item name="cmd" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
+              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
+              <item name="console_libraries" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
+              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
+              <item name="pkg" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
+              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
+              <item name="prompb" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
+              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
+              <item name="storage" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -222,10 +228,10 @@
     </option>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1680" height="1050" extended-state="0" />
+    <frame x="0" y="0" width="1680" height="1050" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25274727" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25885227" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -251,69 +257,6 @@
     <option name="version" value="1" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/tsdb/db.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="493">
-          <caret line="29" column="10" selection-start-line="29" selection-start-column="10" selection-end-line="29" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/tombstones/tombstones_test.go">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/config/config_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="318">
-          <caret line="124" column="29" selection-start-line="124" selection-start-column="29" selection-end-line="124" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/config/config.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="192">
-          <caret line="358" column="11" lean-forward="true" selection-start-line="358" selection-start-column="11" selection-end-line="358" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vendor/github.com/prometheus/client_golang/prometheus/counter.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="318">
-          <caret line="39" column="4" selection-start-line="39" selection-start-column="4" selection-end-line="39" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cmd/prometheus/query_log_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="313">
-          <caret line="96" column="23" selection-start-line="96" selection-start-column="23" selection-end-line="96" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scrape/target_test.go">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/cmd/tsdb/main.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-6413" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/index/index.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-25073" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/tsdbutil/buffer.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2909" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tsdb/block.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="390">
-          <caret line="601" column="5" lean-forward="true" selection-start-line="601" selection-start-column="5" selection-end-line="601" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tsdb/tsdbutil/chunks.go">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -423,6 +366,9 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/scrape_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/pkg/value/value.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="425">
@@ -430,62 +376,160 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pkg/textparse/openmetricsparse.go">
+    <entry file="file://$PROJECT_DIR$/scrape/manager_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="464">
-          <caret line="162" lean-forward="true" selection-start-line="162" selection-end-line="162" />
+        <state relative-caret-position="5865">
+          <caret line="360" column="27" selection-start-line="360" selection-start-column="27" selection-end-line="360" selection-end-column="27" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/pkg/textparse/interface.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
+        <state relative-caret-position="952">
           <caret line="61" selection-start-line="61" selection-end-line="61" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/textparse/openmetricsparse.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2516">
+          <caret line="162" selection-start-line="162" selection-end-line="162" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/pkg/labels/labels.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
-          <caret line="28" column="29" lean-forward="true" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
+        <state relative-caret-position="357">
+          <caret line="28" column="29" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scrape/manager_test.go">
+    <entry file="file://$PROJECT_DIR$/rules/manager.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="921">
-          <caret line="360" column="27" selection-start-line="360" selection-start-column="27" selection-end-line="360" selection-end-column="27" />
-        </state>
+        <state relative-caret-position="-17237" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scrape/scrape_test.go">
+    <entry file="file://$PROJECT_DIR$/scripts/build_react_app.sh">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/storage/interface.go">
+    <entry file="file://$PROJECT_DIR$/scripts/errcheck_excludes.txt">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/genproto.sh">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/sync_makefiles.sh">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="260">
-          <caret line="135" lean-forward="true" selection-start-line="135" selection-end-line="135" />
+        <state relative-caret-position="-429" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/noop.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-665" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/series.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1396" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/generic.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tsdb/chunkenc/chunk.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="722">
+          <caret line="102" selection-start-line="102" selection-end-line="102" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scrape/target.go">
+    <entry file="file://$PROJECT_DIR$/storage/remote/read.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2415">
-          <caret line="57" column="5" selection-start-line="57" selection-start-column="5" selection-end-line="57" selection-end-column="5" />
+        <state relative-caret-position="452">
+          <caret line="244" column="34" selection-start-line="244" selection-start-column="34" selection-end-line="244" selection-end-column="34" />
+          <folding>
+            <element signature="e#609#775#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scrape/manager.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4522">
-          <caret line="285" lean-forward="true" selection-start-line="285" selection-end-line="285" />
+        <state relative-caret-position="17">
+          <caret line="154" lean-forward="true" selection-start-line="154" selection-end-line="154" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scrape/scrape.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="172">
-          <caret line="1575" column="16" lean-forward="true" selection-start-line="1575" selection-start-column="16" selection-end-line="1575" selection-end-column="16" />
+        <state relative-caret-position="17">
+          <caret line="496" column="8" selection-start-line="496" selection-start-column="8" selection-end-line="496" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scrape/target.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-6088">
+          <caret line="67" lean-forward="true" selection-start-line="67" selection-end-line="67" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/engine.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-34662" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/notifier/notifier.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-4328" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/prompb/remote.pb.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/prompb/remote.proto">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/prompb/rpc.pb.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/prompb/rpc.proto">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/prompb/types.proto">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/rules/alerting.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-7114" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/buffer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-4014" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/fanout.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-293" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/remote/chunked.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1450" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/remote/codec.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="408">
+          <caret line="39" lean-forward="true" selection-start-line="39" selection-end-line="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/interface.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="499">
+          <caret line="52" lean-forward="true" selection-start-line="52" selection-end-line="52" />
         </state>
       </provider>
     </entry>

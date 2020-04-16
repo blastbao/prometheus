@@ -105,9 +105,7 @@ func (mc *MetadataMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 // NewManager is the Manager constructor
 //
-
-
-
+//
 func NewManager(logger log.Logger, app storage.Appendable) *Manager {
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -125,6 +123,11 @@ func NewManager(logger log.Logger, app storage.Appendable) *Manager {
 	return m
 }
 
+
+// Manager maintains a set of scrape pools and manages start/stop cycles
+// when receiving new target groups form the discovery manager.
+//
+//
 // Manager 负责维护 scrape pools，并且管理着 scrape 组件的生命周期。
 //
 // Manager 主要有以下函数：
@@ -132,12 +135,8 @@ func NewManager(logger log.Logger, app storage.Appendable) *Manager {
 //	func (m *Manager) Stop()
 //	func (m *Manager) ApplyConfig(cfg *config.Config) error
 //
-
-// Manager maintains a set of scrape pools and manages start/stop cycles
-// when receiving new target groups form the discovery manager.
-//
-// 结构体 Manager 维护 map 类型的 scrapePools 和 targetSets ，两者 key 都是 job_name ，
-// 但 scrapePools 的 value 对应结构体 scrapepool ，而 targetSets 的 value 对应的结构体是 Group 。
+// 结构体 Manager 维护 map 类型的 scrapePools 和 targetSets ，
+// 两者 key 都是 job_name ，但 scrapePools 的 value 对应结构体 scrapepool ，而 targetSets 的 value 对应的结构体是 Group 。
 //
 type Manager struct {
 	logger    log.Logger			// 系统日志
@@ -147,20 +146,12 @@ type Manager struct {
 	jitterSeed    uint64     		// Global jitterSeed seed is used to spread scrape workload across HA setup.
 	mtxScrape     sync.Mutex 		// Guards the fields below.
 
-	scrapeConfigs map[string]*config.ScrapeConfig 	// prometheus.yml 的 scrape_config 配置部分，key 对应 job_name ，value 对应 job_name 的配置参数
-	scrapePools   map[string]*scrapePool 			// key 对应 job_name ，value 对应结构体 scrapePool ，包含该 job_name 下所有的 targets 及对应抓取对象
-	targetSets    map[string][]*targetgroup.Group 	// key 对应 job_name ，value 对应结构体 Group，包含 job_name 对应的 Targets ，Labels 和 Source
+	scrapeConfigs map[string]*config.ScrapeConfig 	// 对应 prometheus.yml 的 scrape_config 配置部分，key 对应 job_name ，value 对应 job_name 的配置参数
+	scrapePools   map[string]*scrapePool 			// key 对应 job_name ，value 对应结构体 scrapePool ，包含该 job_name 下所有的 targets 及 scrape loop
+	targetSets    map[string][]*targetgroup.Group 	// key 对应 job_name ，value 对应结构体 Group，包含 job_name 对应的 Targets ，Labels 和 Source 信息
 
-	triggerReload chan struct{} 	// 若有新的服务(targets)通过服务发现(serviceDisvoer)传过来，会向该管道传值，触发加载配置操作
+	triggerReload chan struct{} // 若有新的服务 (targets) 通过服务发现 (serviceDisvoer) 传过来，会向该管道传值，触发配置重新加载
 }
-
-
-
-
-
-
-
-
 
 
 // Run receives and saves target set updates and triggers the scraping loops reloading.
@@ -439,7 +430,7 @@ func (m *Manager) TargetsActive() map[string][]*Target {
 		// Running in parallel limits the blocking time of scrapePool to scrape interval when there's an update from SD.
 
 		//
-		// 并行运行限制了从SD更新时 scrapePool 到 scrape 间隔的阻塞时间
+		// 并行运行限制了从 SD 更新时 scrapePool 到 scrape 间隔的阻塞时间
 
 		go func(tset string, sp *scrapePool) {
 
