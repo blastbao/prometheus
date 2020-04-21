@@ -21,6 +21,7 @@ import (
 
 // ewmaRate tracks an exponentially weighted moving average of a per-second rate.
 type ewmaRate struct {
+
 	// Keep all 64bit atomically accessed variables at the top of this struct.
 	// See https://golang.org/pkg/sync/atomic/#pkg-note-BUG for more info.
 	newEvents int64
@@ -50,6 +51,8 @@ func (r *ewmaRate) rate() float64 {
 
 // tick assumes to be called every r.interval.
 func (r *ewmaRate) tick() {
+
+
 	newEvents := atomic.SwapInt64(&r.newEvents, 0)
 	instantRate := float64(newEvents) / r.interval.Seconds()
 

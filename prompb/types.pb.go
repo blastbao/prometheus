@@ -138,6 +138,8 @@ func (m *Sample) GetTimestamp() int64 {
 }
 
 // TimeSeries represents samples and labels for a single time series.
+//
+//
 type TimeSeries struct {
 	Labels               []Label  `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"`
 	Samples              []Sample `protobuf:"bytes,2,rep,name=samples,proto3" json:"samples"`

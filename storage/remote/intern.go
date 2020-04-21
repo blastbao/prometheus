@@ -27,6 +27,7 @@ import (
 )
 
 var interner = newPool()
+
 var noReferenceReleases = promauto.NewCounter(prometheus.CounterOpts{
 	Namespace: namespace,
 	Subsystem: subsystem,
@@ -65,8 +66,11 @@ func (p *pool) intern(s string) string {
 		atomic.AddInt64(&interned.refs, 1)
 		return interned.s
 	}
+
+
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
+
 	if interned, ok := p.pool[s]; ok {
 		atomic.AddInt64(&interned.refs, 1)
 		return interned.s
@@ -76,10 +80,13 @@ func (p *pool) intern(s string) string {
 		s:    s,
 		refs: 1,
 	}
+
+
 	return s
 }
 
 func (p *pool) release(s string) {
+
 	p.mtx.RLock()
 	interned, ok := p.pool[s]
 	p.mtx.RUnlock()
@@ -96,6 +103,7 @@ func (p *pool) release(s string) {
 
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
+
 	if atomic.LoadInt64(&interned.refs) != 0 {
 		return
 	}

@@ -36,10 +36,14 @@ func init() {
 	prometheus.MustRegister(remoteReadQueries)
 }
 
-// QueryableClient returns a storage.Queryable which queries the given
-// Client to select series sets.
+
+
+// QueryableClient returns a storage.Queryable which queries the given Client to select series sets.
 func QueryableClient(c *Client) storage.Queryable {
+
+
 	remoteReadQueries.WithLabelValues(c.remoteName, c.url.String())
+
 	return storage.QueryableFunc(func(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
 		return &querier{
 			ctx:    ctx,
@@ -48,6 +52,7 @@ func QueryableClient(c *Client) storage.Queryable {
 			client: c,
 		}, nil
 	})
+
 }
 
 // querier is an adapter to make a Client usable as a storage.Querier.
@@ -59,19 +64,26 @@ type querier struct {
 
 // Select implements storage.Querier and uses the given matchers to read series sets from the Client.
 func (q *querier) Select(sortSeries bool, hints *storage.SelectHints, matchers ...*labels.Matcher) (storage.SeriesSet, storage.Warnings, error) {
+
+
 	query, err := ToQuery(q.mint, q.maxt, matchers, hints)
 	if err != nil {
 		return nil, nil, err
 	}
 
+
+
 	remoteReadGauge := remoteReadQueries.WithLabelValues(q.client.remoteName, q.client.url.String())
 	remoteReadGauge.Inc()
 	defer remoteReadGauge.Dec()
+
+
 
 	res, err := q.client.Read(q.ctx, query)
 	if err != nil {
 		return nil, nil, fmt.Errorf("remote_read: %v", err)
 	}
+
 
 	return FromQueryResult(sortSeries, res), nil, nil
 }

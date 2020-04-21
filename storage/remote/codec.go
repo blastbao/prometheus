@@ -80,6 +80,8 @@ func EncodeReadResponse(resp *prompb.ReadResponse, w http.ResponseWriter) error 
 
 // ToQuery builds a Query proto.
 func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHints) (*prompb.Query, error) {
+
+
 	ms, err := toLabelMatchers(matchers)
 	if err != nil {
 		return nil, err
@@ -97,6 +99,7 @@ func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHi
 			RangeMs:  hints.Range,
 		}
 	}
+
 
 	return &prompb.Query{
 		StartTimestampMs: from,
@@ -342,11 +345,24 @@ func MergeLabels(primary, secondary []prompb.Label) []prompb.Label {
 	return result
 }
 
+
+
+
+
+
+
+
 type byLabel []storage.Series
 
 func (a byLabel) Len() int           { return len(a) }
 func (a byLabel) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byLabel) Less(i, j int) bool { return labels.Compare(a[i].Labels(), a[j].Labels()) < 0 }
+
+
+
+
+
+
 
 // errSeriesSet implements storage.SeriesSet, just returning an error.
 type errSeriesSet struct {

@@ -100,6 +100,10 @@ type Querier interface {
 
 
 
+	// 根据给定的搜索参数（hints: 如起止时间、步进、聚合函数）获取匹配的时序数据，返回数据的样式就是 promQL 页面返回的格式。
+	//
+	//
+
 
 	Select(sortSeries bool, hints *SelectHints, matchers ...*labels.Matcher) (SeriesSet, Warnings, error)
 
@@ -116,7 +120,11 @@ type Querier interface {
 // Use it when you need to have access to samples in encoded format.
 //
 type ChunkQueryable interface {
+
+
 	// ChunkQuerier returns a new ChunkQuerier on the storage.
+	//
+	//
 	ChunkQuerier(ctx context.Context, mint, maxt int64) (ChunkQuerier, Warnings, error)
 }
 
@@ -133,22 +141,18 @@ type ChunkQuerier interface {
 	baseQuerier
 
 
-
 	// Select returns a set of series that matches the given label matchers.
-	// Select() 返回一组与给定标签匹配的 series 。
 	//
 	// Caller can specify if it requires returned series to be sorted.
 	// Prefer not requiring sorting for better performance.
 	//
-	// 调用者可以指定是否需要对返回的 series 进行排序，最好不排序以获得更好的性能。
-	//
-	//
 	// It allows passing hints that can help in optimising select,
 	// but it's up to implementation how this is used if used at all.
 	//
+	//
+	// Select() 返回一组与给定标签匹配的 series 。
+	// 调用者可以指定是否需要对返回的 series 进行排序，最好不排序以获得更好的性能。
 	// Select() 允许传递有助于优化查询的提示（hints），但是否使用、如何使用则取决于具体实现。
-	//
-	//
 	//
 	// 参数说明:
 	//	1. sortSeries: 是否对结果排序
@@ -156,7 +160,6 @@ type ChunkQuerier interface {
 	//  3. matchers: 标签匹配器
 	//
 	// 返回值说明:
-	//
 	//	1. ChunkSeriesSet:
 	//  2. Warnings:
 	//	3. error:
@@ -169,17 +172,15 @@ type baseQuerier interface {
 
 
 	// LabelValues returns all potential values for a label name.
-	// LabelValues 返回标签名 name 的所有可能取值。
-	//
 	// It is not safe to use the strings beyond the lifefime of the querier.
-	// 使用 querier 生命周期以外的字符串是不安全的。
 	//
+	// LabelValues(name) 返回标签 name 的所有可能取值。
 	LabelValues(name string) ([]string, Warnings, error)
 
 
 	// LabelNames returns all the unique label names present in the block in sorted order.
 	//
-	// LabelNames 返回块中存在的标签名（排序、去重）。
+	// LabelNames() 按序返回存储 block 中存在的所有label名称。
 	LabelNames() ([]string, Warnings, error)
 
 
@@ -200,14 +201,20 @@ type baseQuerier interface {
 //
 type SelectHints struct {
 
+	// 时间区间
 	Start int64 		// Start time in milliseconds for this select.
 	End   int64 		// End time in milliseconds for this select.
 
 	Step int64  		// Query step size in milliseconds.
 	Func string 		// String representation of surrounding function or aggregation.
 
+	// group by labels
 	Grouping []string 	// List of label names used in aggregation.
+
+	// without or by
 	By       bool     	// Indicate whether it is without or by.
+
+
 	Range    int64    	// Range vector selector range in milliseconds.
 }
 

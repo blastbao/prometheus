@@ -36,8 +36,9 @@ import (
 )
 
 const (
-	// We track samples in/out and how long pushes take using an Exponentially
-	// Weighted Moving Average.
+
+
+	// We track samples in/out and how long pushes take using an Exponentially Weighted Moving Average.
 	ewmaWeight          = 0.2
 	shardUpdateDuration = 10 * time.Second
 
@@ -63,6 +64,8 @@ type queueManagerMetrics struct {
 }
 
 func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
+
+
 	m := &queueManagerMetrics{}
 
 	m.succeededSamplesTotal = prometheus.NewCounterVec(
@@ -74,6 +77,7 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
 	m.failedSamplesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
@@ -83,6 +87,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.retriedSamplesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
@@ -92,6 +98,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.droppedSamplesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
@@ -101,6 +109,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.enqueueRetriesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
@@ -110,6 +120,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.sentBatchDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
@@ -120,6 +132,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.queueHighestSentTimestamp = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -129,6 +143,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.queuePendingSamples = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -138,6 +154,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.shardCapacity = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -147,6 +165,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.numShards = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -156,6 +176,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.maxNumShards = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -165,6 +187,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.minNumShards = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -174,6 +198,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.desiredNumShards = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -183,6 +209,8 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
+
 	m.bytesSent = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
@@ -192,6 +220,7 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 		},
 		[]string{remoteName, endpoint},
 	)
+
 
 	if r != nil {
 		r.MustRegister(
@@ -214,23 +243,44 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 	return m
 }
 
-// StorageClient defines an interface for sending a batch of samples to an
-// external timeseries database.
+
+
+// StorageClient defines an interface for sending a batch of samples to an external timeseries database.
+// StorageClient 定义了一个接口，用于将一批样本发送到外部时序数据库。
 type StorageClient interface {
+
 	// Store stores the given samples in the remote storage.
+	// Store 将给定的样本存储在远程存储器中。
 	Store(context.Context, []byte) error
+
 	// Name uniquely identifies the remote storage.
+	// Name 唯一标识远程存储。
 	Name() string
+
 	// Endpoint is the remote read or write endpoint for the storage client.
+	// Endpoint 是远程读或写实例。
 	Endpoint() string
 }
 
+
+
+
+
 // QueueManager manages a queue of samples to be sent to the Storage
-// indicated by the provided StorageClient. Implements writeTo interface
-// used by WAL Watcher.
+// indicated by the provided StorageClient.
+//
+//
+// Implements writeTo interface used by WAL Watcher.
+//
+//
 type QueueManager struct {
+
+
+
 	// https://golang.org/pkg/sync/atomic/#pkg-note-BUG
 	lastSendTimestamp int64
+
+
 
 	logger         log.Logger
 	flushDeadline  time.Duration
@@ -240,10 +290,12 @@ type QueueManager struct {
 	client         StorageClient
 	watcher        *wal.Watcher
 
+
 	seriesMtx            sync.Mutex
 	seriesLabels         map[uint64]labels.Labels
 	seriesSegmentIndexes map[uint64]int
 	droppedSeries        map[uint64]struct{}
+
 
 	shards      *shards
 	numShards   int
@@ -251,7 +303,12 @@ type QueueManager struct {
 	quit        chan struct{}
 	wg          sync.WaitGroup
 
+
+
 	samplesIn, samplesDropped, samplesOut, samplesOutDuration *ewmaRate
+
+
+
 
 	metrics                    *queueManagerMetrics
 	highestSentTimestampMetric *maxGauge
@@ -270,13 +327,21 @@ type QueueManager struct {
 	bytesSent                  prometheus.Counter
 }
 
+
+
+
+
 // NewQueueManager builds a new QueueManager.
 func NewQueueManager(metrics *queueManagerMetrics, watcherMetrics *wal.WatcherMetrics, readerMetrics *wal.LiveReaderMetrics, logger log.Logger, walDir string, samplesIn *ewmaRate, cfg config.QueueConfig, externalLabels labels.Labels, relabelConfigs []*relabel.Config, client StorageClient, flushDeadline time.Duration) *QueueManager {
+
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
 
+
 	logger = log.With(logger, remoteName, client.Name(), endpoint, client.Endpoint())
+
+
 	t := &QueueManager{
 		logger:         logger,
 		flushDeadline:  flushDeadline,
@@ -301,29 +366,44 @@ func NewQueueManager(metrics *queueManagerMetrics, watcherMetrics *wal.WatcherMe
 		metrics: metrics,
 	}
 
+
+
 	t.watcher = wal.NewWatcher(watcherMetrics, readerMetrics, logger, client.Name(), t, walDir)
 	t.shards = t.newShards()
+
+
 
 	return t
 }
 
-// Append queues a sample to be sent to the remote storage. Blocks until all samples are
-// enqueued on their shards or a shutdown signal is received.
+// Append queues a sample to be sent to the remote storage.
+//
+// Blocks until all samples are enqueued on their shards or a shutdown signal is received.
 func (t *QueueManager) Append(samples []record.RefSample) bool {
+
+
+
 outer:
+
 	for _, s := range samples {
+
 		t.seriesMtx.Lock()
 		lbls, ok := t.seriesLabels[s.Ref]
 		if !ok {
+
 			t.droppedSamplesTotal.Inc()
 			t.samplesDropped.incr(1)
 			if _, ok := t.droppedSeries[s.Ref]; !ok {
 				level.Info(t.logger).Log("msg", "Dropped sample for series that was not explicitly dropped via relabelling", "ref", s.Ref)
 			}
 			t.seriesMtx.Unlock()
+
 			continue
 		}
 		t.seriesMtx.Unlock()
+
+
+
 		// This will only loop if the queues are being resharded.
 		backoff := t.cfg.MinBackoff
 		for {
@@ -352,14 +432,21 @@ outer:
 	return true
 }
 
+
 // Start the queue manager sending samples to the remote storage.
+//
 // Does not block.
+//
 func (t *QueueManager) Start() {
-	// Setup the QueueManagers metrics. We do this here rather than in the
-	// constructor because of the ordering of creating Queue Managers's, stopping them,
-	// and then starting new ones in storage/remote/storage.go ApplyConfig.
+
+
+	// Setup the QueueManagers metrics.
+	//
+	// We do this here rather than in the constructor because of the ordering of creating Queue Managers's,
+	// stopping them, and then starting new ones in storage/remote/storage.go ApplyConfig.
 	name := t.client.Name()
 	ep := t.client.Endpoint()
+
 	t.highestSentTimestampMetric = &maxGauge{
 		Gauge: t.metrics.queueHighestSentTimestamp.WithLabelValues(name, ep),
 	}
@@ -400,11 +487,17 @@ func (t *QueueManager) Stop() {
 
 	close(t.quit)
 	t.wg.Wait()
-	// Wait for all QueueManager routines to end before stopping shards and WAL watcher. This
-	// is to ensure we don't end up executing a reshard and shards.stop() at the same time, which
-	// causes a closed channel panic.
+
+
+
+	// Wait for all QueueManager routines to end before stopping shards and WAL watcher.
+	//
+	// This is to ensure we don't end up executing a reshard and shards.stop() at the same time,
+	// which causes a closed channel panic.
 	t.shards.stop()
 	t.watcher.Stop()
+
+
 
 	// On shutdown, release the strings in the labels from the intern pool.
 	t.seriesMtx.Lock()
@@ -412,6 +505,10 @@ func (t *QueueManager) Stop() {
 		releaseLabels(labels)
 	}
 	t.seriesMtx.Unlock()
+
+
+
+
 	// Delete metrics so we don't have alerts for queues that are gone.
 	name := t.client.Name()
 	ep := t.client.Endpoint()
@@ -432,9 +529,14 @@ func (t *QueueManager) Stop() {
 
 // StoreSeries keeps track of which series we know about for lookups when sending samples to remote.
 func (t *QueueManager) StoreSeries(series []record.RefSeries, index int) {
+
 	t.seriesMtx.Lock()
 	defer t.seriesMtx.Unlock()
+
+
 	for _, s := range series {
+
+
 		ls := processExternalLabels(s.Labels, t.externalLabels)
 		lbls := relabel.Process(ls, t.relabelConfigs...)
 		if len(lbls) == 0 {
@@ -444,19 +546,32 @@ func (t *QueueManager) StoreSeries(series []record.RefSeries, index int) {
 		t.seriesSegmentIndexes[s.Ref] = index
 		internLabels(lbls)
 
-		// We should not ever be replacing a series labels in the map, but just
-		// in case we do we need to ensure we do not leak the replaced interned
-		// strings.
+
+
+		// We should not ever be replacing a series labels in the map,
+		//
+		// but just in case we do we need to ensure we do not leak the replaced interned strings.
 		if orig, ok := t.seriesLabels[s.Ref]; ok {
 			releaseLabels(orig)
 		}
+
+
 		t.seriesLabels[s.Ref] = lbls
 	}
 }
 
-// SeriesReset is used when reading a checkpoint. WAL Watcher should have
-// stored series records with the checkpoints index number, so we can now
-// delete any ref ID's lower than that # from the two maps.
+
+
+
+
+
+
+
+
+// SeriesReset is used when reading a checkpoint.
+//
+// WAL Watcher should have stored series records with the checkpoints index number,
+// so we can now delete any ref ID's lower than that # from the two maps.
 func (t *QueueManager) SeriesReset(index int) {
 	t.seriesMtx.Lock()
 	defer t.seriesMtx.Unlock()
@@ -472,6 +587,11 @@ func (t *QueueManager) SeriesReset(index int) {
 	}
 }
 
+
+
+
+
+
 func internLabels(lbls labels.Labels) {
 	for i, l := range lbls {
 		lbls[i].Name = interner.intern(l.Name)
@@ -486,11 +606,17 @@ func releaseLabels(ls labels.Labels) {
 	}
 }
 
-// processExternalLabels merges externalLabels into ls. If ls contains
-// a label in externalLabels, the value in ls wins.
+
+
+
+// processExternalLabels merges externalLabels into ls.
+//
+// If ls contains a label in externalLabels, the value in ls wins.
 func processExternalLabels(ls labels.Labels, externalLabels labels.Labels) labels.Labels {
 	i, j, result := 0, 0, make(labels.Labels, 0, len(ls)+len(externalLabels))
 	for i < len(ls) && j < len(externalLabels) {
+
+
 		if ls[i].Name < externalLabels[j].Name {
 			result = append(result, labels.Label{
 				Name:  ls[i].Name,
@@ -658,75 +784,112 @@ func (t *QueueManager) newShards() *shards {
 	return s
 }
 
+
+// 样本结构体
 type sample struct {
-	labels labels.Labels
-	t      int64
-	v      float64
+	labels labels.Labels	// 标签集
+	t      int64			// 时间戳
+	v      float64			// 值
 }
 
-type shards struct {
-	mtx sync.RWMutex // With the WAL, this is never actually contended.
 
-	qm     *QueueManager
+
+type shards struct {
+
+	// With the WAL, this is never actually contended.
+	mtx sync.RWMutex
+
+
+	//
+	qm  *QueueManager
+
+	// 采样队列数组，每个采样队列被一个协程监听、处理
 	queues []chan sample
 
-	// Emulate a wait group with a channel and an atomic int, as you
-	// cannot select on a wait group.
-	done    chan struct{}
+	// Emulate a wait group with a channel and an atomic int, as you cannot select on a wait group.
+	// 使用 channel 和原子变量来模拟 WaitGroup ，因为不能将 WaitGroup 放到 select 中。
+	done chan struct{}
+
+	// 当前正在运行的采样协程
 	running int32
 
 	// Soft shutdown context will prevent new enqueues and deadlocks.
+	// 软关闭
 	softShutdown chan struct{}
 
-	// Hard shutdown context is used to terminate outgoing HTTP connections
-	// after giving them a chance to terminate.
+	// Hard shutdown context is used to terminate outgoing HTTP connections after giving them a chance to terminate.
+	// 硬关闭
 	hardShutdown context.CancelFunc
 }
 
+
+
+
 // start the shards; must be called before any call to enqueue.
 func (s *shards) start(n int) {
+
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
+	// 创建 n 个采样队列
 	newQueues := make([]chan sample, n)
 	for i := 0; i < n; i++ {
 		newQueues[i] = make(chan sample, s.qm.cfg.Capacity)
 	}
 
+	// 初始化 s 的成员变量
 	s.queues = newQueues
-
 	var hardShutdownCtx context.Context
 	hardShutdownCtx, s.hardShutdown = context.WithCancel(context.Background())
 	s.softShutdown = make(chan struct{})
 	s.running = int32(n)
 	s.done = make(chan struct{})
+
+
+	// 创建 n 个 runShard() 协程，每个负责从采样队列 newQueues[i] 中读取样本数据、缓存到数组、批量的发送到远程存储。
 	for i := 0; i < n; i++ {
 		go s.runShard(hardShutdownCtx, i, newQueues[i])
 	}
+
+	// 上报协程数
 	s.qm.numShardsMetric.Set(float64(n))
 }
 
+
+
 // stop the shards; subsequent call to enqueue will return false.
 func (s *shards) stop() {
-	// Attempt a clean shutdown, but only wait flushDeadline for all the shards
-	// to cleanly exit.  As we're doing RPCs, enqueue can block indefinitely.
-	// We must be able so call stop concurrently, hence we can only take the
-	// RLock here.
+
+	// Attempt a clean shutdown, but only wait flushDeadline for all the shards to cleanly exit.
+	//
+	// As we're doing RPCs, enqueue can block indefinitely.
+	//
+	// We must be able so call stop concurrently, hence we can only take the RLock here.
+
+
 	s.mtx.RLock()
 	close(s.softShutdown)
 	s.mtx.RUnlock()
 
-	// Enqueue should now be unblocked, so we can take the write lock.  This
-	// also ensures we don't race with writes to the queues, and get a panic:
-	// send on closed channel.
+
+	// Enqueue should now be unblocked, so we can take the write lock.
+	//
+	// This also ensures we don't race with writes to the queues, and get a panic: send on closed channel.
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
+
+
+	// 关闭 n 个采样队列，这回触发对应的 runShard() 协程退出
 	for _, queue := range s.queues {
 		close(queue)
 	}
+
+
 	select {
+	// 当所有的 runShard() 协程都退出后，s.done 信号管道会被关闭，此时可以安全的退出。
 	case <-s.done:
 		return
+	// 到达一定超时时间后，所有的协程未完成退出，则打印错误信息，后面进行强制关闭。
 	case <-time.After(s.qm.flushDeadline):
 		level.Error(s.qm.logger).Log("msg", "Failed to flush all samples on shutdown")
 	}
@@ -736,9 +899,18 @@ func (s *shards) stop() {
 	<-s.done
 }
 
-// enqueue a sample.  If we are currently in the process of shutting down or resharding,
-// will return false; in this case, you should back off and retry.
+
+
+// enqueue a sample.
+// 样本入队。
+//
+// If we are currently in the process of shutting down or resharding, will return false;
+// 如果我们目前正在关闭中，将返回 false ；
+//
+// in this case, you should back off and retry.
+// 在这种情况下，您应该进行重试。
 func (s *shards) enqueue(ref uint64, sample sample) bool {
+
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 
@@ -748,27 +920,37 @@ func (s *shards) enqueue(ref uint64, sample sample) bool {
 	default:
 	}
 
+	// 根据 ref 确定 shard 编号
 	shard := uint64(ref) % uint64(len(s.queues))
 	select {
 	case <-s.softShutdown:
 		return false
+	//样本入队
 	case s.queues[shard] <- sample:
 		return true
 	}
+
 }
 
+
+
+// 不断地从 queue 中读取样本数据、缓存到数组，然后批量的发送到远程存储。
 func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {
+
+
+	// 当所有的协程都退出后，s.running 为 0 ， 此时关闭 s.done 信号管道，通知 stop() 函数。
 	defer func() {
 		if atomic.AddInt32(&s.running, -1) == 0 {
 			close(s.done)
 		}
 	}()
 
-	shardNum := strconv.Itoa(shardID)
-
 	// Send batches of at most MaxSamplesPerSend samples to the remote storage.
-	// If we have fewer samples than that, flush them out after a deadline
-	// anyways.
+	// If we have fewer samples than that, flush them out after a deadline anyways.
+	//
+	// 将最多为 MaxSamplesPerSend 的样本批量发送到远程存储。
+	// 如果我们的样品比 MaxSamplesPerSend 少，则在超时到期后发送。
+
 	var (
 		max            = s.qm.cfg.MaxSamplesPerSend
 		nPending       = 0
@@ -776,7 +958,11 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {
 		buf            []byte
 	)
 
+
+	// 定时器
 	timer := time.NewTimer(time.Duration(s.qm.cfg.BatchSendDeadline))
+
+	// 如何安全的关闭 timer ???
 	stop := func() {
 		if !timer.Stop() {
 			select {
@@ -787,12 +973,17 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {
 	}
 	defer stop()
 
+
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 
+		// 从 queue 中不断读取样本数据
 		case sample, ok := <-queue:
+
+			// 如果队列被关闭，而还有缓存的样本尚未发送，则将它们 flush 到 remote storage 。
 			if !ok {
 				if nPending > 0 {
 					level.Debug(s.qm.logger).Log("msg", "Flushing samples to remote storage...", "count", nPending)
@@ -803,15 +994,29 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {
 				return
 			}
 
+
+
 			// Number of pending samples is limited by the fact that sendSamples (via sendSamplesWithBackoff)
 			// retries endlessly, so once we reach max samples, if we can never send to the endpoint we'll
-			// stop reading from the queue. This makes it safe to reference pendingSamples by index.
+			// stop reading from the queue.
+			//
+			// This makes it safe to reference pendingSamples by index.
+
+
+
+			// 将 sample 样本存储到数组 pendingSamples 中暂存
 			pendingSamples[nPending].Labels = labelsToLabelsProto(sample.labels, pendingSamples[nPending].Labels)
 			pendingSamples[nPending].Samples[0].Timestamp = sample.t
 			pendingSamples[nPending].Samples[0].Value = sample.v
+
+			// 增加缓存样本数（数组下标）
 			nPending++
+
+			// 上报
 			s.qm.pendingSamplesMetric.Inc()
 
+
+			// 如果缓存的样本数目超过 max 则发送它们到 remote storage，然后重置 nPending 为 0，并重置计数器 。
 			if nPending >= max {
 				s.sendSamples(ctx, pendingSamples, &buf)
 				nPending = 0
@@ -821,13 +1026,18 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {
 				timer.Reset(time.Duration(s.qm.cfg.BatchSendDeadline))
 			}
 
+		// 定时间隔
 		case <-timer.C:
+
+			// 如果 nPending 的样本数不为 0 ，则发送它们到 remote storage ，然后重置 nPending 为 0 。
 			if nPending > 0 {
-				level.Debug(s.qm.logger).Log("msg", "runShard timer ticked, sending samples", "samples", nPending, "shard", shardNum)
+				level.Debug(s.qm.logger).Log("msg", "runShard timer ticked, sending samples", "samples", nPending, "shard", strconv.Itoa(shardID))
 				s.sendSamples(ctx, pendingSamples[:nPending], &buf)
 				s.qm.pendingSamplesMetric.Sub(float64(nPending))
 				nPending = 0
 			}
+
+			// 重置定时器，以便重新定时
 			timer.Reset(time.Duration(s.qm.cfg.BatchSendDeadline))
 		}
 	}
@@ -835,21 +1045,34 @@ func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {
 
 func (s *shards) sendSamples(ctx context.Context, samples []prompb.TimeSeries, buf *[]byte) {
 	begin := time.Now()
+
+	// 将样本 samples 发送到远程存储
 	err := s.sendSamplesWithBackoff(ctx, samples, buf)
+
+	// 出错则打印日志和上报
 	if err != nil {
 		level.Error(s.qm.logger).Log("msg", "non-recoverable error", "count", len(samples), "err", err)
 		s.qm.failedSamplesTotal.Add(float64(len(samples)))
 	}
 
-	// These counters are used to calculate the dynamic sharding, and as such
-	// should be maintained irrespective of success or failure.
+
+	// These counters are used to calculate the dynamic sharding,
+	// and as such should be maintained irrespective of success or failure.
+
+	// 上报样本数、发送延迟
 	s.qm.samplesOut.incr(int64(len(samples)))
 	s.qm.samplesOutDuration.incr(int64(time.Since(begin)))
 }
 
+
 // sendSamples to the remote storage with backoff for recoverable errors.
+//
+// sendSamples() 将样本发送到远程存储，遇到可重试的错误，会自动重试。
 func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.TimeSeries, buf *[]byte) error {
+
 	backoff := s.qm.cfg.MinBackoff
+
+	// 构造写请求
 	req, highest, err := buildWriteRequest(samples, *buf)
 	*buf = req
 	if err != nil {
@@ -858,17 +1081,24 @@ func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.Ti
 		return err
 	}
 
+	// 带重试的发送请求
 	for {
+
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
+
 		begin := time.Now()
+
+		// 调用 Store() 将样本存储在远程存储器中。
 		err := s.qm.client.Store(ctx, req)
 
+		// 上报延迟
 		s.qm.sentBatchDuration.Observe(time.Since(begin).Seconds())
 
+		// 发送成功，上报其它数据
 		if err == nil {
 			s.qm.succeededSamplesTotal.Add(float64(len(samples)))
 			s.qm.bytesSent.Add(float64(len(req)))
@@ -877,12 +1107,16 @@ func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.Ti
 			return nil
 		}
 
+		// 发送失败
 		if _, ok := err.(recoverableError); !ok {
 			return err
 		}
+
+		// 上报错误信息、打印日志
 		s.qm.retriedSamplesTotal.Add(float64(len(samples)))
 		level.Debug(s.qm.logger).Log("msg", "Failed to send batch, retrying", "err", err)
 
+		// 等待、重试
 		time.Sleep(time.Duration(backoff))
 		backoff = backoff * 2
 		if backoff > s.qm.cfg.MaxBackoff {
@@ -892,36 +1126,53 @@ func (s *shards) sendSamplesWithBackoff(ctx context.Context, samples []prompb.Ti
 }
 
 func buildWriteRequest(samples []prompb.TimeSeries, buf []byte) ([]byte, int64, error) {
+
 	var highest int64
+
+	// 遍历 samples ，找出最大（最近）时间戳
 	for _, ts := range samples {
 		// At the moment we only ever append a TimeSeries with a single sample in it.
 		if ts.Samples[0].Timestamp > highest {
 			highest = ts.Samples[0].Timestamp
 		}
 	}
+
+	// 构造写请求
 	req := &prompb.WriteRequest{
 		Timeseries: samples,
 	}
 
+	// 序列化
 	data, err := proto.Marshal(req)
 	if err != nil {
 		return nil, highest, err
 	}
 
-	// snappy uses len() to see if it needs to allocate a new slice. Make the
-	// buffer as long as possible.
+	// snappy uses len() to see if it needs to allocate a new slice.
+	// Make the buffer as long as possible.
+	//
+	// 重置 buf
 	if buf != nil {
 		buf = buf[0:cap(buf)]
 	}
+
+	// 数据压缩
 	compressed := snappy.Encode(buf, data)
+
+	// 返回
 	return compressed, highest, nil
 }
 
+
 func allocateTimeSeries(capacity int) []prompb.TimeSeries {
+
 	timeseries := make([]prompb.TimeSeries, capacity)
+
+
 	// We only ever send one sample per timeseries, so preallocate with length one.
 	for i := range timeseries {
 		timeseries[i].Samples = []prompb.Sample{{}}
 	}
+
 	return timeseries
 }
