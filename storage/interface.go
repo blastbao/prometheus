@@ -39,18 +39,19 @@ type Appendable interface {
 
 
 
-
-// Storage ingests and manages samples, along with various indexes. All methods
-// are goroutine-safe. Storage implements storage.SampleAppender.
+// Storage ingests and manages samples, along with various indexes.
+//
+// All methods are goroutine-safe.
+//
+// Storage implements storage.SampleAppender.
 // TODO(bwplotka): Add ChunkQueryable to Storage in next PR.
 type Storage interface {
 
-
+	// Queryable handles queries against a storage.
 	Queryable
 
-
+	// Appendable allows creating appenders.
 	Appendable
-
 
 	// StartTime returns the oldest timestamp stored in the storage.
 	StartTime() (int64, error)
@@ -375,6 +376,9 @@ type ChunkSeries interface {
 
 
 // Labels represents an item that has labels e.g. time series.
+//
+// 在 prometheus 中，一个时序数据可由一组 Labels 唯一标识，所以 Series 接口内嵌了 Labels 接口。
+//
 type Labels interface {
 
 	// Labels returns the complete set of labels.

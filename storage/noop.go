@@ -70,11 +70,10 @@ func NoopSeriesSet() SeriesSet {
 	return noopSeriesSet{}
 }
 
-func (noopSeriesSet) Next() bool { return false }
+func (noopSeriesSet) Next() bool { return false } 	// 没有下一条数据
+func (noopSeriesSet) At() Series { return nil }		// 当前数据为 nil
+func (noopSeriesSet) Err() error { return nil } 	// 当前错误为 nil
 
-func (noopSeriesSet) At() Series { return nil }
-
-func (noopSeriesSet) Err() error { return nil }
 
 type noopChunkedSeriesSet struct{}
 
@@ -83,8 +82,6 @@ func NoopChunkedSeriesSet() ChunkSeriesSet {
 	return noopChunkedSeriesSet{}
 }
 
-func (noopChunkedSeriesSet) Next() bool { return false }
-
-func (noopChunkedSeriesSet) At() ChunkSeries { return nil }
-
-func (noopChunkedSeriesSet) Err() error { return nil }
+func (noopChunkedSeriesSet) Next() bool { return false } 	// 没有下一条数据
+func (noopChunkedSeriesSet) At() ChunkSeries { return nil } // 当前数据为 nil
+func (noopChunkedSeriesSet) Err() error { return nil }		// 当前错误为 nil

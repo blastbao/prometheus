@@ -800,7 +800,7 @@ type shards struct {
 	mtx sync.RWMutex
 
 
-	//
+	// 当前 shards 归属的 manager
 	qm  *QueueManager
 
 	// 采样队列数组，每个采样队列被一个协程监听、处理
@@ -831,7 +831,7 @@ func (s *shards) start(n int) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-	// 创建 n 个采样队列
+	// 创建 n 个采样队列 newQueues[0...]
 	newQueues := make([]chan sample, n)
 	for i := 0; i < n; i++ {
 		newQueues[i] = make(chan sample, s.qm.cfg.Capacity)
@@ -879,7 +879,7 @@ func (s *shards) stop() {
 	defer s.mtx.Unlock()
 
 
-	// 关闭 n 个采样队列，这回触发对应的 runShard() 协程退出
+	// 关闭 n 个采样队列，触发对应的 runShard() 协程退出
 	for _, queue := range s.queues {
 		close(queue)
 	}
@@ -895,7 +895,11 @@ func (s *shards) stop() {
 	}
 
 	// Force an unclean shutdown.
+
+	// 硬关闭
 	s.hardShutdown()
+
+	// ???
 	<-s.done
 }
 
@@ -925,7 +929,7 @@ func (s *shards) enqueue(ref uint64, sample sample) bool {
 	select {
 	case <-s.softShutdown:
 		return false
-	//样本入队
+	//样本入队，等待被后台协程采集和处理（写远程存储）
 	case s.queues[shard] <- sample:
 		return true
 	}

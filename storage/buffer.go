@@ -19,6 +19,8 @@ import (
 	"github.com/blastbao/prometheus/tsdb/chunkenc"
 )
 
+
+
 // BufferedSeriesIterator wraps an iterator with a look-back buffer.
 type BufferedSeriesIterator struct {
 	it    chunkenc.Iterator
@@ -64,14 +66,15 @@ func (b *BufferedSeriesIterator) ReduceDelta(delta int64) bool {
 	return b.buf.reduceDelta(delta)
 }
 
-// PeekBack returns the nth previous element of the iterator. If there is none buffered,
-// ok is false.
+// PeekBack returns the nth previous element of the iterator.
+//
+// If there is none buffered, ok is false.
 func (b *BufferedSeriesIterator) PeekBack(n int) (t int64, v float64, ok bool) {
 	return b.buf.nthLast(n)
 }
 
-// Buffer returns an iterator over the buffered data. Invalidates previously
-// returned iterators.
+// Buffer returns an iterator over the buffered data.
+// Invalidates previously returned iterators.
 func (b *BufferedSeriesIterator) Buffer() chunkenc.Iterator {
 	return b.buf.iterator()
 }
@@ -80,8 +83,8 @@ func (b *BufferedSeriesIterator) Buffer() chunkenc.Iterator {
 func (b *BufferedSeriesIterator) Seek(t int64) bool {
 	t0 := t - b.buf.delta
 
-	// If the delta would cause us to seek backwards, preserve the buffer
-	// and just continue regular advancement while filling the buffer on the way.
+	// If the delta would cause us to seek backwards,
+	// preserve the buffer and just continue regular advancement while filling the buffer on the way.
 	if t0 > b.lastTime {
 		b.buf.reset()
 
@@ -89,17 +92,22 @@ func (b *BufferedSeriesIterator) Seek(t int64) bool {
 		if !b.ok {
 			return false
 		}
+
 		b.lastTime, _ = b.Values()
+
 	}
+
 
 	if b.lastTime >= t {
 		return true
 	}
+
 	for b.Next() {
 		if b.lastTime >= t {
 			return true
 		}
 	}
+
 
 	return false
 }
@@ -203,8 +211,7 @@ func (r *sampleRing) at(i int) (int64, float64) {
 	return s.t, s.v
 }
 
-// add adds a sample to the ring buffer and frees all samples that fall
-// out of the delta range.
+// add adds a sample to the ring buffer and frees all samples that fall out of the delta range.
 func (r *sampleRing) add(t int64, v float64) {
 	l := len(r.buf)
 	// Grow the ring buffer if it fits no more elements.
@@ -238,8 +245,8 @@ func (r *sampleRing) add(t int64, v float64) {
 	}
 }
 
-// reduceDelta lowers the buffered time delta, dropping any samples that are
-// out of the new delta range.
+// reduceDelta lowers the buffered time delta,
+// dropping any samples that are out of the new delta range.
 func (r *sampleRing) reduceDelta(delta int64) bool {
 	if delta > r.delta {
 		return false
