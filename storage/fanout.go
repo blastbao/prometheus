@@ -30,11 +30,13 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+
+
 type fanout struct {
 	logger log.Logger
 
-	primary     Storage
-	secondaries []Storage
+	primary     Storage 	// 主存储，本地存储，默认是 tsdb
+	secondaries []Storage   // 远程存储，通过配置文件定义，允许多个
 }
 
 // NewFanout returns a new fan-out Storage,

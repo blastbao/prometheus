@@ -224,13 +224,13 @@ func newQueueManagerMetrics(r prometheus.Registerer) *queueManagerMetrics {
 
 	if r != nil {
 		r.MustRegister(
-			m.succeededSamplesTotal,
-			m.failedSamplesTotal,
-			m.retriedSamplesTotal,
-			m.droppedSamplesTotal,
-			m.enqueueRetriesTotal,
-			m.sentBatchDuration,
-			m.queueHighestSentTimestamp,
+			m.succeededSamplesTotal,		// 成功数
+			m.failedSamplesTotal,			// 失败数
+			m.retriedSamplesTotal, 			// 重试数
+			m.droppedSamplesTotal,			// 丢弃数
+			m.enqueueRetriesTotal,			//
+			m.sentBatchDuration,           	// 发送延迟
+			m.queueHighestSentTimestamp, 	//
 			m.queuePendingSamples,
 			m.shardCapacity,
 			m.numShards,
@@ -292,8 +292,14 @@ type QueueManager struct {
 
 
 	seriesMtx            sync.Mutex
+
+	// 保存了 ref 到 labels 的映射
 	seriesLabels         map[uint64]labels.Labels
+
+	//
 	seriesSegmentIndexes map[uint64]int
+
+	//
 	droppedSeries        map[uint64]struct{}
 
 
@@ -376,51 +382,68 @@ func NewQueueManager(metrics *queueManagerMetrics, watcherMetrics *wal.WatcherMe
 	return t
 }
 
+
+
+
+
+
+
 // Append queues a sample to be sent to the remote storage.
-//
 // Blocks until all samples are enqueued on their shards or a shutdown signal is received.
+//
 func (t *QueueManager) Append(samples []record.RefSample) bool {
-
-
 
 outer:
 
+	// 遍历样本
 	for _, s := range samples {
 
 		t.seriesMtx.Lock()
+
+		// 根据 s.Ref 取出关联的 labels
 		lbls, ok := t.seriesLabels[s.Ref]
+
+		// 如果未找到，则丢弃当前样本
 		if !ok {
 
+			// 上报 `丢弃样本数`
 			t.droppedSamplesTotal.Inc()
 			t.samplesDropped.incr(1)
+
 			if _, ok := t.droppedSeries[s.Ref]; !ok {
 				level.Info(t.logger).Log("msg", "Dropped sample for series that was not explicitly dropped via relabelling", "ref", s.Ref)
 			}
+
 			t.seriesMtx.Unlock()
 
 			continue
 		}
+
 		t.seriesMtx.Unlock()
-
-
 
 		// This will only loop if the queues are being resharded.
 		backoff := t.cfg.MinBackoff
+
+		// 把当前样本 s 传送给 t.shards，不断重试
 		for {
+
 			select {
 			case <-t.quit:
 				return false
 			default:
 			}
 
+			// 样本入队
 			if t.shards.enqueue(s.Ref, sample{
 				labels: lbls,
 				t:      s.T,
 				v:      s.V,
 			}) {
+				// 入队成功，则继续处理下一个样本
 				continue outer
 			}
 
+			// 入队失败，则上报、等待、重试...
 			t.enqueueRetriesMetric.Inc()
 			time.Sleep(time.Duration(backoff))
 			backoff = backoff * 2
@@ -444,6 +467,8 @@ func (t *QueueManager) Start() {
 	//
 	// We do this here rather than in the constructor because of the ordering of creating Queue Managers's,
 	// stopping them, and then starting new ones in storage/remote/storage.go ApplyConfig.
+	//
+	//
 	name := t.client.Name()
 	ep := t.client.Endpoint()
 
@@ -471,11 +496,28 @@ func (t *QueueManager) Start() {
 	t.minNumShards.Set(float64(t.cfg.MinShards))
 	t.desiredNumShards.Set(float64(t.cfg.MinShards))
 
+
+
+
+
+
+
+	// 启动 t.numShards 个数据队列
 	t.shards.start(t.numShards)
+
+	// 启动 wal 文件监听服务:
+	//  服务启动定时任务，每 5s 读取一次 wal 文件的 copy 文件，而不是直接打开 wal 原始文件。
+	//  读取文件时判断文件是否是被写入文件，若正在写入数据，还需要考虑写入和读取之间的平衡关系。
+	//  wal 监听器获取到的数据通过关联的 writeTo 对象发送到数据队列中。
+	//  每次发送的数据都只会发送到一个指定的 shard 中，shard 编号通过计算 sample 获得。
 	t.watcher.Start()
 
 	t.wg.Add(2)
+
+	// 定时计算所需的 shard 数目，触发 reshard 信号，以优化数据传送效率。
 	go t.updateShardsLoop()
+
+	// 监听reshard 信号，执行 reshard。
 	go t.reshardLoop()
 }
 
@@ -536,14 +578,23 @@ func (t *QueueManager) StoreSeries(series []record.RefSeries, index int) {
 
 	for _, s := range series {
 
-
+		// 把 t.externalLabels 合并到 s.Labels 中，遇到同名标签则取 s.Labels 中的标签值，返回合并后的标签集。
 		ls := processExternalLabels(s.Labels, t.externalLabels)
+
+		// relabel
 		lbls := relabel.Process(ls, t.relabelConfigs...)
+
+		// 如果 relabel 之后无标签，在丢弃当前数据，continue
 		if len(lbls) == 0 {
 			t.droppedSeries[s.Ref] = struct{}{}
 			continue
 		}
+
+		//
 		t.seriesSegmentIndexes[s.Ref] = index
+
+
+
 		internLabels(lbls)
 
 
@@ -569,14 +620,22 @@ func (t *QueueManager) StoreSeries(series []record.RefSeries, index int) {
 
 
 // SeriesReset is used when reading a checkpoint.
+// SeriesReset 用于读取检查点。
 //
 // WAL Watcher should have stored series records with the checkpoints index number,
 // so we can now delete any ref ID's lower than that # from the two maps.
+//
+// WAL Watcher 应该存储带有检查点索引号的时序数据，
+//
+
 func (t *QueueManager) SeriesReset(index int) {
 	t.seriesMtx.Lock()
 	defer t.seriesMtx.Unlock()
-	// Check for series that are in segments older than the checkpoint
-	// that were not also present in the checkpoint.
+
+	// Check for series that are in segments older than the checkpoint that were not also present in the checkpoint.
+	//
+
+
 	for k, v := range t.seriesSegmentIndexes {
 		if v < index {
 			delete(t.seriesSegmentIndexes, k)
@@ -610,8 +669,10 @@ func releaseLabels(ls labels.Labels) {
 
 
 // processExternalLabels merges externalLabels into ls.
-//
 // If ls contains a label in externalLabels, the value in ls wins.
+//
+// 把 externalLabels 合并到 ls 中。如果某个标签既在 ls 中，又在 externalLabels 中，则选取 ls 中的值 。
+//
 func processExternalLabels(ls labels.Labels, externalLabels labels.Labels) labels.Labels {
 	i, j, result := 0, 0, make(labels.Labels, 0, len(ls)+len(externalLabels))
 	for i < len(ls) && j < len(externalLabels) {
@@ -648,18 +709,25 @@ func processExternalLabels(ls labels.Labels, externalLabels labels.Labels) label
 func (t *QueueManager) updateShardsLoop() {
 	defer t.wg.Done()
 
+	// 创建定时器（10秒）
 	ticker := time.NewTicker(shardUpdateDuration)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
+
+			// 计算所需的 shard 数目
 			desiredShards := t.calculateDesiredShards()
 			if desiredShards == t.numShards {
 				continue
 			}
-			// Resharding can take some time, and we want this loop
-			// to stay close to shardUpdateDuration.
+
+			// Resharding can take some time, and we want this loop to stay close to shardUpdateDuration.
+			// Resharding 可能要花费一些时间，我们希望开销和 shardUpdateDuration 差不多。
 			select {
+
+			// 把 desiredShards 写入管道中，reshardLoop() 协程会监听该管道，执行 resharding 。
 			case t.reshardChan <- desiredShards:
 				level.Info(t.logger).Log("msg", "Remote storage resharding", "from", t.numShards, "to", desiredShards)
 				t.numShards = desiredShards
@@ -672,10 +740,13 @@ func (t *QueueManager) updateShardsLoop() {
 	}
 }
 
+
 // calculateDesiredShards returns the number of desired shards, which will be
 // the current QueueManager.numShards if resharding should not occur for reasons
 // outlined in this functions implementation. It is up to the caller to reshard, or not,
 // based on the return value.
+//
+
 func (t *QueueManager) calculateDesiredShards() int {
 	t.samplesOut.tick()
 	t.samplesDropped.tick()
@@ -745,11 +816,13 @@ func (t *QueueManager) calculateDesiredShards() int {
 	}
 
 	numShards := int(math.Ceil(desiredShards))
+
 	// Do not downshard if we are more than ten seconds back.
 	if numShards < t.numShards && delay > 10.0 {
 		level.Debug(t.logger).Log("msg", "Not downsharding due to being too far behind")
 		return t.numShards
 	}
+
 
 	if numShards > t.cfg.MaxShards {
 		numShards = t.cfg.MaxShards
@@ -765,16 +838,21 @@ func (t *QueueManager) reshardLoop() {
 	for {
 		select {
 		case numShards := <-t.reshardChan:
-			// We start the newShards after we have stopped (the therefore completely
-			// flushed) the oldShards, to guarantee we only every deliver samples in
-			// order.
+
+			// We start the newShards after we have stopped (the therefore completely flushed) the oldShards,
+			// to guarantee we only every deliver samples in order.
+
+			// reshard:
+			// 	1. 先停止所有旧队列
 			t.shards.stop()
+			// 	2. 再启动 numShards 个新队列
 			t.shards.start(numShards)
 		case <-t.quit:
 			return
 		}
 	}
 }
+
 
 func (t *QueueManager) newShards() *shards {
 	s := &shards{
@@ -826,6 +904,15 @@ type shards struct {
 
 
 // start the shards; must be called before any call to enqueue.
+//
+// 启动 n 个数据队列，每条队列都会执行数据的批量发送操作。
+//
+// 目前有两种批量发送策略，定量发送和定时发送
+//	 MaxSamplesPerSend 用于设置来每次发送最大数量，若队列中数据大于最大值，则执行批量发送操作；
+//	 BatchSendDeadline 用于设置最大等待时间，若队列等待时间超过最大时间，无论队列中有多少数据都会发送。
+//
+// 发送失败会进行无限重试，每次重试都等待时间都会增加，直到达到最大值 MaxBackoff 。
+//
 func (s *shards) start(n int) {
 
 	s.mtx.Lock()
@@ -857,7 +944,11 @@ func (s *shards) start(n int) {
 
 
 
-// stop the shards; subsequent call to enqueue will return false.
+// stop the shards;
+// subsequent call to enqueue will return false.
+//
+// 关闭 shards ，所有后续的样本入队请求都会失败并返回 false 。
+//
 func (s *shards) stop() {
 
 	// Attempt a clean shutdown, but only wait flushDeadline for all the shards to cleanly exit.
@@ -866,11 +957,9 @@ func (s *shards) stop() {
 	//
 	// We must be able so call stop concurrently, hence we can only take the RLock here.
 
-
 	s.mtx.RLock()
 	close(s.softShutdown)
 	s.mtx.RUnlock()
-
 
 	// Enqueue should now be unblocked, so we can take the write lock.
 	//
@@ -878,12 +967,10 @@ func (s *shards) stop() {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
-
-	// 关闭 n 个采样队列，触发对应的 runShard() 协程退出
+	// 关闭 n 个采样队列，触发对应的 n 个 runShard() 后台协程退出
 	for _, queue := range s.queues {
 		close(queue)
 	}
-
 
 	select {
 	// 当所有的 runShard() 协程都退出后，s.done 信号管道会被关闭，此时可以安全的退出。
@@ -933,10 +1020,7 @@ func (s *shards) enqueue(ref uint64, sample sample) bool {
 	case s.queues[shard] <- sample:
 		return true
 	}
-
 }
-
-
 
 // 不断地从 queue 中读取样本数据、缓存到数组，然后批量的发送到远程存储。
 func (s *shards) runShard(ctx context.Context, shardID int, queue chan sample) {

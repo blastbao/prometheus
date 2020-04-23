@@ -60,7 +60,9 @@ type WriteStorage struct {
 	configHash        string
 	externalLabelHash string
 	walDir            string
+
 	queues            map[string]*QueueManager
+
 	samplesIn         *ewmaRate
 	flushDeadline     time.Duration
 }
@@ -84,6 +86,8 @@ func NewWriteStorage(logger log.Logger, reg prometheus.Registerer, walDir string
 		walDir:            walDir,
 	}
 
+
+
 	go rws.run()
 
 
@@ -91,20 +95,26 @@ func NewWriteStorage(logger log.Logger, reg prometheus.Registerer, walDir string
 }
 
 func (rws *WriteStorage) run() {
+
 	ticker := time.NewTicker(shardUpdateDuration)
 	defer ticker.Stop()
+
 	for range ticker.C {
 		rws.samplesIn.tick()
 	}
+
 }
 
 // ApplyConfig updates the state as the new config requires.
 // Only stop & create queues which have changes.
 func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
+
+
 	rws.mtx.Lock()
 	defer rws.mtx.Unlock()
 
 
+	// 在应用配置 conf 之前，先检查 conf.RemoteWriteConfigs 和 conf.GlobalConfig.ExternalLabels 有无变更，若无变更，直接返回。
 	configHash, err := toHash(conf.RemoteWriteConfigs)
 	if err != nil {
 		return err
@@ -115,20 +125,28 @@ func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
 		return err
 	}
 
-	// Remote write queues only need to change if the remote write config or
-	// external labels change.
+	// Remote write queues only need to change if the remote write config or external labels change.
 	externalLabelUnchanged := externalLabelHash == rws.externalLabelHash
 	if configHash == rws.configHash && externalLabelUnchanged {
 		level.Debug(rws.logger).Log("msg", "Remote write config has not changed, no need to restart QueueManagers")
 		return nil
 	}
 
+
+	// 若有变更 ，
+
+
+
 	rws.configHash = configHash
 	rws.externalLabelHash = externalLabelHash
 
 	newQueues := make(map[string]*QueueManager)
 	newHashes := []string{}
+
+
 	for _, rwConf := range conf.RemoteWriteConfigs {
+
+
 		hash, err := toHash(rwConf)
 		if err != nil {
 			return err
@@ -142,6 +160,7 @@ func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
 			name = rwConf.Name
 		}
 
+
 		// Don't allow duplicate remote write configs.
 		if _, ok := newQueues[hash]; ok {
 			return fmt.Errorf("duplicate remote write configs are not allowed, found duplicate for URL: %s", rwConf.URL)
@@ -152,20 +171,26 @@ func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
 		if ok {
 			nameUnchanged = queue.client.Name() == name
 		}
+
 		if externalLabelUnchanged && nameUnchanged {
 			newQueues[hash] = queue
 			delete(rws.queues, hash)
 			continue
 		}
 
+
 		c, err := NewClient(name, &ClientConfig{
 			URL:              rwConf.URL,
 			Timeout:          rwConf.RemoteTimeout,
 			HTTPClientConfig: rwConf.HTTPClientConfig,
 		})
+
+
 		if err != nil {
 			return err
 		}
+
+
 		newQueues[hash] = NewQueueManager(
 			rws.queueMetrics,
 			rws.watcherMetrics,
@@ -179,16 +204,18 @@ func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
 			c,
 			rws.flushDeadline,
 		)
+
 		// Keep track of which queues are new so we know which to start.
 		newHashes = append(newHashes, hash)
 	}
 
-	// Anything remaining in rws.queues is a queue who's config has
-	// changed or was removed from the overall remote write config.
+
+	// Anything remaining in rws.queues is a queue who's config has changed or was removed from the overall remote write config.
 	for _, q := range rws.queues {
 		q.Stop()
 	}
 
+	//
 	for _, hash := range newHashes {
 		newQueues[hash].Start()
 	}
@@ -214,6 +241,11 @@ func (rws *WriteStorage) Close() error {
 	}
 	return nil
 }
+
+
+
+
+
 
 type timestampTracker struct {
 	writeStorage     *WriteStorage

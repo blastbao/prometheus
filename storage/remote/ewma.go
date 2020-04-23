@@ -19,11 +19,17 @@ import (
 	"time"
 )
 
+
+
+
+
 // ewmaRate tracks an exponentially weighted moving average of a per-second rate.
+
 type ewmaRate struct {
 
 	// Keep all 64bit atomically accessed variables at the top of this struct.
 	// See https://golang.org/pkg/sync/atomic/#pkg-note-BUG for more info.
+
 	newEvents int64
 
 	alpha    float64

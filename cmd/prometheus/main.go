@@ -102,18 +102,18 @@ func main() {
 	cfg := struct {
 		configFile string
 
-		localStoragePath    string
-		notifier            notifier.Options
-		notifierTimeout     model.Duration
+		localStoragePath    string  			// 存储地址
+		notifier            notifier.Options 	// 通知配置
+		notifierTimeout     model.Duration		// 通知超时时间
 		forGracePeriod      model.Duration
 		outageTolerance     model.Duration
 		resendDelay         model.Duration
-		web                 web.Options
-		tsdb                tsdbOptions
-		lookbackDelta       model.Duration
+		web                 web.Options			// web 配置
+		tsdb                tsdbOptions 		// tsdb 数据库配置
+		lookbackDelta       model.Duration		// 允许在表达式评估期间检索度量标准的差异。
 		webTimeout          model.Duration
 		queryTimeout        model.Duration
-		queryConcurrency    int
+		queryConcurrency    int					// 查询并发数
 		queryMaxSamples     int
 		RemoteFlushDeadline model.Duration
 
@@ -344,18 +344,20 @@ func main() {
 	)
 
 	var (
+
+		// 创建上下文
 		ctxWeb, cancelWeb = context.WithCancel(context.Background())
 		ctxRule           = context.Background()
-
+		// 通知管理器
 		notifierManager = notifier.NewManager(&cfg.notifier, log.With(logger, "component", "notifier"))
-
+		// 服务器发现 - 采集
 		ctxScrape, cancelScrape = context.WithCancel(context.Background())
 		discoveryManagerScrape  = discovery.NewManager(ctxScrape, log.With(logger, "component", "discovery manager scrape"), discovery.Name("scrape"))
-
+		// 服务器发现 - 通知
 		ctxNotify, cancelNotify = context.WithCancel(context.Background())
 		discoveryManagerNotify  = discovery.NewManager(ctxNotify, log.With(logger, "component", "discovery manager notify"), discovery.Name("notify"))
 
-
+		// 数据采集管理器
 		// fanoutStorage 是存储的抽象
 		scrapeManager = scrape.NewManager(log.With(logger, "component", "scrape manager"), fanoutStorage)
 
@@ -368,8 +370,10 @@ func main() {
 			LookbackDelta:      time.Duration(cfg.lookbackDelta),
 		}
 
+		// 新建查询引擎
 		queryEngine = promql.NewEngine(opts)
 
+		// 规则管理器
 		ruleManager = rules.NewManager(&rules.ManagerOptions{
 			Appendable:      fanoutStorage,
 			TSDB:            localStorage,
@@ -416,6 +420,8 @@ func main() {
 
 		cfg.web.Flags[f.Name] = f.Value.String()
 	}
+
+	// web 管理器
 
 	// Depends on cfg.web.ScrapeManager so needs to be after cfg.web.ScrapeManager = scrapeManager.
 	webHandler := web.New(log.With(logger, "component", "web"), &cfg.web)
