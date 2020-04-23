@@ -640,7 +640,10 @@ type FileSDConfig struct {
 }
 
 // RemoteWriteConfig is the configuration for writing to remote storage.
+//
+// RemoteWriteConfig 是用于写入远程存储的配置。
 type RemoteWriteConfig struct {
+
 	URL                 *config_util.URL  `yaml:"url"`
 	RemoteTimeout       model.Duration    `yaml:"remote_timeout,omitempty"`
 	WriteRelabelConfigs []*relabel.Config `yaml:"write_relabel_configs,omitempty"`
@@ -648,7 +651,10 @@ type RemoteWriteConfig struct {
 
 	// We cannot do proper Go type embedding below as the parser will then parse
 	// values arbitrarily into the overflow maps of further-down types.
+	// 我们不能在 `yaml` 标签中嵌入正确的 Go 类型，因为解析器会将值任意地解析到下一个类型的溢出映射中。
 	HTTPClientConfig config_util.HTTPClientConfig `yaml:",inline"`
+
+	// 写入远程存储的队列配置。
 	QueueConfig      QueueConfig                  `yaml:"queue_config,omitempty"`
 }
 
@@ -674,29 +680,36 @@ func (c *RemoteWriteConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	return c.HTTPClientConfig.Validate()
 }
 
-// QueueConfig is the configuration for the queue used to write to remote
-// storage.
+// QueueConfig is the configuration for the queue used to write to remote storage.
+// QueueConfig 是用于写入远程存储的队列配置。
 type QueueConfig struct {
-	// Number of samples to buffer per shard before we block. Defaults to
-	// MaxSamplesPerSend.
+
+	// Number of samples to buffer per shard before we block. Defaults to MaxSamplesPerSend.
+	// 在触发 flush 前能够缓存的最大样本数。默认为 MaxSamplesPerSend 。
 	Capacity int `yaml:"capacity,omitempty"`
 
 	// Max number of shards, i.e. amount of concurrency.
+	// shards 的最大数目，控制写的并发度。
 	MaxShards int `yaml:"max_shards,omitempty"`
 
 	// Min number of shards, i.e. amount of concurrency.
+	// shards 的最小数目，控制写的并发度。
 	MinShards int `yaml:"min_shards,omitempty"`
 
 	// Maximum number of samples per send.
+	// 每次发送的最大样本数。
 	MaxSamplesPerSend int `yaml:"max_samples_per_send,omitempty"`
 
 	// Maximum time sample will wait in buffer.
+	// 样本在缓冲区中等待的最长时间，到达这个时间，即便缓存的样本数目不足也会触发 flush 。
 	BatchSendDeadline model.Duration `yaml:"batch_send_deadline,omitempty"`
 
 	// On recoverable errors, backoff exponentially.
+	// 在可恢复的错误上，按指数退避。控制重试间隔。
 	MinBackoff model.Duration `yaml:"min_backoff,omitempty"`
 	MaxBackoff model.Duration `yaml:"max_backoff,omitempty"`
 }
+
 
 // RemoteReadConfig is the configuration for reading from remote storage.
 type RemoteReadConfig struct {

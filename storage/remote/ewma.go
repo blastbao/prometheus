@@ -39,12 +39,15 @@ type ewmaRate struct {
 	mutex    sync.Mutex
 }
 
-// newEWMARate always allocates a new ewmaRate, as this guarantees the atomically
-// accessed int64 will be aligned on ARM.  See prometheus#2666.
+
+// newEWMARate always allocates a new ewmaRate,
+// as this guarantees the atomically accessed int64 will be aligned on ARM.
+//
+// See prometheus#2666.
 func newEWMARate(alpha float64, interval time.Duration) *ewmaRate {
 	return &ewmaRate{
-		alpha:    alpha,
-		interval: interval,
+		alpha:    alpha,	// 权重
+		interval: interval,	// 定时间隔
 	}
 }
 
@@ -56,18 +59,24 @@ func (r *ewmaRate) rate() float64 {
 }
 
 // tick assumes to be called every r.interval.
+//
+// 每隔 r.interval 秒会调用一次 tick()，用来统计这段时间内 "平均每秒通过 r.incr() 增加的数量"，
 func (r *ewmaRate) tick() {
 
-
+	// stores 0 into &r.newEvents and returns the previous r.newEvents value.
 	newEvents := atomic.SwapInt64(&r.newEvents, 0)
+
+	// 计算每秒的事件数增量
 	instantRate := float64(newEvents) / r.interval.Seconds()
 
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	if r.init {
+		// 非首次运行，计算相邻两次每秒增量的差值 * 权重
 		r.lastRate += r.alpha * (instantRate - r.lastRate)
 	} else if newEvents > 0 {
+		// 首次运行，初始化成员
 		r.init = true
 		r.lastRate = instantRate
 	}

@@ -281,7 +281,6 @@ type QueueManager struct {
 	lastSendTimestamp int64
 
 
-
 	logger         log.Logger
 	flushDeadline  time.Duration
 	cfg            config.QueueConfig
@@ -303,18 +302,23 @@ type QueueManager struct {
 	droppedSeries        map[uint64]struct{}
 
 
+	//
 	shards      *shards
 	numShards   int
+
 	reshardChan chan int
+
+
 	quit        chan struct{}
 	wg          sync.WaitGroup
 
 
 
-	samplesIn, samplesDropped, samplesOut, samplesOutDuration *ewmaRate
 
-
-
+	samplesIn,
+	samplesDropped,
+	samplesOut,
+	samplesOutDuration *ewmaRate
 
 	metrics                    *queueManagerMetrics
 	highestSentTimestampMetric *maxGauge
@@ -338,7 +342,22 @@ type QueueManager struct {
 
 
 // NewQueueManager builds a new QueueManager.
-func NewQueueManager(metrics *queueManagerMetrics, watcherMetrics *wal.WatcherMetrics, readerMetrics *wal.LiveReaderMetrics, logger log.Logger, walDir string, samplesIn *ewmaRate, cfg config.QueueConfig, externalLabels labels.Labels, relabelConfigs []*relabel.Config, client StorageClient, flushDeadline time.Duration) *QueueManager {
+func NewQueueManager(
+
+	metrics *queueManagerMetrics,
+	watcherMetrics *wal.WatcherMetrics,
+	readerMetrics *wal.LiveReaderMetrics,
+	logger log.Logger,
+
+	walDir string,
+	samplesIn *ewmaRate,
+	cfg config.QueueConfig,
+	externalLabels labels.Labels,
+	relabelConfigs []*relabel.Config,
+	client StorageClient,
+	flushDeadline time.Duration,
+
+	) *QueueManager {
 
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -372,9 +391,11 @@ func NewQueueManager(metrics *queueManagerMetrics, watcherMetrics *wal.WatcherMe
 		metrics: metrics,
 	}
 
-
-
+	// 创建 wal watcher
 	t.watcher = wal.NewWatcher(watcherMetrics, readerMetrics, logger, client.Name(), t, walDir)
+
+
+	// 创建 shards
 	t.shards = t.newShards()
 
 
@@ -390,6 +411,9 @@ func NewQueueManager(metrics *queueManagerMetrics, watcherMetrics *wal.WatcherMe
 
 // Append queues a sample to be sent to the remote storage.
 // Blocks until all samples are enqueued on their shards or a shutdown signal is received.
+//
+//
+//
 //
 func (t *QueueManager) Append(samples []record.RefSample) bool {
 
@@ -460,18 +484,21 @@ outer:
 //
 // Does not block.
 //
+//
+//
+// Start() 方法的主要逻辑是启动了四个任务。
+//
 func (t *QueueManager) Start() {
+
+	// 获取 t.client 信息
+	name := t.client.Name()		// 远程存储名
+	ep := t.client.Endpoint()	// 远程存储地址
 
 
 	// Setup the QueueManagers metrics.
 	//
 	// We do this here rather than in the constructor because of the ordering of creating Queue Managers's,
 	// stopping them, and then starting new ones in storage/remote/storage.go ApplyConfig.
-	//
-	//
-	name := t.client.Name()
-	ep := t.client.Endpoint()
-
 	t.highestSentTimestampMetric = &maxGauge{
 		Gauge: t.metrics.queueHighestSentTimestamp.WithLabelValues(name, ep),
 	}
@@ -496,16 +523,10 @@ func (t *QueueManager) Start() {
 	t.minNumShards.Set(float64(t.cfg.MinShards))
 	t.desiredNumShards.Set(float64(t.cfg.MinShards))
 
-
-
-
-
-
-
-	// 启动 t.numShards 个数据队列
+	// 1. 启动 t.numShards 个数据队列
 	t.shards.start(t.numShards)
 
-	// 启动 wal 文件监听服务:
+	// 2. 启动 wal 文件监听服务:
 	//  服务启动定时任务，每 5s 读取一次 wal 文件的 copy 文件，而不是直接打开 wal 原始文件。
 	//  读取文件时判断文件是否是被写入文件，若正在写入数据，还需要考虑写入和读取之间的平衡关系。
 	//  wal 监听器获取到的数据通过关联的 writeTo 对象发送到数据队列中。
@@ -514,10 +535,10 @@ func (t *QueueManager) Start() {
 
 	t.wg.Add(2)
 
-	// 定时计算所需的 shard 数目，触发 reshard 信号，以优化数据传送效率。
+	// 3. 定时计算所需的 shard 数目，触发 reshard 信号，以优化数据传送效率。
 	go t.updateShardsLoop()
 
-	// 监听reshard 信号，执行 reshard。
+	// 4. 监听 reshard 信号，执行 reshard 。
 	go t.reshardLoop()
 }
 
@@ -768,12 +789,15 @@ func (t *QueueManager) calculateDesiredShards() int {
 		samplesPending     = delay * samplesInRate * samplesKeptRatio
 	)
 
+
 	if samplesOutRate <= 0 {
 		return t.numShards
 	}
 
+
 	// We shouldn't reshard if Prometheus hasn't been able to send to the
 	// remote endpoint successfully within some period of time.
+
 	minSendTimestamp := time.Now().Add(-2 * time.Duration(t.cfg.BatchSendDeadline)).Unix()
 	lsts := atomic.LoadInt64(&t.lastSendTimestamp)
 	if lsts < minSendTimestamp {
@@ -871,12 +895,11 @@ type sample struct {
 }
 
 
-
+//
 type shards struct {
 
 	// With the WAL, this is never actually contended.
 	mtx sync.RWMutex
-
 
 	// 当前 shards 归属的 manager
 	qm  *QueueManager
