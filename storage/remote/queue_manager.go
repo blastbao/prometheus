@@ -399,7 +399,6 @@ func NewQueueManager(
 	t.shards = t.newShards()
 
 
-
 	return t
 }
 
@@ -526,12 +525,17 @@ func (t *QueueManager) Start() {
 	// 1. 启动 t.numShards 个数据队列
 	t.shards.start(t.numShards)
 
+
+
 	// 2. 启动 wal 文件监听服务:
 	//  服务启动定时任务，每 5s 读取一次 wal 文件的 copy 文件，而不是直接打开 wal 原始文件。
 	//  读取文件时判断文件是否是被写入文件，若正在写入数据，还需要考虑写入和读取之间的平衡关系。
 	//  wal 监听器获取到的数据通过关联的 writeTo 对象发送到数据队列中。
 	//  每次发送的数据都只会发送到一个指定的 shard 中，shard 编号通过计算 sample 获得。
 	t.watcher.Start()
+
+
+
 
 	t.wg.Add(2)
 
@@ -590,7 +594,12 @@ func (t *QueueManager) Stop() {
 	t.metrics.desiredNumShards.DeleteLabelValues(name, ep)
 }
 
+
+
 // StoreSeries keeps track of which series we know about for lookups when sending samples to remote.
+//
+//
+//
 func (t *QueueManager) StoreSeries(series []record.RefSeries, index int) {
 
 	t.seriesMtx.Lock()

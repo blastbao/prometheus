@@ -338,8 +338,18 @@ func main() {
 
 
 	var (
+
+
 		localStorage  = &readyStorage{}
-		remoteStorage = remote.NewStorage(log.With(logger, "component", "remote"), prometheus.DefaultRegisterer, localStorage.StartTime, cfg.localStoragePath, time.Duration(cfg.RemoteFlushDeadline))
+
+
+		remoteStorage = remote.NewStorage(
+			log.With(logger, "component", "remote"),
+			prometheus.DefaultRegisterer,
+			localStorage.StartTime,
+			cfg.localStoragePath,
+			time.Duration(cfg.RemoteFlushDeadline))
+
 		fanoutStorage = storage.NewFanout(logger, localStorage, remoteStorage)
 	)
 
@@ -915,8 +925,7 @@ func sendAlerts(s sender, externalURL string) rules.NotifyFunc {
 	}
 }
 
-// readyStorage implements the Storage interface while allowing to set the actual
-// storage at a later point in time.
+// readyStorage implements the Storage interface while allowing to set the actual storage at a later point in time.
 type readyStorage struct {
 	mtx             sync.RWMutex
 	db              *tsdb.DB

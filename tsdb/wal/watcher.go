@@ -136,9 +136,11 @@ func NewWatcherMetrics(reg prometheus.Registerer) *WatcherMetrics {
 
 // NewWatcher creates a new WAL watcher for a given WriteTo.
 func NewWatcher(metrics *WatcherMetrics, readerMetrics *LiveReaderMetrics, logger log.Logger, name string, writer WriteTo, walDir string) *Watcher {
+
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
+
 	return &Watcher{
 		logger:        logger,
 		writer:        writer,

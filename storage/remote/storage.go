@@ -43,28 +43,43 @@ const (
 // startTimeCallback is a callback func that return the oldest timestamp stored in a storage.
 type startTimeCallback func() (int64, error)
 
-// Storage represents all the remote read and write endpoints.  It implements
-// storage.Storage.
+
+// Storage represents all the remote read and write endpoints.
+// It implements storage.Storage.
+
 type Storage struct {
 	logger log.Logger
 	mtx    sync.Mutex
 
+	// 负责写远程存储
 	rws *WriteStorage
 
-	// For reads
+	// 负责读取时序数据
 	queryables             []storage.Queryable
+
+	//
 	localStartTimeCallback startTimeCallback
 }
 
 // NewStorage returns a remote.Storage.
-func NewStorage(l log.Logger, reg prometheus.Registerer, stCallback startTimeCallback, walDir string, flushDeadline time.Duration) *Storage {
+func NewStorage(
+	l log.Logger,
+	reg prometheus.Registerer,
+	stCallback startTimeCallback,
+	walDir string,
+	flushDeadline time.Duration ) *Storage {
+
+
 	if l == nil {
 		l = log.NewNopLogger()
 	}
+
+	
 	s := &Storage{
-		logger:                 logging.Dedupe(l, 1*time.Minute),
+		logger: logging.Dedupe(l, 1*time.Minute),
 		localStartTimeCallback: stCallback,
 	}
+	
 	s.rws = NewWriteStorage(s.logger, reg, walDir, flushDeadline)
 	return s
 }
@@ -74,23 +89,29 @@ func (s *Storage) ApplyConfig(conf *config.Config) error {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
+	// Update remote write clients
 	if err := s.rws.ApplyConfig(conf); err != nil {
 		return err
 	}
 
-	// Update read clients
+	// Update remote read clients
 	readHashes := make(map[string]struct{})
 	queryables := make([]storage.Queryable, 0, len(conf.RemoteReadConfigs))
+
 	for _, rrConf := range conf.RemoteReadConfigs {
+
+		// 计算配置项的 hash 作为唯一标识，每个远程读配置对应一个 storage.Queryable
 		hash, err := toHash(rrConf)
 		if err != nil {
 			return err
 		}
 
 		// Don't allow duplicate remote read configs.
+		// 如果 hash 值对应的远程读配置已经添加，则为重复配置，报错返回。
 		if _, ok := readHashes[hash]; ok {
 			return fmt.Errorf("duplicate remote read configs are not allowed, found duplicate for URL: %s", rrConf.URL)
 		}
+
 		readHashes[hash] = struct{}{}
 
 		// Set the queue name to the config hash if the user has not set
@@ -101,25 +122,38 @@ func (s *Storage) ApplyConfig(conf *config.Config) error {
 			name = rrConf.Name
 		}
 
+		// 构造新的 http client 用来发送远程读请求
 		c, err := NewClient(name, &ClientConfig{
 			URL:              rrConf.URL,
 			Timeout:          rrConf.RemoteTimeout,
 			HTTPClientConfig: rrConf.HTTPClientConfig,
 		})
+
 		if err != nil {
 			return err
 		}
 
+		// 用 c 来构造一个 storage.Queryable
 		q := QueryableClient(c)
+
+		// 附加 ExternalLabels 到 q 上
 		q = ExternalLabelsHandler(q, conf.GlobalConfig.ExternalLabels)
+
+		// 附加 RequiredMatchers 到 q 上
 		if len(rrConf.RequiredMatchers) > 0 {
 			q = RequiredMatchersFilter(q, labelsToEqualityMatchers(rrConf.RequiredMatchers))
 		}
+
+
 		if !rrConf.ReadRecent {
 			q = PreferLocalStorageFilter(q, s.localStartTimeCallback)
 		}
+
+		// 把 q 添加到 queryables 中
 		queryables = append(queryables, q)
 	}
+
+	// 设置 s.queryables
 	s.queryables = queryables
 
 	return nil
@@ -133,9 +167,11 @@ func (s *Storage) StartTime() (int64, error) {
 // Querier returns a storage.MergeQuerier combining the remote client queriers
 // of each configured remote read endpoint.
 func (s *Storage) Querier(ctx context.Context, mint, maxt int64) (storage.Querier, error) {
+
 	s.mtx.Lock()
 	queryables := s.queryables
 	s.mtx.Unlock()
+
 
 	queriers := make([]storage.Querier, 0, len(queryables))
 	for _, queryable := range queryables {
@@ -145,6 +181,7 @@ func (s *Storage) Querier(ctx context.Context, mint, maxt int64) (storage.Querie
 		}
 		queriers = append(queriers, q)
 	}
+
 	return storage.NewMergeQuerier(nil, queriers, storage.ChainedSeriesMerge), nil
 }
 

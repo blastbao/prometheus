@@ -141,7 +141,6 @@ func (c Client) Endpoint() string {
 func (c *Client) Read(ctx context.Context, query *prompb.Query) (*prompb.QueryResult, error) {
 
 
-
 	req := &prompb.ReadRequest{
 		// TODO: Support batching multiple queries into one read request, as the protobuf interface allows for it.
 		Queries: []*prompb.Query{

@@ -81,12 +81,13 @@ func EncodeReadResponse(resp *prompb.ReadResponse, w http.ResponseWriter) error 
 // ToQuery builds a Query proto.
 func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHints) (*prompb.Query, error) {
 
-
+	// 把 matchers 从 []*labels.Matcher 转换成 []*prompb.LabelMatcher
 	ms, err := toLabelMatchers(matchers)
 	if err != nil {
 		return nil, err
 	}
 
+	// 把 hints 从 *storage.SelectHints 转换成 *prompb.ReadHints
 	var rp *prompb.ReadHints
 	if hints != nil {
 		rp = &prompb.ReadHints{
@@ -100,12 +101,12 @@ func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHi
 		}
 	}
 
-
+	// 构造 *prompb.Query 对象
 	return &prompb.Query{
-		StartTimestampMs: from,
-		EndTimestampMs:   to,
-		Matchers:         ms,
-		Hints:            rp,
+		StartTimestampMs: from,		// 开始时间
+		EndTimestampMs:   to,		// 结束时间
+		Matchers:         ms,		// 标签匹配
+		Hints:            rp,		// 查询条件
 	}, nil
 }
 
@@ -148,23 +149,41 @@ func ToQueryResult(ss storage.SeriesSet, sampleLimit int) (*prompb.QueryResult, 
 }
 
 // FromQueryResult unpacks and sorts a QueryResult proto.
+//
+// 把 res 从 prompb.QueryResult 结果转换成 storage.SeriesSet 迭代器
 func FromQueryResult(sortSeries bool, res *prompb.QueryResult) storage.SeriesSet {
+
+
 	series := make([]storage.Series, 0, len(res.Timeseries))
+
+	// 数据格式转换: res.Timeseries => series
 	for _, ts := range res.Timeseries {
+
+		// 把 ts.Labels 从 []prompb.Label 转换为 []Label 类型，并按 label name 进行排序，便于后面的判重
 		labels := labelProtosToLabels(ts.Labels)
+
+		// 检查返回的 labels 是否合法：
+		// 1. metric 名合法
+		// 2. label name/value 合法
+		// 3. label name 不存在重复
 		if err := validateLabelsAndMetricName(labels); err != nil {
 			return errSeriesSet{err: err}
 		}
 
+		// 把 ts 转换成 concreteSeries 存储到 series 数组中
 		series = append(series, &concreteSeries{
 			labels:  labels,
 			samples: ts.Samples,
 		})
+
 	}
 
+	// 如果需要对 series 按标签集排序，则进行排序
 	if sortSeries {
 		sort.Sort(byLabel(series))
 	}
+
+	// 构造时序数据的迭代器
 	return &concreteSeriesSet{
 		series: series,
 	}
@@ -455,16 +474,26 @@ func (c *concreteSeriesIterator) Err() error {
 // validateLabelsAndMetricName validates the label names/values and metric names returned from remote read,
 // also making sure that there are no labels with duplicate names
 func validateLabelsAndMetricName(ls labels.Labels) error {
+
+
 	for i, l := range ls {
+
+		// 如果标签名为 "__name__" , 则为 metric 名，需要检查是否满足 metric 命名规范
 		if l.Name == labels.MetricName && !model.IsValidMetricName(model.LabelValue(l.Value)) {
 			return errors.Errorf("invalid metric name: %v", l.Value)
 		}
+
+		// 检查是否是合法标签名
 		if !model.LabelName(l.Name).IsValid() {
 			return errors.Errorf("invalid label name: %v", l.Name)
 		}
+
+		// 检查是否是合法标签值
 		if !model.LabelValue(l.Value).IsValid() {
 			return errors.Errorf("invalid label value: %v", l.Value)
 		}
+
+		// 检查标签名是否重复
 		if i > 0 && l.Name == ls[i-1].Name {
 			return errors.Errorf("duplicate label with name: %v", l.Name)
 		}
@@ -474,11 +503,16 @@ func validateLabelsAndMetricName(ls labels.Labels) error {
 
 func toLabelMatchers(matchers []*labels.Matcher) ([]*prompb.LabelMatcher, error) {
 	pbMatchers := make([]*prompb.LabelMatcher, 0, len(matchers))
+
+
 	for _, m := range matchers {
 		var mType prompb.LabelMatcher_Type
 		switch m.Type {
+
+		// 相等
 		case labels.MatchEqual:
 			mType = prompb.LabelMatcher_EQ
+
 		case labels.MatchNotEqual:
 			mType = prompb.LabelMatcher_NEQ
 		case labels.MatchRegexp:
@@ -532,7 +566,12 @@ func LabelProtosToMetric(labelPairs []*prompb.Label) model.Metric {
 	return metric
 }
 
+
+
+// 把 labelPairs 从 []prompb.Label 转换为 labels.Labels 类型
 func labelProtosToLabels(labelPairs []prompb.Label) labels.Labels {
+
+	// 把 labelPairs 从 []prompb.Label 转换为 labels.Labels 类型
 	result := make(labels.Labels, 0, len(labelPairs))
 	for _, l := range labelPairs {
 		result = append(result, labels.Label{
@@ -540,6 +579,8 @@ func labelProtosToLabels(labelPairs []prompb.Label) labels.Labels {
 			Value: l.Value,
 		})
 	}
+
+	// 按 Label.name 对 result 进行排序
 	sort.Sort(result)
 	return result
 }

@@ -71,13 +71,12 @@ type WriteStorage struct {
 
 // NewWriteStorage creates and runs a WriteStorage.
 func NewWriteStorage(
-
 	logger log.Logger,
 	reg prometheus.Registerer,
 	walDir string,
 	flushDeadline time.Duration,
+) *WriteStorage {
 
-	) *WriteStorage {
 
 	if logger == nil {
 		logger = log.NewNopLogger()
@@ -85,14 +84,12 @@ func NewWriteStorage(
 
 
 	rws := &WriteStorage{
-
+		// hash(RemoteWriteConfig-id) => *QueueManager
 		queues:            make(map[string]*QueueManager),
-
 		// metrics
 		queueMetrics:      newQueueManagerMetrics(reg),
 		watcherMetrics:    wal.NewWatcherMetrics(reg),
 		liveReaderMetrics: wal.NewLiveReaderMetrics(reg),
-
 		logger:            logger,
 		flushDeadline:     flushDeadline,
 		samplesIn:         newEWMARate(ewmaWeight, shardUpdateDuration),
@@ -100,7 +97,7 @@ func NewWriteStorage(
 	}
 
 
-
+	//
 	go rws.run()
 
 
@@ -209,7 +206,7 @@ func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
 			return err
 		}
 
-		// 构造新的 QueueManager 保存到 map[hash] 中
+		// 构造新的 QueueManager 保存到 map[hash] 中，它负责 hash 对应的 RemoteWriteConf 的远程存储写的任务。
 		newQueues[hash] = NewQueueManager(
 			rws.queueMetrics,
 			rws.watcherMetrics,

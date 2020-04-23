@@ -23,9 +23,13 @@ type MatchType int
 
 // Possible MatchTypes.
 const (
+	// 相等
 	MatchEqual MatchType = iota
+	// 不等
 	MatchNotEqual
+	// 正则匹配
 	MatchRegexp
+	// 正则排除
 	MatchNotRegexp
 )
 
