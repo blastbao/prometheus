@@ -688,14 +688,11 @@ const pathLabel = "__alerts_path__"
 
 func (a alertmanagerLabels) url() *url.URL {
 	return &url.URL{
-		Scheme: a.Get(model.SchemeLabel),
-		Host:   a.Get(model.AddressLabel),
-		Path:   a.Get(pathLabel),
+		Scheme: a.Get(model.SchemeLabel),	// "http" or "https"
+		Host:   a.Get(model.AddressLabel),	// address 服务地址
+		Path:   a.Get(pathLabel),			// alerts 推送地址
 	}
 }
-
-
-
 
 // alertmanagerSet contains a set of Alertmanagers discovered via a group of service
 // discovery definitions that have a common configuration on how alerts should be sent.
@@ -792,10 +789,7 @@ func (s *alertmanagerSet) sync(tgs []*targetgroup.Group) {
 }
 
 
-
-
-
-
+// 构造 alertmanager 的 alerts 推送地址
 func postPath(pre string, v config.AlertmanagerAPIVersion) string {
 	alertPushEndpoint := fmt.Sprintf("/api/%v/alerts", string(v))
 	return path.Join("/", pre, alertPushEndpoint)
@@ -804,62 +798,78 @@ func postPath(pre string, v config.AlertmanagerAPIVersion) string {
 // alertmanagerFromGroup extracts a list of alertmanagers from a target group and an associated AlertmanagerConfig.
 //
 //
-
 func alertmanagerFromGroup(tg *targetgroup.Group, cfg *config.AlertmanagerConfig) ([]alertmanager, []alertmanager, error) {
-
 
 	var res []alertmanager
 	var droppedAlertManagers []alertmanager
 
+	// 遍历 targets ，每个 target 由一个标签集 model.LabelSet 来代表。
+	for _, tgLabelSet := range tg.Targets {
 
+		// 标签组合:  tg.Labels + tgLabelSet + "__scheme__" + "__alerts_path__"
 
-	for _, tlset := range tg.Targets {
+		// 创建数组来存储组合后的新标签集
+		lbls := make([]labels.Label, 0, len(tgLabelSet)+2+len(tg.Labels))
 
-
-		lbls := make([]labels.Label, 0, len(tlset)+2+len(tg.Labels))
-
-		for ln, lv := range tlset {
+		// 存储 tgLabelSet 的标签集
+		for ln, lv := range tgLabelSet {
 			lbls = append(lbls, labels.Label{Name: string(ln), Value: string(lv)})
 		}
 
 		// Set configured scheme as the initial scheme label for overwrite.
+		// 存储 "__scheme__" 标签
 		lbls = append(lbls, labels.Label{Name: model.SchemeLabel, Value: cfg.Scheme})
+		// 存储 "__alerts_path__" 标签
 		lbls = append(lbls, labels.Label{Name: pathLabel, Value: postPath(cfg.PathPrefix, cfg.APIVersion)})
 
 		// Combine target labels with target group labels.
+		// 存储 tg.Labels 标签集，如果发生冲突，则忽略。
 		for ln, lv := range tg.Labels {
-			if _, ok := tlset[ln]; !ok {
+			if _, ok := tgLabelSet[ln]; !ok {
 				lbls = append(lbls, labels.Label{Name: string(ln), Value: string(lv)})
 			}
 		}
 
+		// 把 lbls 进行 relabel 得到 lset，如果 relabel 之后没有标签剩下，就视当前 target 为 dropped
 		lset := relabel.Process(labels.New(lbls...), cfg.RelabelConfigs...)
 		if lset == nil {
 			droppedAlertManagers = append(droppedAlertManagers, alertmanagerLabels{lbls})
 			continue
 		}
 
+
+		// lset 是 labels.Labels 类型，也即 []labels.Label 类型，所支持的操作比较有限。
+		// 这里把 lset 从 labels.Labels 封装成 labels.Builder，以支持更高级的操作，如后续的 Set/Del 操作，如同操作 map 一样简单。
 		lb := labels.NewBuilder(lset)
 
 		// addPort checks whether we should add a default port to the address.
 		// If the address is not valid, we don't append a port either.
+		//
+		// addPort 检查是否应向地址尾部添加默认端口号。如果地址无效，则不需附加端口，返回 false 。
 		addPort := func(s string) bool {
 			// If we can split, a port exists and we don't have to add one.
+			// 如果可以 split ，则存在端口，不必添加。
 			if _, _, err := net.SplitHostPort(s); err == nil {
 				return false
 			}
-			// If adding a port makes it valid, the previous error
-			// was not due to an invalid address and we can append a port.
+			// If adding a port makes it valid, the previous error was not due to an invalid address and we can append a port.
+			// 如果添加端口（随便添加个端口号）使其有效，则上一个错误不是由于地址无效造成的，可以添加端口。
 			_, _, err := net.SplitHostPort(s + ":1234")
+			// 如果添加端口号，仍然报错，则原地址是无效地址，返回 false。
 			return err == nil
 		}
 
+		// 获取 target 的地址
 		addr := lset.Get(model.AddressLabel)
 
-
 		// If it's an address with no trailing port, infer it based on the used scheme.
+		// 需要在 addr 尾部需要添加 port
 		if addPort(addr) {
+
 			// Addresses reaching this point are already wrapped in [] if necessary.
+
+
+			// 获取 target 的 address 的 schema
 			switch lset.Get(model.SchemeLabel) {
 			case "http", "":
 				addr = addr + ":80"
@@ -868,22 +878,28 @@ func alertmanagerFromGroup(tg *targetgroup.Group, cfg *config.AlertmanagerConfig
 			default:
 				return nil, nil, errors.Errorf("invalid scheme: %q", cfg.Scheme)
 			}
+			// 更新 target 的 address 标签
 			lb.Set(model.AddressLabel, addr)
 		}
 
+		// 检查地址的合法性
 		if err := config.CheckTargetAddress(model.LabelValue(addr)); err != nil {
 			return nil, nil, err
 		}
 
-		// Meta labels are deleted after relabelling. Other internal labels propagate to
-		// the target which decides whether they will be part of their label set.
+		// Meta labels are deleted after relabelling.
+		// Other internal labels propagate to the target which decides whether they will be part of their label set.
+
+		// 移除 lset 中那些以 "__meta_" 为前缀的标签
 		for _, l := range lset {
 			if strings.HasPrefix(l.Name, model.MetaLabelPrefix) {
 				lb.Del(l.Name)
 			}
 		}
 
+
 		res = append(res, alertmanagerLabels{lset})
+
 	}
 	return res, droppedAlertManagers, nil
 }

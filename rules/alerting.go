@@ -432,8 +432,9 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 
 		if _, ok := alerts[h]; ok {
 			err = fmt.Errorf("vector contains metrics with the same labelset after applying alert labels")
-			// We have already acquired the lock above hence using SetHealth and
-			// SetLastError will deadlock.
+
+			// We have already acquired the lock above hence using SetHealth and SetLastError will deadlock.
+
 			r.health = HealthBad
 			r.lastError = err
 			return nil, err
@@ -535,8 +536,7 @@ func (r *AlertingRule) currentAlerts() []*Alert {
 }
 
 // ForEachActiveAlert runs the given function on each alert.
-// This should be used when you want to use the actual alerts from the AlertingRule
-// and not on its copy.
+// This should be used when you want to use the actual alerts from the AlertingRule and not on its copy.
 // If you want to run on a copy of alerts then don't use this, get the alerts from 'ActiveAlerts()'.
 func (r *AlertingRule) ForEachActiveAlert(f func(*Alert)) {
 	r.mtx.Lock()
@@ -582,24 +582,29 @@ func (r *AlertingRule) String() string {
 	return string(byt)
 }
 
-// HTMLSnippet returns an HTML snippet representing this alerting rule. The
-// resulting snippet is expected to be presented in a <pre> element, so that
-// line breaks and other returned whitespace is respected.
+// HTMLSnippet returns an HTML snippet representing this alerting rule.
+// The resulting snippet is expected to be presented in a <pre> element,
+// so that line breaks and other returned whitespace is respected.
 func (r *AlertingRule) HTMLSnippet(pathPrefix string) html_template.HTML {
+
+
 	alertMetric := model.Metric{
 		model.MetricNameLabel: alertMetricName,
 		alertNameLabel:        model.LabelValue(r.name),
 	}
+
 
 	labelsMap := make(map[string]string, len(r.labels))
 	for _, l := range r.labels {
 		labelsMap[l.Name] = html_template.HTMLEscapeString(l.Value)
 	}
 
+
 	annotationsMap := make(map[string]string, len(r.annotations))
 	for _, l := range r.annotations {
 		annotationsMap[l.Name] = html_template.HTMLEscapeString(l.Value)
 	}
+
 
 	ar := rulefmt.Rule{
 		Alert:       fmt.Sprintf("<a href=%q>%s</a>", pathPrefix+strutil.TableLinkForExpression(alertMetric.String()), r.name),

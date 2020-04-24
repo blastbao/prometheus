@@ -310,10 +310,8 @@ func (g *Group) Rules() []Rule { return g.rules }
 func (g *Group) Interval() time.Duration { return g.interval }
 
 
-
 func (g *Group) run(ctx context.Context) {
 	defer close(g.terminated)
-
 
 	// Wait an initial amount to have consistently slotted intervals.
 	evalTimestamp := g.evalTimestamp().Add(g.interval)
