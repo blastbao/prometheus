@@ -502,6 +502,7 @@ func (c *AlertingConfig) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	return nil
 }
 
+
 // AlertmanagerConfigs is a slice of *AlertmanagerConfig.
 type AlertmanagerConfigs []*AlertmanagerConfig
 

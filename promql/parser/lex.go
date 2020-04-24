@@ -213,6 +213,20 @@ type stateFn func(*Lexer) stateFn
 // Negative numbers indicate undefined positions.
 type Pos int
 
+
+
+
+
+
+
+// lexer 本质是一个 scan expression => token 的状态机，
+//
+// lexer 结构体里面定义了和这个状态机有关的状态信息，
+// 里面比较有特色的是 state，这里并不向一版的状态机用一个 string 表示状态，而是给了一个下一个 token 的处理函数
+// 这样这个state，不仅体现了状态，同时把此状态需要的处理函数也传过来了
+
+
+
 // Lexer holds the state of the scanner.
 type Lexer struct {
 	input       string  // The string being scanned.

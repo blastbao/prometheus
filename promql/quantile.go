@@ -22,8 +22,7 @@ import (
 
 // Helpers to calculate quantiles.
 
-// excludedLabels are the labels to exclude from signature calculation for
-// quantiles.
+// excludedLabels are the labels to exclude from signature calculation for quantiles.
 var excludedLabels = []string{
 	labels.MetricName,
 	labels.BucketLabel,
@@ -180,15 +179,19 @@ func ensureMonotonic(buckets buckets) {
 // If q<0, -Inf is returned.
 // If q>1, +Inf is returned.
 func quantile(q float64, values vectorByValueHeap) float64 {
+
 	if len(values) == 0 {
 		return math.NaN()
 	}
+
 	if q < 0 {
 		return math.Inf(-1)
 	}
+
 	if q > 1 {
 		return math.Inf(+1)
 	}
+
 	sort.Sort(values)
 
 	n := float64(len(values))

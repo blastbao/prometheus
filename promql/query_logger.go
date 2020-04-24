@@ -27,6 +27,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
+
+
 type ActiveQueryTracker struct {
 	mmapedFile    []byte
 	getNextIndex  chan int

@@ -47,8 +47,9 @@ const (
 
 var testStartTime = time.Unix(0, 0).UTC()
 
-// Test is a sequence of read and write commands that are run
-// against a test storage.
+
+
+// Test is a sequence of read and write commands that are run against a test storage.
 type Test struct {
 	testutil.T
 

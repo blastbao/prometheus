@@ -163,19 +163,25 @@ func NewGroupMetrics(reg prometheus.Registerer) *Metrics {
 // QueryFunc processes PromQL queries.
 type QueryFunc func(ctx context.Context, q string, t time.Time) (promql.Vector, error)
 
-// EngineQueryFunc returns a new query function that executes instant queries against
-// the given engine.
+
+// EngineQueryFunc returns a new query function that executes instant queries against the given engine.
+//
 // It converts scalar into vector results.
 func EngineQueryFunc(engine *promql.Engine, q storage.Queryable) QueryFunc {
+
 	return func(ctx context.Context, qs string, t time.Time) (promql.Vector, error) {
+
+
 		q, err := engine.NewInstantQuery(q, qs, t)
 		if err != nil {
 			return nil, err
 		}
+
 		res := q.Exec(ctx)
 		if res.Err != nil {
 			return nil, res.Err
 		}
+
 		switch v := res.Value.(type) {
 		case promql.Vector:
 			return v, nil
@@ -187,6 +193,7 @@ func EngineQueryFunc(engine *promql.Engine, q storage.Queryable) QueryFunc {
 		default:
 			return nil, errors.New("rule result is not a vector or scalar")
 		}
+
 	}
 }
 
@@ -221,8 +228,12 @@ type Rule interface {
 	HTMLSnippet(pathPrefix string) html_template.HTML
 }
 
+
+
 // Group is a set of rules that have a logical relation.
 type Group struct {
+
+
 	name                 string
 	file                 string
 	interval             time.Duration
@@ -244,6 +255,7 @@ type Group struct {
 
 	metrics *Metrics
 }
+
 
 type GroupOptions struct {
 	Name, File    string
@@ -297,11 +309,15 @@ func (g *Group) Rules() []Rule { return g.rules }
 // Interval returns the group's interval.
 func (g *Group) Interval() time.Duration { return g.interval }
 
+
+
 func (g *Group) run(ctx context.Context) {
 	defer close(g.terminated)
 
+
 	// Wait an initial amount to have consistently slotted intervals.
 	evalTimestamp := g.evalTimestamp().Add(g.interval)
+
 	select {
 	case <-time.After(time.Until(evalTimestamp)):
 	case <-g.done:
@@ -310,9 +326,9 @@ func (g *Group) run(ctx context.Context) {
 
 	ctx = promql.NewOriginContext(ctx, map[string]interface{}{
 		"ruleGroup": map[string]string{
-			"file": g.File(),
-			"name": g.Name(),
-		},
+						"file": g.File(),
+						"name": g.Name(),
+					 },
 	})
 
 	iter := func() {
@@ -555,12 +571,20 @@ func (g *Group) CopyState(from *Group) {
 
 // Eval runs a single evaluation cycle in which all rules are evaluated sequentially.
 func (g *Group) Eval(ctx context.Context, ts time.Time) {
+
+
+
+
 	for i, rule := range g.rules {
+
 		select {
 		case <-g.done:
 			return
 		default:
 		}
+
+
+
 
 		func(i int, rule Rule) {
 			sp, ctx := opentracing.StartSpanFromContext(ctx, "rule")
@@ -899,11 +923,14 @@ func (m *Manager) Stop() {
 	level.Info(m.logger).Log("msg", "Rule manager stopped")
 }
 
-// Update the rule manager's state as the config requires. If
-// loading the new rules failed the old rule set is restored.
+// Update the rule manager's state as the config requires.
+// If loading the new rules failed the old rule set is restored.
 func (m *Manager) Update(interval time.Duration, files []string, externalLabels labels.Labels) error {
+
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
+
+
 
 	groups, errs := m.LoadGroups(interval, externalLabels, files...)
 	if errs != nil {
@@ -912,17 +939,22 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 		}
 		return errors.New("error loading rules, previous rule set restored")
 	}
+
+
 	m.restored = true
 
 	var wg sync.WaitGroup
 	for _, newg := range groups {
+
 		// If there is an old group with the same identifier,
 		// check if new group equals with the old group, if yes then skip it.
 		// If not equals, stop it and wait for it to finish the current iteration.
 		// Then copy it into the new group.
+
 		gn := groupKey(newg.file, newg.name)
 		oldg, ok := m.groups[gn]
 		delete(m.groups, gn)
+
 
 		if ok && oldg.Equals(newg) {
 			groups[gn] = oldg
@@ -971,11 +1003,24 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 
 // LoadGroups reads groups from a list of files.
 func (m *Manager) LoadGroups(
-	interval time.Duration, externalLabels labels.Labels, filenames ...string,
-) (map[string]*Group, []error) {
+	interval time.Duration,
+	externalLabels labels.Labels,
+	filenames ...string,
+) (
+	map[string]*Group,
+	[]error,
+) {
+
+
+
+
+
 	groups := make(map[string]*Group)
 
 	shouldRestore := !m.restored
+
+
+
 
 	for _, fn := range filenames {
 		rgs, errs := rulefmt.ParseFile(fn)

@@ -55,8 +55,8 @@ const (
 )
 
 var (
-	// DefaultEvaluationInterval is the default evaluation interval of
-	// a subquery in milliseconds.
+	// DefaultEvaluationInterval is the default evaluation interval of a subquery in milliseconds.
+	// DefaultEvaluationInterval 是子查询的默认计算间隔（毫秒）。
 	DefaultEvaluationInterval int64
 )
 
@@ -69,6 +69,7 @@ func SetDefaultEvaluationInterval(ev time.Duration) {
 func GetDefaultEvaluationInterval() int64 {
 	return atomic.LoadInt64(&DefaultEvaluationInterval)
 }
+
 
 type engineMetrics struct {
 	currentQueries       prometheus.Gauge
@@ -89,12 +90,14 @@ func convertibleToInt64(v float64) bool {
 type (
 	// ErrQueryTimeout is returned if a query timed out during processing.
 	ErrQueryTimeout string
+
 	// ErrQueryCanceled is returned if a query was canceled during processing.
 	ErrQueryCanceled string
+
 	// ErrTooManySamples is returned if a query would load more than the maximum allowed samples into memory.
 	ErrTooManySamples string
-	// ErrStorage is returned if an error was encountered in the storage layer
-	// during query handling.
+
+	// ErrStorage is returned if an error was encountered in the storage layer during query handling.
 	ErrStorage struct{ Err error }
 )
 
@@ -118,41 +121,67 @@ type QueryLogger interface {
 	Close() error
 }
 
-// A Query is derived from an a raw query string and can be run against an engine
-// it is associated with.
+
+
+
+// PromQL 本质就是实现下面的 interface ，执行一个query，返回结果，支持取消、关闭和获取解析后表达式以及执行统计信息。
+
+
+// A Query is derived from an a raw query string and can be run against an engine it is associated with.
 type Query interface {
+
 	// Exec processes the query. Can only be called once.
+	// 执行
 	Exec(ctx context.Context) *Result
+
 	// Close recovers memory used by the query result.
+	// 关闭
 	Close()
+
 	// Statement returns the parsed statement of the query.
+	// 表达式
 	Statement() parser.Statement
+
 	// Stats returns statistics about the lifetime of the query.
+	// 统计信息
 	Stats() *stats.QueryTimers
+
 	// Cancel signals that a running query execution should be aborted.
+	// 取消
 	Cancel()
 }
 
 // query implements the Query interface.
 type query struct {
+
 	// Underlying data provider.
+	// 底层数据提供者
 	queryable storage.Queryable
+
 	// The original query string.
+	// 原始查询语句
 	q string
+
 	// Statement of the parsed query.
+	// 原始查询语句的表达式
 	stmt parser.Statement
+
 	// Timer stats for the query execution.
+	// 执行时间的统计
 	stats *stats.QueryTimers
+
 	// Result matrix for reuse.
+	// 结果矩阵
 	matrix Matrix
+
 	// Cancellation function for the query.
+	// 取消函数
 	cancel func()
 
 	// The engine against which the query is executed.
+	//
 	ng *Engine
 }
-
-type queryOrigin struct{}
 
 // Statement implements the Query interface.
 func (q *query) Statement() parser.Statement {
@@ -180,15 +209,25 @@ func (q *query) Close() {
 
 // Exec implements the Query interface.
 func (q *query) Exec(ctx context.Context) *Result {
+
+	// 从 ctx 中取出 span，设置 tag
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span.SetTag(queryTag, q.stmt.String())
 	}
 
-	// Exec query.
+	// 执行查询
 	res, warnings, err := q.ng.exec(ctx, q)
 
-	return &Result{Err: err, Value: res, Warnings: warnings}
+	// 返回结果
+	return &Result{
+		Err: err,
+		Value: res,
+		Warnings: warnings,
+	}
 }
+
+
+type queryOrigin struct{}
 
 // contextDone returns an error if the context was canceled or timed out.
 func contextDone(ctx context.Context, env string) error {
@@ -222,6 +261,8 @@ type EngineOpts struct {
 }
 
 // Engine handles the lifetime of queries from beginning to end.
+// Engine 处理查询的整个生命周期。
+//
 // It is connected to a querier.
 type Engine struct {
 	logger             log.Logger
@@ -236,6 +277,7 @@ type Engine struct {
 
 // NewEngine returns a new engine.
 func NewEngine(opts EngineOpts) *Engine {
+
 	if opts.Logger == nil {
 		opts.Logger = log.NewNopLogger()
 	}
@@ -299,11 +341,13 @@ func NewEngine(opts EngineOpts) *Engine {
 		}),
 	}
 
+
 	if t := opts.ActiveQueryTracker; t != nil {
 		metrics.maxConcurrentQueries.Set(float64(t.GetMaxConcurrent()))
 	} else {
 		metrics.maxConcurrentQueries.Set(-1)
 	}
+
 
 	if opts.LookbackDelta == 0 {
 		opts.LookbackDelta = defaultLookbackDelta
@@ -311,6 +355,7 @@ func NewEngine(opts EngineOpts) *Engine {
 			level.Debug(l).Log("msg", "Lookback delta is zero, setting to default value", "value", defaultLookbackDelta)
 		}
 	}
+
 
 	if opts.Reg != nil {
 		opts.Reg.MustRegister(
@@ -337,12 +382,14 @@ func NewEngine(opts EngineOpts) *Engine {
 
 // SetQueryLogger sets the query logger.
 func (ng *Engine) SetQueryLogger(l QueryLogger) {
+
 	ng.queryLoggerLock.Lock()
 	defer ng.queryLoggerLock.Unlock()
 
+
 	if ng.queryLogger != nil {
-		// An error closing the old file descriptor should
-		// not make reload fail; only log a warning.
+
+		// An error closing the old file descriptor should not make reload fail; only log a warning.
 		err := ng.queryLogger.Close()
 		if err != nil {
 			level.Warn(ng.logger).Log("msg", "Error while closing the previous query log file", "err", err)
@@ -358,41 +405,54 @@ func (ng *Engine) SetQueryLogger(l QueryLogger) {
 	}
 }
 
+
+
 // NewInstantQuery returns an evaluation query for the given expression at the given time.
 func (ng *Engine) NewInstantQuery(q storage.Queryable, qs string, ts time.Time) (Query, error) {
+
 	expr, err := parser.ParseExpr(qs)
 	if err != nil {
 		return nil, err
 	}
+
+	//
 	qry := ng.newQuery(q, expr, ts, ts, 0)
 	qry.q = qs
 
 	return qry, nil
 }
 
-// NewRangeQuery returns an evaluation query for the given time range and with
-// the resolution set by the interval.
+// NewRangeQuery returns an evaluation query for the given time range and with the resolution set by the interval.
 func (ng *Engine) NewRangeQuery(q storage.Queryable, qs string, start, end time.Time, interval time.Duration) (Query, error) {
+
+
 	expr, err := parser.ParseExpr(qs)
 	if err != nil {
 		return nil, err
 	}
+
+
 	if expr.Type() != parser.ValueTypeVector && expr.Type() != parser.ValueTypeScalar {
 		return nil, errors.Errorf("invalid expression type %q for range query, must be Scalar or instant Vector", parser.DocumentedType(expr.Type()))
 	}
+
+
 	qry := ng.newQuery(q, expr, start, end, interval)
 	qry.q = qs
+
 
 	return qry, nil
 }
 
 func (ng *Engine) newQuery(q storage.Queryable, expr parser.Expr, start, end time.Time, interval time.Duration) *query {
+
 	es := &parser.EvalStmt{
-		Expr:     expr,
-		Start:    start,
-		End:      end,
-		Interval: interval,
+		Expr:     expr,		// 表达式
+		Start:    start,	// 开始时间
+		End:      end,		// 结束时间
+		Interval: interval,	// 时间间隔
 	}
+
 	qry := &query{
 		stmt:      es,
 		ng:        ng,
@@ -414,9 +474,13 @@ func (ng *Engine) newTestQuery(f func(context.Context) error) Query {
 
 // exec executes the query.
 //
-// At this point per query only one EvalStmt is evaluated. Alert and record
-// statements are not handled by the Engine.
+// At this point per query only one EvalStmt is evaluated.
+// Alert and record statements are not handled by the Engine.
+//
+//
+//
 func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage.Warnings, err error) {
+
 	ng.metrics.currentQueries.Inc()
 	defer ng.metrics.currentQueries.Dec()
 
@@ -425,40 +489,53 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 
 	defer func() {
 		ng.queryLoggerLock.RLock()
+
 		if l := ng.queryLogger; l != nil {
+
+
 			params := make(map[string]interface{}, 4)
 			params["query"] = q.q
 			if eq, ok := q.Statement().(*parser.EvalStmt); ok {
 				params["start"] = formatDate(eq.Start)
 				params["end"] = formatDate(eq.End)
-				// The step provided by the user is in seconds.
-				params["step"] = int64(eq.Interval / (time.Second / time.Nanosecond))
+				params["step"] = int64(eq.Interval / (time.Second / time.Nanosecond)) // The step provided by the user is in seconds.
 			}
+
+
 			f := []interface{}{"params", params}
 			if err != nil {
 				f = append(f, "error", err)
 			}
+
 			f = append(f, "stats", stats.NewQueryStats(q.Stats()))
 			if origin := ctx.Value(queryOrigin{}); origin != nil {
 				for k, v := range origin.(map[string]interface{}) {
 					f = append(f, k, v)
 				}
 			}
+
 			if err := l.Log(f...); err != nil {
 				ng.metrics.queryLogFailures.Inc()
 				level.Error(ng.logger).Log("msg", "can't log query", "err", err)
 			}
+
 		}
+
+
 		ng.queryLoggerLock.RUnlock()
 	}()
+
 
 	execSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.ExecTotalTime)
 	defer execSpanTimer.Finish()
 
+
 	queueSpanTimer, _ := q.stats.GetSpanTimer(ctx, stats.ExecQueueTime, ng.metrics.queryQueueTime)
-	// Log query in active log. The active log guarantees that we don't run over
-	// MaxConcurrent queries.
+
+
+	// Log query in active log. The active log guarantees that we don't run over MaxConcurrent queries.
 	if ng.activeQueryTracker != nil {
+
 		queryIndex, err := ng.activeQueryTracker.Insert(ctx, q.q)
 		if err != nil {
 			queueSpanTimer.Finish()
@@ -471,10 +548,14 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 	// Cancel when execution is done or an error was raised.
 	defer q.cancel()
 
+
+
 	const env = "query execution"
 
 	evalSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.EvalTotalTime)
 	defer evalSpanTimer.Finish()
+
+
 
 	// The base context might already be canceled on the first iteration (e.g. during shutdown).
 	if err := contextDone(ctx, env); err != nil {
@@ -503,12 +584,15 @@ func durationMilliseconds(d time.Duration) int64 {
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, storage.Warnings, error) {
 	prepareSpanTimer, ctxPrepare := query.stats.GetSpanTimer(ctx, stats.QueryPreparationTime, ng.metrics.queryPrepareTime)
 	mint := ng.findMinTime(s)
+
+
 	querier, err := query.queryable.Querier(ctxPrepare, timestamp.FromTime(mint), timestamp.FromTime(s.End))
 	if err != nil {
 		prepareSpanTimer.Finish()
 		return nil, nil, err
 	}
 	defer querier.Close()
+
 
 	warnings, err := ng.populateSeries(ctxPrepare, querier, s)
 	prepareSpanTimer.Finish()
@@ -1416,9 +1500,13 @@ func putPointSlice(p []Point) {
 	pointPool.Put(p[:0])
 }
 
+
 // matrixSelector evaluates a *parser.MatrixSelector expression.
 func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
+
+
 	checkForSeriesSetExpansion(ev.ctx, node)
+
 
 	vs := node.VectorSelector.(*parser.VectorSelector)
 
@@ -1428,6 +1516,7 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 		mint   = maxt - durationMilliseconds(node.Range)
 		matrix = make(Matrix, 0, len(vs.Series))
 	)
+
 
 	it := storage.NewBuffer(durationMilliseconds(node.Range))
 	series := vs.Series

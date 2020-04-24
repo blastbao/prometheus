@@ -40,29 +40,42 @@ import (
 )
 
 const (
+
 	// AlertMetricName is the metric name for synthetic alert timeseries.
 	alertMetricName = "ALERTS"
+
 	// AlertForStateMetricName is the metric name for 'for' state of alert.
 	alertForStateMetricName = "ALERTS_FOR_STATE"
 
 	// AlertNameLabel is the label name indicating the name of an alert.
 	alertNameLabel = "alertname"
+
 	// AlertStateLabel is the label name indicating the state of an alert.
 	alertStateLabel = "alertstate"
+
 )
 
 // AlertState denotes the state of an active alert.
 type AlertState int
 
+
+
+// 告警状态：
+// 	Inactive：这里什么都没有发生。
+// 	Pending：已触发阈值，但未满足告警持续时间（即rule中的for字段）。
+// 	Firing：已触发阈值且满足告警持续时间。
+
 const (
+
 	// StateInactive is the state of an alert that is neither firing nor pending.
 	StateInactive AlertState = iota
-	// StatePending is the state of an alert that has been active for less than
-	// the configured threshold duration.
+
+	// StatePending is the state of an alert that has been active for less than the configured threshold duration.
 	StatePending
-	// StateFiring is the state of an alert that has been active for longer than
-	// the configured threshold duration.
+
+	// StateFiring is the state of an alert that has been active for longer than the configured threshold duration.
 	StateFiring
+
 )
 
 func (s AlertState) String() string {
@@ -77,15 +90,25 @@ func (s AlertState) String() string {
 	panic(errors.Errorf("unknown alert state: %s", s.String()))
 }
 
+
+
 // Alert is the user-level representation of a single instance of an alerting rule.
+// Alert 是一条警报规则的用户层面表示。
 type Alert struct {
+
+	// 状态
 	State AlertState
 
+	// 标签，会被添加到告警中
 	Labels      labels.Labels
+
+	// 注解，告警的补充和描述
 	Annotations labels.Labels
 
 	// The value at the last evaluation of the alerting expression.
+	// 告警表达式最后一次求值时的值。
 	Value float64
+
 	// The interval during which the condition of this alert held true.
 	// ResolvedAt will be 0 to indicate a still active alert.
 	ActiveAt   time.Time
@@ -95,64 +118,92 @@ type Alert struct {
 	ValidUntil time.Time
 }
 
+// 是否需要发送
 func (a *Alert) needsSending(ts time.Time, resendDelay time.Duration) bool {
+
+	// 已触发阈值，但未满足告警持续时间，返回 false 。
 	if a.State == StatePending {
 		return false
 	}
 
-	// if an alert has been resolved since the last send, resend it
+	// if an alert has been resolved since the last send, resend it.
 	if a.ResolvedAt.After(a.LastSentAt) {
 		return true
 	}
 
+
 	return a.LastSentAt.Add(resendDelay).Before(ts)
 }
 
+
+
 // An AlertingRule generates alerts from its vector expression.
 type AlertingRule struct {
+
 	// The name of the alert.
 	name string
+
 	// The vector expression from which to generate alerts.
 	vector parser.Expr
+
 	// The duration for which a labelset needs to persist in the expression
 	// output vector before an alert transitions from Pending to Firing state.
 	holdDuration time.Duration
+
 	// Extra labels to attach to the resulting alert sample vectors.
 	labels labels.Labels
+
 	// Non-identifying key/value pairs.
 	annotations labels.Labels
+
 	// External labels from the global config.
 	externalLabels map[string]string
-	// true if old state has been restored. We start persisting samples for ALERT_FOR_STATE
-	// only after the restoration.
+
+	// true if old state has been restored. We start persisting samples for ALERT_FOR_STATE only after the restoration.
 	restored bool
+
 	// Protects the below.
 	mtx sync.Mutex
+
 	// Time in seconds taken to evaluate rule.
 	evaluationDuration time.Duration
+
 	// Timestamp of last evaluation of rule.
 	evaluationTimestamp time.Time
+
 	// The health of the alerting rule.
 	health RuleHealth
+
 	// The last error seen by the alerting rule.
 	lastError error
-	// A map of alerts which are currently active (Pending or Firing), keyed by
-	// the fingerprint of the labelset they correspond to.
+
+
+	// A map of alerts which are currently active (Pending or Firing), keyed by the fingerprint of the labelset they correspond to.
 	active map[uint64]*Alert
+
 
 	logger log.Logger
 }
 
 // NewAlertingRule constructs a new AlertingRule.
 func NewAlertingRule(
-	name string, vec parser.Expr, hold time.Duration,
-	labels, annotations, externalLabels labels.Labels,
-	restored bool, logger log.Logger,
+
+	name string,
+	vec parser.Expr,
+	hold time.Duration,
+	labels,
+	annotations,
+	externalLabels labels.Labels,
+	restored bool,
+	logger log.Logger,
+
 ) *AlertingRule {
+
 	el := make(map[string]string, len(externalLabels))
 	for _, lbl := range externalLabels {
 		el[lbl.Name] = lbl.Value
 	}
+
 
 	return &AlertingRule{
 		name:           name,
@@ -167,6 +218,7 @@ func NewAlertingRule(
 		restored:       restored,
 	}
 }
+
 
 // Name returns the name of the alerting rule.
 func (r *AlertingRule) Name() string {
@@ -221,6 +273,7 @@ func (r *AlertingRule) Annotations() labels.Labels {
 	return r.annotations
 }
 
+
 func (r *AlertingRule) sample(alert *Alert, ts time.Time) promql.Sample {
 	lb := labels.NewBuilder(r.labels)
 
@@ -238,6 +291,7 @@ func (r *AlertingRule) sample(alert *Alert, ts time.Time) promql.Sample {
 	}
 	return s
 }
+
 
 // forStateSample returns the sample for ALERTS_FOR_STATE.
 func (r *AlertingRule) forStateSample(alert *Alert, ts time.Time, v float64) promql.Sample {
@@ -257,12 +311,15 @@ func (r *AlertingRule) forStateSample(alert *Alert, ts time.Time, v float64) pro
 	return s
 }
 
+
+
 // SetEvaluationDuration updates evaluationDuration to the duration it took to evaluate the rule on its last evaluation.
 func (r *AlertingRule) SetEvaluationDuration(dur time.Duration) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	r.evaluationDuration = dur
 }
+
 
 // GetEvaluationDuration returns the time in seconds it took to evaluate the alerting rule.
 func (r *AlertingRule) GetEvaluationDuration() time.Duration {
@@ -271,12 +328,14 @@ func (r *AlertingRule) GetEvaluationDuration() time.Duration {
 	return r.evaluationDuration
 }
 
+
 // SetEvaluationTimestamp updates evaluationTimestamp to the timestamp of when the rule was last evaluated.
 func (r *AlertingRule) SetEvaluationTimestamp(ts time.Time) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 	r.evaluationTimestamp = ts
 }
+
 
 // GetEvaluationTimestamp returns the time the evaluation took place.
 func (r *AlertingRule) GetEvaluationTimestamp() time.Time {
@@ -290,13 +349,19 @@ func (r *AlertingRule) SetRestored(restored bool) {
 	r.restored = restored
 }
 
+
+
 // resolvedRetention is the duration for which a resolved alert instance
 // is kept in memory state and consequently repeatedly sent to the AlertManager.
 const resolvedRetention = 15 * time.Minute
 
-// Eval evaluates the rule expression and then creates pending alerts and fires
-// or removes previously pending alerts accordingly.
+
+// Eval evaluates the rule expression and then creates pending alerts and fires or removes previously pending alerts accordingly.
 func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, externalURL *url.URL) (promql.Vector, error) {
+
+
+
+
 	res, err := query(ctx, r.vector.String(), ts)
 	if err != nil {
 		r.SetHealth(HealthBad)
@@ -304,16 +369,17 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 		return nil, err
 	}
 
+
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	// Create pending alerts for any new vector elements in the alert expression
-	// or update the expression value for existing elements.
+	// Create pending alerts for any new vector elements in the alert expression or update the expression value for existing elements.
 	resultFPs := map[uint64]struct{}{}
 
 	var vec promql.Vector
 	var alerts = make(map[uint64]*Alert, len(res))
 	for _, smpl := range res {
+
 		// Provide the alert information to the template.
 		l := make(map[string]string, len(smpl.Metric))
 		for _, lbl := range smpl.Metric {
@@ -321,8 +387,9 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 		}
 
 		tmplData := template.AlertTemplateData(l, r.externalLabels, smpl.V)
-		// Inject some convenience variables that are easier to remember for users
-		// who are not used to Go's templating system.
+
+
+		// Inject some convenience variables that are easier to remember for users who are not used to Go's templating system.
 		defs := []string{
 			"{{$labels := .Labels}}",
 			"{{$externalLabels := .ExternalLabels}}",
@@ -452,8 +519,8 @@ func (r *AlertingRule) ActiveAlerts() []*Alert {
 	return res
 }
 
-// currentAlerts returns all instances of alerts for this rule. This may include
-// inactive alerts that were previously firing.
+// currentAlerts returns all instances of alerts for this rule.
+// This may include inactive alerts that were previously firing.
 func (r *AlertingRule) currentAlerts() []*Alert {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()

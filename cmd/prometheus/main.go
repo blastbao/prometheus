@@ -385,9 +385,14 @@ func main() {
 
 		// 规则管理器
 		ruleManager = rules.NewManager(&rules.ManagerOptions{
+
 			Appendable:      fanoutStorage,
+
 			TSDB:            localStorage,
+
+			//
 			QueryFunc:       rules.EngineQueryFunc(queryEngine, fanoutStorage),
+			// 若触发告警规则,则通过sendAlerts发送告警信息
 			NotifyFunc:      sendAlerts(notifierManager, cfg.web.ExternalURL.String()),
 			Context:         ctxRule,
 			ExternalURL:     cfg.web.ExternalURL,
@@ -902,8 +907,9 @@ type sender interface {
 // sendAlerts implements the rules.NotifyFunc for a Notifier.
 func sendAlerts(s sender, externalURL string) rules.NotifyFunc {
 	return func(ctx context.Context, expr string, alerts ...*rules.Alert) {
+		// 把告警信息由 []*rules.Alert 转换成 []*notifier.Alert 类型。
 		var res []*notifier.Alert
-
+		// 遍历告警信息
 		for _, alert := range alerts {
 			a := &notifier.Alert{
 				StartsAt:     alert.FiredAt,
@@ -911,14 +917,17 @@ func sendAlerts(s sender, externalURL string) rules.NotifyFunc {
 				Annotations:  alert.Annotations,
 				GeneratorURL: externalURL + strutil.TableLinkForExpression(expr),
 			}
+
+			// 若告警结束，设置告警结束时间为 ResolverdAt 时间
 			if !alert.ResolvedAt.IsZero() {
 				a.EndsAt = alert.ResolvedAt
+			// 若告警还是 active 状态，设置告警结束时间为当前时间
 			} else {
 				a.EndsAt = alert.ValidUntil
 			}
 			res = append(res, a)
 		}
-
+		// 若告警信息大于 0 ，发送告警。
 		if len(alerts) > 0 {
 			s.Send(res...)
 		}
