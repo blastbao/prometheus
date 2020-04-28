@@ -127,6 +127,8 @@ func (a *Alert) needsSending(ts time.Time, resendDelay time.Duration) bool {
 	}
 
 	// if an alert has been resolved since the last send, resend it.
+	//
+	//
 	if a.ResolvedAt.After(a.LastSentAt) {
 		return true
 	}
@@ -141,44 +143,70 @@ func (a *Alert) needsSending(ts time.Time, resendDelay time.Duration) bool {
 type AlertingRule struct {
 
 	// The name of the alert.
+	// 告警名
 	name string
 
 	// The vector expression from which to generate alerts.
+	// 告警表达式
 	vector parser.Expr
 
 	// The duration for which a labelset needs to persist in the expression
 	// output vector before an alert transitions from Pending to Firing state.
+	//
+	// alert 从 “Pending” 转换为 “Firing” 状态前需要持续的时间。
 	holdDuration time.Duration
 
 	// Extra labels to attach to the resulting alert sample vectors.
+	//
+	// 需要附加到结果集上的标签。
 	labels labels.Labels
 
+
 	// Non-identifying key/value pairs.
+	//
+	// 告警注解
 	annotations labels.Labels
 
 	// External labels from the global config.
+	//
+	// 全局标签
 	externalLabels map[string]string
 
+
 	// true if old state has been restored. We start persisting samples for ALERT_FOR_STATE only after the restoration.
+	//
+	// ???
 	restored bool
 
 	// Protects the below.
 	mtx sync.Mutex
 
 	// Time in seconds taken to evaluate rule.
+	//
+	// 计算规则所用的时间（秒）。
 	evaluationDuration time.Duration
 
 	// Timestamp of last evaluation of rule.
+	//
+	// 最近一次计算规则的时间戳。
 	evaluationTimestamp time.Time
 
+
 	// The health of the alerting rule.
+	//
+	// 警报规则的运行状况。
 	health RuleHealth
 
+
 	// The last error seen by the alerting rule.
+	//
+	// 警报规则看到的最后一个错误。
 	lastError error
 
 
 	// A map of alerts which are currently active (Pending or Firing), keyed by the fingerprint of the labelset they correspond to.
+	//
+	// 当前处于活动状态（Pending or Firing）的警报。
 	active map[uint64]*Alert
 
 
@@ -199,11 +227,13 @@ func NewAlertingRule(
 
 ) *AlertingRule {
 
+
+
+	// 把 externalLabels 从 slice 转换成 map 。
 	el := make(map[string]string, len(externalLabels))
 	for _, lbl := range externalLabels {
 		el[lbl.Name] = lbl.Value
 	}
-
 
 	return &AlertingRule{
 		name:           name,
@@ -274,21 +304,33 @@ func (r *AlertingRule) Annotations() labels.Labels {
 }
 
 
+
 func (r *AlertingRule) sample(alert *Alert, ts time.Time) promql.Sample {
+
+	// r.labels 是 labels.Labels 类型，也即 []labels.Label 类型，所支持的操作比较有限。
+	// 这里把 r.labels 从 labels.Labels 封装成 labels.Builder，以支持更高级的操作，如 Set/Del 操作，如同操作 map 一样简单。
+
 	lb := labels.NewBuilder(r.labels)
 
+	// 把 alert.Labels 添加到 r.labels 中，若冲突则覆盖。
 	for _, l := range alert.Labels {
 		lb.Set(l.Name, l.Value)
 	}
 
-	lb.Set(labels.MetricName, alertMetricName)
-	lb.Set(labels.AlertName, r.name)
-	lb.Set(alertStateLabel, alert.State.String())
+	// 添加额外标签
+	lb.Set(labels.MetricName, alertMetricName)		// 指标名："__name__"
+	lb.Set(labels.AlertName, r.name)				// 告警名："alertname"
+	lb.Set(alertStateLabel, alert.State.String())	// 告警状态："alertstate"
 
+	//
 	s := promql.Sample{
 		Metric: lb.Labels(),
-		Point:  promql.Point{T: timestamp.FromTime(ts), V: 1},
+		Point:  promql.Point{
+					T: timestamp.FromTime(ts),	// 时间戳（毫秒）
+					V: 1,						//
+				},
 	}
+
 	return s
 }
 
@@ -361,14 +403,13 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 
 
 
-
+	// 执行查询，获取 vector 类型返回结果
 	res, err := query(ctx, r.vector.String(), ts)
 	if err != nil {
 		r.SetHealth(HealthBad)
 		r.SetLastError(err)
 		return nil, err
 	}
-
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -378,6 +419,9 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 
 	var vec promql.Vector
 	var alerts = make(map[uint64]*Alert, len(res))
+
+
+	//
 	for _, smpl := range res {
 
 		// Provide the alert information to the template.
@@ -386,8 +430,8 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 			l[lbl.Name] = lbl.Value
 		}
 
-		tmplData := template.AlertTemplateData(l, r.externalLabels, smpl.V)
 
+		tmplData := template.AlertTemplateData(l, r.externalLabels, smpl.V)
 
 		// Inject some convenience variables that are easier to remember for users who are not used to Go's templating system.
 		defs := []string{
@@ -464,15 +508,18 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 	// Check if any pending alerts should be removed or fire now. Write out alert timeseries.
 	for fp, a := range r.active {
 		if _, ok := resultFPs[fp]; !ok {
-			// If the alert was previously firing, keep it around for a given
-			// retention time so it is reported as resolved to the AlertManager.
+
+			// If the alert was previously firing,
+			// keep it around for a given retention time so it is reported as resolved to the AlertManager.
 			if a.State == StatePending || (!a.ResolvedAt.IsZero() && ts.Sub(a.ResolvedAt) > resolvedRetention) {
 				delete(r.active, fp)
 			}
+
 			if a.State != StateInactive {
 				a.State = StateInactive
 				a.ResolvedAt = ts
 			}
+
 			continue
 		}
 
@@ -487,8 +534,7 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 		}
 	}
 
-	// We have already acquired the lock above hence using SetHealth and
-	// SetLastError will deadlock.
+	// We have already acquired the lock above hence using SetHealth and SetLastError will deadlock.
 	r.health = HealthGood
 	r.lastError = err
 	return vec, nil
@@ -550,8 +596,11 @@ func (r *AlertingRule) ForEachActiveAlert(f func(*Alert)) {
 func (r *AlertingRule) sendAlerts(ctx context.Context, ts time.Time, resendDelay time.Duration, interval time.Duration, notifyFunc NotifyFunc) {
 	alerts := []*Alert{}
 	r.ForEachActiveAlert(func(alert *Alert) {
+
 		if alert.needsSending(ts, resendDelay) {
+
 			alert.LastSentAt = ts
+
 			// Allow for a couple Eval or Alertmanager send failures
 			delta := resendDelay
 			if interval > resendDelay {
@@ -561,6 +610,7 @@ func (r *AlertingRule) sendAlerts(ctx context.Context, ts time.Time, resendDelay
 			anew := *alert
 			alerts = append(alerts, &anew)
 		}
+
 	})
 	notifyFunc(ctx, r.vector.String(), alerts...)
 }

@@ -171,25 +171,31 @@ func EngineQueryFunc(engine *promql.Engine, q storage.Queryable) QueryFunc {
 
 	return func(ctx context.Context, qs string, t time.Time) (promql.Vector, error) {
 
-
+		// 构造查询器
 		q, err := engine.NewInstantQuery(q, qs, t)
 		if err != nil {
 			return nil, err
 		}
 
+		// 执行查询
 		res := q.Exec(ctx)
 		if res.Err != nil {
 			return nil, res.Err
 		}
 
+		// 查询结果处理
 		switch v := res.Value.(type) {
+		// return vector directly.
 		case promql.Vector:
 			return v, nil
+		// convert from	scalar to vector.
 		case promql.Scalar:
-			return promql.Vector{promql.Sample{
-				Point:  promql.Point(v),
-				Metric: labels.Labels{},
-			}}, nil
+			return promql.Vector{
+				promql.Sample{
+					Point:  promql.Point(v),
+					Metric: labels.Labels{},
+				},
+			}, nil
 		default:
 			return nil, errors.New("rule result is not a vector or scalar")
 		}
@@ -204,6 +210,7 @@ type Rule interface {
 	// Labels of the rule.
 	Labels() labels.Labels
 	// eval evaluates the rule, including any associated recording or alerting actions.
+	// eval评估规则，包括任何相关的记录或警报操作。
 	Eval(context.Context, time.Time, QueryFunc, *url.URL) (promql.Vector, error)
 	// String returns a human-readable string representation of the rule.
 	String() string
@@ -215,14 +222,18 @@ type Rule interface {
 	SetHealth(RuleHealth)
 	// Health returns the current health of the rule.
 	Health() RuleHealth
+
 	SetEvaluationDuration(time.Duration)
+
 	// GetEvaluationDuration returns last evaluation duration.
 	// NOTE: Used dynamically by rules.html template.
 	GetEvaluationDuration() time.Duration
 	SetEvaluationTimestamp(time.Time)
+
 	// GetEvaluationTimestamp returns last evaluation timestamp.
 	// NOTE: Used dynamically by rules.html template.
 	GetEvaluationTimestamp() time.Time
+
 	// HTMLSnippet returns a human-readable string representation of the rule,
 	// decorated with HTML elements for use the web frontend.
 	HTMLSnippet(pathPrefix string) html_template.HTML
@@ -268,7 +279,9 @@ type GroupOptions struct {
 
 // NewGroup makes a new Group with the given name, options, and rules.
 func NewGroup(o GroupOptions) *Group {
+
 	metrics := o.Opts.Metrics
+
 	if metrics == nil {
 		metrics = NewGroupMetrics(o.Opts.Registerer)
 	}
@@ -311,16 +324,20 @@ func (g *Group) Interval() time.Duration { return g.interval }
 
 
 func (g *Group) run(ctx context.Context) {
+
+
 	defer close(g.terminated)
 
 	// Wait an initial amount to have consistently slotted intervals.
 	evalTimestamp := g.evalTimestamp().Add(g.interval)
+
 
 	select {
 	case <-time.After(time.Until(evalTimestamp)):
 	case <-g.done:
 		return
 	}
+
 
 	ctx = promql.NewOriginContext(ctx, map[string]interface{}{
 		"ruleGroup": map[string]string{
@@ -357,11 +374,13 @@ func (g *Group) run(ctx context.Context) {
 					g.staleSeries = append(g.staleSeries, r)
 				}
 			}
+
 			// That can be garbage collected at this point.
 			g.seriesInPreviousEval = nil
-			// Wait for 2 intervals to give the opportunity to renamed rules
-			// to insert new series in the tsdb. At this point if there is a
-			// renamed rule, it should already be started.
+
+			// Wait for 2 intervals to give the opportunity to renamed rules to insert new series in the tsdb.
+			// At this point if there is a renamed rule, it should already be started.
+
 			select {
 			case <-g.managerDone:
 			case <-time.After(2 * g.interval):
@@ -515,11 +534,15 @@ func nameAndLabels(rule Rule) string {
 	return rule.Name() + rule.Labels().String()
 }
 
+
 // CopyState copies the alerting rule and staleness related state from the given group.
 //
-// Rules are matched based on their name and labels. If there are duplicates, the
-// first is matched with the first, second with the second etc.
+// Rules are matched based on their name and labels.
+//
+// If there are duplicates, the first is matched with the first, second with the second etc.
 func (g *Group) CopyState(from *Group) {
+
+
 	g.evaluationDuration = from.evaluationDuration
 
 	ruleMap := make(map[string][]int, len(from.rules))
@@ -530,24 +553,35 @@ func (g *Group) CopyState(from *Group) {
 		ruleMap[nameAndLabels] = append(l, fi)
 	}
 
+
 	for i, rule := range g.rules {
+
+
 		nameAndLabels := nameAndLabels(rule)
 		indexes := ruleMap[nameAndLabels]
+
 		if len(indexes) == 0 {
 			continue
 		}
+
+
 		fi := indexes[0]
 		g.seriesInPreviousEval[i] = from.seriesInPreviousEval[fi]
 		ruleMap[nameAndLabels] = indexes[1:]
+
+
 
 		ar, ok := rule.(*AlertingRule)
 		if !ok {
 			continue
 		}
+
+
 		far, ok := from.rules[fi].(*AlertingRule)
 		if !ok {
 			continue
 		}
+
 
 		for fp, a := range far.active {
 			ar.active[fp] = a
@@ -557,12 +591,20 @@ func (g *Group) CopyState(from *Group) {
 	// Handle deleted and unmatched duplicate rules.
 	g.staleSeries = from.staleSeries
 	for fi, fromRule := range from.rules {
+
+
 		nameAndLabels := nameAndLabels(fromRule)
+
 		l := ruleMap[nameAndLabels]
+
 		if len(l) != 0 {
+
 			for _, series := range from.seriesInPreviousEval[fi] {
+
 				g.staleSeries = append(g.staleSeries, series)
+
 			}
+
 		}
 	}
 }
@@ -575,33 +617,44 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 
 	for i, rule := range g.rules {
 
+
+
 		select {
 		case <-g.done:
 			return
 		default:
 		}
 
-
-
-
 		func(i int, rule Rule) {
+
 			sp, ctx := opentracing.StartSpanFromContext(ctx, "rule")
 			sp.SetTag("name", rule.Name())
+
 			defer func(t time.Time) {
 				sp.Finish()
 
 				since := time.Since(t)
+
 				g.metrics.evalDuration.Observe(since.Seconds())
+
 				rule.SetEvaluationDuration(since)
+
 				rule.SetEvaluationTimestamp(t)
+
 			}(time.Now())
 
 			g.metrics.evalTotal.WithLabelValues(groupKey(g.File(), g.Name())).Inc()
 
+
+
+
+
+
+
 			vector, err := rule.Eval(ctx, ts, g.opts.QueryFunc, g.opts.ExternalURL)
 			if err != nil {
-				// Canceled queries are intentional termination of queries. This normally
-				// happens on shutdown and thus we skip logging of any errors here.
+				// Canceled queries are intentional termination of queries.
+				// This normally happens on shutdown and thus we skip logging of any errors here.
 				if _, ok := err.(promql.ErrQueryCanceled); !ok {
 					level.Warn(g.logger).Log("msg", "Evaluating rule failed", "rule", rule, "err", err)
 				}
@@ -609,9 +662,11 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 				return
 			}
 
+
 			if ar, ok := rule.(*AlertingRule); ok {
 				ar.sendAlerts(ctx, ts, g.opts.ResendDelay, g.interval, g.opts.NotifyFunc)
 			}
+
 			var (
 				numOutOfOrder = 0
 				numDuplicates = 0
@@ -620,14 +675,22 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 			app := g.opts.Appendable.Appender()
 			seriesReturned := make(map[string]labels.Labels, len(g.seriesInPreviousEval[i]))
 			defer func() {
+
 				if err := app.Commit(); err != nil {
 					level.Warn(g.logger).Log("msg", "Rule sample appending failed", "err", err)
 					return
 				}
+
 				g.seriesInPreviousEval[i] = seriesReturned
 			}()
+
+
+
 			for _, s := range vector {
+
+
 				if _, err := app.Add(s.Metric, s.T, s.V); err != nil {
+
 					switch errors.Cause(err) {
 					case storage.ErrOutOfOrderSample:
 						numOutOfOrder++
@@ -638,26 +701,38 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 					default:
 						level.Warn(g.logger).Log("msg", "Rule evaluation result discarded", "err", err, "sample", s)
 					}
+
 				} else {
 					seriesReturned[s.Metric.String()] = s.Metric
 				}
 			}
+
+
 			if numOutOfOrder > 0 {
 				level.Warn(g.logger).Log("msg", "Error on ingesting out-of-order result from rule evaluation", "numDropped", numOutOfOrder)
 			}
+
+
 			if numDuplicates > 0 {
 				level.Warn(g.logger).Log("msg", "Error on ingesting results from rule evaluation with different value but same timestamp", "numDropped", numDuplicates)
 			}
 
+
 			for metric, lset := range g.seriesInPreviousEval[i] {
+
+
 				if _, ok := seriesReturned[metric]; !ok {
+
+
+
 					// Series no longer exposed, mark it stale.
+
 					_, err = app.Add(lset, timestamp.FromTime(ts), math.Float64frombits(value.StaleNaN))
 					switch errors.Cause(err) {
 					case nil:
 					case storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp:
-						// Do not count these in logging, as this is expected if series
-						// is exposed from a different rule.
+
+						// Do not count these in logging, as this is expected if series is exposed from a different rule.
 					default:
 						level.Warn(g.logger).Log("msg", "Adding stale sample failed", "sample", metric, "err", err)
 					}
@@ -674,13 +749,14 @@ func (g *Group) cleanupStaleSeries(ts time.Time) {
 	}
 	app := g.opts.Appendable.Appender()
 	for _, s := range g.staleSeries {
+
 		// Rule that produced series no longer configured, mark it stale.
 		_, err := app.Add(s, timestamp.FromTime(ts), math.Float64frombits(value.StaleNaN))
 		switch errors.Cause(err) {
 		case nil:
 		case storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp:
-			// Do not count these in logging, as this is expected if series
-			// is exposed from a different rule.
+
+			// Do not count these in logging, as this is expected if series is exposed from a different rule.
 		default:
 			level.Warn(g.logger).Log("msg", "Adding stale sample for previous configuration failed", "sample", s, "err", err)
 		}
@@ -692,10 +768,12 @@ func (g *Group) cleanupStaleSeries(ts time.Time) {
 	}
 }
 
-// RestoreForState restores the 'for' state of the alerts
-// by looking up last ActiveAt from storage.
+
+
+// RestoreForState restores the 'for' state of the alerts by looking up last ActiveAt from storage.
 func (g *Group) RestoreForState(ts time.Time) {
 	maxtMS := int64(model.TimeFromUnixNano(ts.UnixNano()))
+
 	// We allow restoration only if alerts were active before after certain time.
 	mint := ts.Add(-g.opts.OutageTolerance)
 	mintMS := int64(model.TimeFromUnixNano(mint.UnixNano()))
@@ -879,8 +957,7 @@ type ManagerOptions struct {
 	Metrics *Metrics
 }
 
-// NewManager returns an implementation of Manager, ready to be started
-// by calling the Run method.
+// NewManager returns an implementation of Manager, ready to be started by calling the Run method.
 func NewManager(o *ManagerOptions) *Manager {
 	if o.Metrics == nil {
 		o.Metrics = NewGroupMetrics(o.Registerer)

@@ -229,7 +229,6 @@ func do(ctx context.Context, client *http.Client, req *http.Request) (*http.Resp
 func NewManager(o *Options, logger log.Logger) *Manager {
 	ctx, cancel := context.WithCancel(context.Background())
 
-
 	// 初始化 http 请求客户端
 	if o.Do == nil {
 		o.Do = do
@@ -248,7 +247,6 @@ func NewManager(o *Options, logger log.Logger) *Manager {
 		opts:   o,										// 其他一些参数，包含告警队列总容量、label重置配置等
 		logger: logger,									// 日志
 	}
-
 
 	// 返回告警队列的当前长度
 	queueLenFunc := func() float64 { return float64(n.queueLen()) }
@@ -329,7 +327,7 @@ func (n *Manager) queueLen() int {
 	return len(n.queue)
 }
 
-// 从 n.queue 中取出 alerts ，最多取出 maxBatchSize 个。
+// 从 n.queue 中取出一批 alerts 以供发送，最多取出 maxBatchSize 个。
 func (n *Manager) nextBatch() []*Alert {
 	n.mtx.Lock()
 	defer n.mtx.Unlock()
@@ -355,7 +353,7 @@ func (n *Manager) Run(tsets <-chan map[string][]*targetgroup.Group) {
 		// 退出信号
 		case <-n.ctx.Done():
 			return
-		// 当告警服务有更新，重新加载配置。
+		// 当告警服务有更新，重新加载它们。
 		case ts := <-tsets:
 			n.reload(ts)
 		// 新告警信号：当有新告警信息 alerts 到达时，会通过 setMore() 函数触发本管道。
@@ -365,7 +363,7 @@ func (n *Manager) Run(tsets <-chan map[string][]*targetgroup.Group) {
 		// 从告警队列中批量获取告警信息
 		alerts := n.nextBatch()
 
-		// 发送告警到 alertmanagers 上，判断是否发送成功，失败则上报。
+		// 发送告警 alerts 到 n.alertmanagers 上，判断是否发送成功，失败则上报。
 		if !n.sendAll(alerts...) {
 			n.metrics.dropped.Add(float64(len(alerts)))
 		}
@@ -377,8 +375,6 @@ func (n *Manager) Run(tsets <-chan map[string][]*targetgroup.Group) {
 		}
 	}
 }
-
-
 
 // 若检测到告警服务有变动，则会调用 reload 方法，同步告警服务。
 func (n *Manager) reload(tgs map[string][]*targetgroup.Group) {
@@ -481,6 +477,7 @@ func (n *Manager) setMore() {
 
 // Alertmanagers returns a slice of Alertmanager URLs.
 func (n *Manager) Alertmanagers() []*url.URL {
+
 	n.mtx.RLock()
 	amSets := n.alertmanagers
 	n.mtx.RUnlock()
@@ -488,11 +485,13 @@ func (n *Manager) Alertmanagers() []*url.URL {
 	var res []*url.URL
 
 	for _, ams := range amSets {
+
 		ams.mtx.RLock()
 		for _, am := range ams.ams {
 			res = append(res, am.url())
 		}
 		ams.mtx.RUnlock()
+
 	}
 
 	return res
@@ -619,10 +618,17 @@ func (n *Manager) sendAll(alerts ...*Alert) bool {
 }
 
 func alertsToOpenAPIAlerts(alerts []*Alert) models.PostableAlerts {
+
+
 	openAPIAlerts := models.PostableAlerts{}
+
 	for _, a := range alerts {
+
+
 		start := strfmt.DateTime(a.StartsAt)
 		end := strfmt.DateTime(a.EndsAt)
+
+
 		openAPIAlerts = append(openAPIAlerts, &models.PostableAlert{
 			Annotations: labelsToOpenAPILabelSet(a.Annotations),
 			EndsAt:      end,
@@ -646,6 +652,7 @@ func labelsToOpenAPILabelSet(modelLabelSet labels.Labels) models.LabelSet {
 	return apiLabelSet
 }
 
+// 发送 http 请求
 func (n *Manager) sendOne(ctx context.Context, c *http.Client, url string, b []byte) error {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
 	if err != nil {
@@ -723,6 +730,8 @@ func newAlertmanagerSet(cfg *config.AlertmanagerConfig, logger log.Logger, metri
 	}
 	return s, nil
 }
+
+
 
 // sync extracts a deduplicated set of Alertmanager endpoints from a list of target groups definitions.
 
