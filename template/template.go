@@ -78,14 +78,19 @@ func (q queryResultByLabelSorter) Swap(i, j int) {
 // QueryFunc executes a PromQL query at the given time.
 type QueryFunc func(context.Context, string, time.Time) (promql.Vector, error)
 
+
+
 func query(ctx context.Context, q string, ts time.Time, queryFn QueryFunc) (queryResult, error) {
+
+	// 执行查询，返回一组 []promql.Sample 采样点
 	vector, err := queryFn(ctx, q, ts)
 	if err != nil {
 		return nil, err
 	}
 
-	// promql.Vector is hard to work with in templates, so convert to
-	// base data types.
+	// promql.Vector is hard to work with in templates, so convert to base data types.
+	// promql.Vector 很难在模板中使用，因此转换为基本数据类型 queryResult 。
+	//
 	// TODO(fabxc): probably not true anymore after type rework.
 	var result = make(queryResult, len(vector))
 	for n, v := range vector {
@@ -107,7 +112,10 @@ type Expander struct {
 }
 
 // NewTemplateExpander returns a template expander ready to use.
+//
+//
 func NewTemplateExpander(
+
 	ctx context.Context,
 	text string,
 	name string,
@@ -115,30 +123,38 @@ func NewTemplateExpander(
 	timestamp model.Time,
 	queryFunc QueryFunc,
 	externalURL *url.URL,
+
 ) *Expander {
+
 	return &Expander{
 		text: text,
 		name: name,
 		data: data,
 		funcMap: text_template.FuncMap{
+
 			"query": func(q string) (queryResult, error) {
 				return query(ctx, q, timestamp.Time(), queryFunc)
 			},
+
 			"first": func(v queryResult) (*sample, error) {
 				if len(v) > 0 {
 					return v[0], nil
 				}
 				return nil, errors.New("first() called on vector with no elements")
 			},
+
 			"label": func(label string, s *sample) string {
 				return s.Labels[label]
 			},
+
 			"value": func(s *sample) float64 {
 				return s.Value
 			},
+
 			"strvalue": func(s *sample) string {
 				return s.Labels["__value__"]
 			},
+
 			"args": func(args ...interface{}) map[string]interface{} {
 				result := make(map[string]interface{})
 				for i, a := range args {
@@ -146,13 +162,16 @@ func NewTemplateExpander(
 				}
 				return result
 			},
+
 			"reReplaceAll": func(pattern, repl, text string) string {
 				re := regexp.MustCompile(pattern)
 				return re.ReplaceAllString(text, repl)
 			},
+
 			"safeHtml": func(text string) html_template.HTML {
 				return html_template.HTML(text)
 			},
+
 			"match":     regexp.MatchString,
 			"title":     strings.Title,
 			"toUpper":   strings.ToUpper,
@@ -286,8 +305,10 @@ func (te Expander) Funcs(fm text_template.FuncMap) {
 
 // Expand expands a template in text (non-HTML) mode.
 func (te Expander) Expand() (result string, resultErr error) {
-	// It'd better to have no alert description than to kill the whole process
-	// if there's a bug in the template.
+
+	// It'd better to have no alert description than to kill the whole process if there's a bug in the template.
+	//
+	// 如果模板中有错误，最好没有警报描述，而不是终止整个过程。
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool

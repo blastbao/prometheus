@@ -290,20 +290,30 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// GlobalConfig configures values that are used across other configuration
-// objects.
+// GlobalConfig configures values that are used across other configuration objects.
 type GlobalConfig struct {
+
 	// How frequently to scrape targets by default.
 	ScrapeInterval model.Duration `yaml:"scrape_interval,omitempty"`
+
 	// The default timeout when scraping targets.
 	ScrapeTimeout model.Duration `yaml:"scrape_timeout,omitempty"`
+
 	// How frequently to evaluate rules by default.
+	//
+	// Prometheus 会根据 GlobalConfig.EvaluationInterval 定义的周期计算 PromQL 表达式。
+	// 如果 PromQL 表达式能够找到匹配的时间序列，则会为每一条时间序列产生一个告警实例。
 	EvaluationInterval model.Duration `yaml:"evaluation_interval,omitempty"`
+
+
 	// File to which PromQL queries are logged.
 	QueryLogFile string `yaml:"query_log_file,omitempty"`
+
+
 	// The labels to add to any timeseries that this Prometheus instance scrapes.
 	ExternalLabels labels.Labels `yaml:"external_labels,omitempty"`
 }
+
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (c *GlobalConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -551,6 +561,8 @@ var SupportedAlertmanagerAPIVersions = []AlertmanagerAPIVersion{
 
 // AlertmanagerConfig configures how Alertmanagers can be discovered and communicated with.
 type AlertmanagerConfig struct {
+
+
 	// We cannot do proper Go type embedding below as the parser will then parse
 	// values arbitrarily into the overflow maps of further-down types.
 

@@ -118,13 +118,22 @@ type Rule struct {
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
+
 // RuleNode adds yaml.v3 layer to support line and column outputs for invalid rules.
 type RuleNode struct {
 	Record      yaml.Node         `yaml:"record,omitempty"`
+	// 告警规则的名称。
 	Alert       yaml.Node         `yaml:"alert,omitempty"`
+	// 基于 PromQL 表达式的告警触发条件，用于计算是否有时间序列满足该条件。
 	Expr        yaml.Node         `yaml:"expr"`
+
+	// 评估等待时间，可选参数。用于表示只有当触发条件持续一段时间后才发送告警，在等待期间新产生告警的状态为 pending 。
 	For         model.Duration    `yaml:"for,omitempty"`
+
+	// 自定义标签，允许用户指定要附加到告警上的一组附加标签。已有的冲突标签会被此处标签覆盖，标签值可以模板化。
 	Labels      map[string]string `yaml:"labels,omitempty"`
+
+	// 附加信息，包含一组信息标签，比如用于描述告警信息如链接、详细描述等，标签值可以模板化。
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
