@@ -31,19 +31,42 @@ import (
 )
 
 // A RecordingRule records its vector expression into new timeseries.
+//
+// 记录规则：
+//
+// 记录规则允许预先计算经常需要或计算上昂贵的表达式，并将其结果保存为一组新的时间序列。
+// 因此，查询预先计算的结果通常比每次需要时执行原始表达式快得多。
+// 这对于仪表板尤其有用，仪表板需要在每次刷新时重复查询相同的表达式。
+//
+// 记录和警报规则存在于规则组（Group）中，组内的规则以固定间隔顺序运行
+// 记录和警报规则的名称必须是有效的度量标准名称。
+//
 type RecordingRule struct {
+
+	// 告警名
 	name   string
+	// 告警表达式
 	vector parser.Expr
+	// 需要附加到结果集上的标签。
 	labels labels.Labels
+
 	// Protects the below.
 	mtx sync.Mutex
+
 	// The health of the recording rule.
+	// 警报规则的运行状况。
 	health RuleHealth
+
 	// Timestamp of last evaluation of the recording rule.
+	// 最近一次计算规则的时间戳。
 	evaluationTimestamp time.Time
+
 	// The last error seen by the recording rule.
+	// 警报规则看到的最后一个错误。
 	lastError error
+
 	// Duration of how long it took to evaluate the recording rule.
+	// 计算规则所用的时间（秒）。
 	evaluationDuration time.Duration
 }
 
@@ -75,32 +98,40 @@ func (rule *RecordingRule) Labels() labels.Labels {
 // Eval evaluates the rule and then overrides the metric names and labels accordingly.
 func (rule *RecordingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, _ *url.URL) (promql.Vector, error) {
 
+	// 执行告警查询，返回一组 []promql.Sample 采样点，每个采样点即为一个告警点。
 	vector, err := query(ctx, rule.vector.String(), ts)
 
+	// 如果查询出错，则设置健康状态为 "Bad"、保存错误信息，然后返回。
 	if err != nil {
 		rule.SetHealth(HealthBad)
 		rule.SetLastError(err)
 		return nil, err
 	}
 
-
 	// Override the metric name and labels.
+	// 遍历各个样本点，将其转换为一个新的 metric 数据，主要是添加 "__name__" 标签和其它 rule.labels 。
 	for i := range vector {
+
 		sample := &vector[i]
 
+		// 将 sample.Metric 转换成 lb
 		lb := labels.NewBuilder(sample.Metric)
 
+		// 添加（覆盖）"__name__" 标签，将 sample 构造成新的 metric 数据。
 		lb.Set(labels.MetricName, rule.name)
 
+		// 将 rule.labels 中标签添加到 sample 上。
 		for _, l := range rule.labels {
 			lb.Set(l.Name, l.Value)
 		}
 
+		// 将 lb 更新到 sample.Metric
 		sample.Metric = lb.Labels()
 	}
 
-
 	// Check that the rule does not produce identical metrics after applying labels.
+	//
+	// 检查处理后的 vector 中是否包含 sample.Metric 相同的冲突样本点。
 	if vector.ContainsSameLabelset() {
 		err = fmt.Errorf("vector contains metrics with the same labelset after applying rule labels")
 		rule.SetHealth(HealthBad)
@@ -110,10 +141,12 @@ func (rule *RecordingRule) Eval(ctx context.Context, ts time.Time, query QueryFu
 
 	rule.SetHealth(HealthGood)
 	rule.SetLastError(err)
+
 	return vector, nil
 }
 
 func (rule *RecordingRule) String() string {
+
 	r := rulefmt.Rule{
 		Record: rule.name,
 		Expr:   rule.vector.String(),

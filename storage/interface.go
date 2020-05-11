@@ -104,8 +104,6 @@ type Querier interface {
 	// 根据给定的搜索参数（hints: 如起止时间、步进、聚合函数）获取匹配的时序数据，返回数据的样式就是 promQL 页面返回的格式。
 	//
 	//
-
-
 	Select(sortSeries bool, hints *SelectHints, matchers ...*labels.Matcher) (SeriesSet, Warnings, error)
 
 

@@ -130,16 +130,27 @@ func (vec Vector) String() string {
 
 // ContainsSameLabelset checks if a vector has samples with the same labelset
 // Such a behavior is semantically undefined
+//
 // https://github.com/blastbao/prometheus/issues/4562
+//
+//
 func (vec Vector) ContainsSameLabelset() bool {
+
 	l := make(map[uint64]struct{}, len(vec))
+
+	// 遍历 vec 中每个 sample
 	for _, s := range vec {
+		// 计算 s.Metric 的 hash 值
 		hash := s.Metric.Hash()
+		// 如果 hash 值已经存在，意味着出现相同的 s.Metric ，则存在冲突。
 		if _, ok := l[hash]; ok {
 			return true
 		}
+		// 否则，将 hash 添加到 l 中。
 		l[hash] = struct{}{}
 	}
+
+	// 至此，不存在冲突的 sample 。
 	return false
 }
 

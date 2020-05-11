@@ -140,6 +140,8 @@ func (a *Alert) needsSending(ts time.Time, resendDelay time.Duration) bool {
 
 
 // An AlertingRule generates alerts from its vector expression.
+//
+// 警报规则：AlertingRule 根据矢量表达式 vector 来生成 Alert。
 type AlertingRule struct {
 
 	// The name of the alert.
@@ -160,7 +162,6 @@ type AlertingRule struct {
 	//
 	// 需要附加到结果集上的标签。
 	labels labels.Labels
-
 
 	// Non-identifying key/value pairs.
 	//
@@ -193,29 +194,27 @@ type AlertingRule struct {
 	// 最近一次计算规则的时间戳。
 	evaluationTimestamp time.Time
 
-
 	// The health of the alerting rule.
 	//
 	// 警报规则的运行状况。
 	health RuleHealth
-
 
 	// The last error seen by the alerting rule.
 	//
 	// 警报规则看到的最后一个错误。
 	lastError error
 
-
 	// A map of alerts which are currently active (Pending or Firing), keyed by the fingerprint of the labelset they correspond to.
 	//
-	// 当前处于活动状态（Pending or Firing）的警报。
+	// [!] 当前处于活动状态（Pending or Firing）的警报。
 	active map[uint64]*Alert
-
 
 	logger log.Logger
 }
 
 // NewAlertingRule constructs a new AlertingRule.
+//
+// 构造告警规则
 func NewAlertingRule(
 
 	name string,
@@ -229,14 +228,13 @@ func NewAlertingRule(
 
 ) *AlertingRule {
 
-
-
 	// 把 externalLabels 从 slice 转换成 map 。
 	el := make(map[string]string, len(externalLabels))
 	for _, lbl := range externalLabels {
 		el[lbl.Name] = lbl.Value
 	}
 
+	//
 	return &AlertingRule{
 		name:           name,
 		vector:         vec,
@@ -250,7 +248,6 @@ func NewAlertingRule(
 		restored:       restored,
 	}
 }
-
 
 // Name returns the name of the alerting rule.
 func (r *AlertingRule) Name() string {
@@ -305,6 +302,11 @@ func (r *AlertingRule) Annotations() labels.Labels {
 	return r.annotations
 }
 
+
+// ALERTS{alertname="<alert name>", alertstate="pending|firing", <additional alert labels>}
+//
+//
+//
 func (r *AlertingRule) sample(alert *Alert, ts time.Time) promql.Sample {
 
 	// r.labels 是 labels.Labels 类型，也即 []labels.Label 切片类型，所支持的操作比较有限。
@@ -318,9 +320,9 @@ func (r *AlertingRule) sample(alert *Alert, ts time.Time) promql.Sample {
 	}
 
 	// 添加额外标签
-	lb.Set(labels.MetricName, alertMetricName)		// 设置指标名为 "ALERTS"
-	lb.Set(labels.AlertName, r.name)				// 告警名："alertname"
-	lb.Set(alertStateLabel, alert.State.String())	// 告警状态："alertstate"
+	lb.Set(labels.MetricName, alertMetricName)		// 设置指标名为  __name__ = "ALERTS"
+	lb.Set(labels.AlertName, r.name)				// 告警名："alertname" = r.name
+	lb.Set(alertStateLabel, alert.State.String())	// 告警状态："alertstate" = alert.State
 
 	// 构造一个样本点，由 标签集合、时间戳、值 构成。
 	s := promql.Sample{
@@ -334,6 +336,11 @@ func (r *AlertingRule) sample(alert *Alert, ts time.Time) promql.Sample {
 }
 
 // forStateSample returns the sample for ALERTS_FOR_STATE.
+//
+// refer:
+// 1. https://ganeshvernekar.com/gsoc-2018/persist-for-state/
+// 2. https://github.com/prometheus/prometheus/pull/4061
+// 3. https://github.com/prometheus/prometheus/issues/422
 func (r *AlertingRule) forStateSample(alert *Alert, ts time.Time, v float64) promql.Sample {
 
 	// 这里把 r.labels 从 []labels.Label 封装成 labels.Builder，以支持更高级的操作
@@ -344,9 +351,9 @@ func (r *AlertingRule) forStateSample(alert *Alert, ts time.Time, v float64) pro
 		lb.Set(l.Name, l.Value)
 	}
 
-	// 添加额外标签
-	lb.Set(labels.MetricName, alertForStateMetricName)  // 设置指标名为 "ALERTS_FOR_STATE"
-	lb.Set(labels.AlertName, r.name)					// 设置告警名为  r.name
+	// 添加 "__name__" 和 "alertname" 标签
+	lb.Set(labels.MetricName, alertForStateMetricName)  // 设置指标名为 __name__ = "ALERTS_FOR_STATE"
+	lb.Set(labels.AlertName, r.name)					// 设置告警名为 alertname = r.name
 
 	// 构造一个样本点，由 标签集合、时间戳、值 构成。
 	s := promql.Sample{
@@ -412,7 +419,7 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 	// 执行告警查询，返回一组 []promql.Sample 采样点，每个采样点即为一个告警点。
 	samples, err := query(ctx, r.vector.String(), ts)
 
-	// 如果查询出错，则设置健康状态为 "Bad" ，同时保存错误信息。
+	// 如果查询出错，则设置健康状态为 "Bad"、保存错误信息，然后返回。
 	if err != nil {
 		r.SetHealth(HealthBad)
 		r.SetLastError(err)
@@ -429,7 +436,6 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 	// resultFPs 用来存放本次 query() 返回的告警点，key 是告警点 label(s) 的 hash 值。
 	resultFPs := map[uint64]struct{}{}
 
-	var vec promql.Vector
 	var alerts = make(map[uint64]*Alert, len(samples))
 
 	// 遍历各个样本点，为每个样本点构造 alert 对象，并存储到 resultFPs 和 alerts 中。
@@ -505,7 +511,7 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 		// 保存 hash 值
 		resultFPs[h] = struct{}{}
 
-		// 如果 h 值对应的 alert 已经存在，则遇到重复的 sample ，设置健康状态为 "Bad" ，同时保存错误信息，返回。
+		// 如果 h 值对应的 alert 已经存在，则遇到重复的 sample ，设置健康状态为 "Bad" 、保存错误信息，返回。
 		if _, ok := alerts[h]; ok {
 			err = fmt.Errorf("vector contains metrics with the same labelset after applying alert labels")
 			// We have already acquired the lock above hence using SetHealth and SetLastError will deadlock.
@@ -523,7 +529,6 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 			Value:       sample.V,
 		}
 	}
-
 
 	// [!] 遍历新触发的告警 alerts ，来更新 r.active[] 中已触发的告警的状态。
 	//
@@ -547,13 +552,22 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 			continue
 		}
 
+		// 直接覆盖
 		r.active[h] = a
 	}
 
 
-	// Check if any pending alerts should be removed or fire now. Write out alert timeseries.
 
+
+
+
+	var vec promql.Vector
+
+
+	// Check if any pending alerts should be removed or fire now. Write out alert timeseries.
+	//
 	// 遍历所有已触发的告警（r.active），根据其是否是重复触发（resultFPs），而需要清理或者变更状态。
+
 	for fp, a := range r.active {
 
 		// resultFPs 中存储了本次 query() 返回的告警，代表当前新触发的告警。
@@ -594,6 +608,7 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 			continue
 		}
 
+
 		// 至此，意味着告警 a 存在于 resultFPs 中，即告警 a 被重复触发：
 		//
 		// 1. 如果 a 的状态是 pending ，且 now() - a.ActiveAt 已经超过一定时间，意味着它持续触发了很多次，将其状态变更为 StateFiring，同时设置 FiredAt 为当前时间戳。
@@ -602,9 +617,12 @@ func (r *AlertingRule) Eval(ctx context.Context, ts time.Time, query QueryFunc, 
 			a.FiredAt = ts 			// [!] 设置告警的 Firing 时间
 		}
 
-		// ???
+
+		// 2. 如果需要保存这些新触发的告警，则构造数据点，存到 vec 中，
 		if r.restored {
+			//
 			vec = append(vec, r.sample(a, ts))
+			//
 			vec = append(vec, r.forStateSample(a, ts, float64(a.ActiveAt.Unix())))
 		}
 	}
