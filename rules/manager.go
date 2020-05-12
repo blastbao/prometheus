@@ -345,12 +345,16 @@ func (g *Group) Rules() []Rule { return g.rules }
 func (g *Group) Interval() time.Duration { return g.interval }
 
 
+
+
 func (g *Group) run(ctx context.Context) {
 
+
+	// g.run() 的退出，只可能是由 g.done 被触发导致的，而触发 g.done 只能通过 g.stopAndMakeStale() 或 g.stop() 函数，
+	// 这两个函数会阻塞在 g.terminated 管道上。所以，在 run() 退出前调用 close(g.terminated) 来解除它们的阻塞。
 	defer close(g.terminated)
 
 	// Wait an initial amount to have consistently slotted intervals.
-
 
 	// 确定下一次执行 g.Eval() 的时刻
 	evalTimestamp := g.evalTimestamp().Add(g.interval)
@@ -392,30 +396,30 @@ func (g *Group) run(ctx context.Context) {
 	tick := time.NewTicker(g.interval)
 	defer tick.Stop()
 
-
 	makeStale := func(s bool) {
 
-		// false ?
+		// 如果是通过 g.stop() 关闭 g.run() ，那么 s == false ，无需进行 makeStale 操作，直接 return 。
+		// 如果是通过 g.stopAndMakeStale() 关闭 g.run() ，那么 s == true ，需要进行 makeStale 操作。
 		if !s {
 			return
 		}
 
-		//
+		// 进行 makeStale 操作
 		go func(now time.Time) {
 
-
-			for _, rule := range g.seriesInPreviousEval {
-
-				for _, r := range rule {
-
-					g.staleSeries = append(g.staleSeries, r)
-
+			// 遍历上次 g.Eval() 之后，各个 g.rules[i] 返回的警报结果集
+			for _, series := range g.seriesInPreviousEval {
+				// 把每个 g.rules[i] 返回的警报结果添加到 g.staleSeries 中，便于后续统一进行 StaleNaN 处理。
+				for _, s := range series {
+					g.staleSeries = append(g.staleSeries, s)
 				}
-
 			}
 
 			// That can be garbage collected at this point.
+
+			// g.seriesInPreviousEval 此后便没什么用了，这里加速一下 GC 。
 			g.seriesInPreviousEval = nil
+
 
 			// Wait for 2 intervals to give the opportunity to renamed rules to insert new series in the tsdb.
 			// At this point if there is a renamed rule, it should already be started.
@@ -423,6 +427,7 @@ func (g *Group) run(ctx context.Context) {
 			select {
 			case <-g.managerDone:
 			case <-time.After(2 * g.interval):
+				// 把 g.staleSeries 中存储的警报的状态置为 StaleNaN 。
 				g.cleanupStaleSeries(now)
 			}
 
@@ -430,16 +435,17 @@ func (g *Group) run(ctx context.Context) {
 	}
 
 
+
 	// 首次执行 g.Eval()，同步调用，可能耗时较久，超过 g.interval 。
 	iter()
 
 
 
+	//
 	if g.shouldRestore {
 
 
 		// If we have to restore, we wait for another Eval to finish.
-
 
 		// The reason behind this is, during first eval (or before it)
 		// we might not have enough data scraped, and recording rules would not
@@ -467,7 +473,10 @@ func (g *Group) run(ctx context.Context) {
 
 
 
-	//（理想情况）按 g.interval 定时间隔执行 g.Eval()
+	// 正常情况，按 g.interval 定时间隔执行 g.Eval()，不退出。
+	//
+	// 异常情况，如果 g.done 信号被触发，那么可能是 g.stopAndMakeStale() 或 g.stop() 导致，
+	//
 	for {
 
 		select {
@@ -499,15 +508,20 @@ func (g *Group) run(ctx context.Context) {
 
 
 
+
 }
 
 func (g *Group) stopAndMakeStale() {
+	// 这会导致 stale := <-g.done 的 stale 为 true 。
 	g.done <- true
+	// 在 g.run() 中会监听 g.done 信号，并在完成清理工作后、退出 g.run() 之前，调用 close(g.terminated) 来解除本处的阻塞。
 	<-g.terminated
 }
 
 func (g *Group) stop() {
+	// 这会导致 stale := <-g.done 的 stale 为 false 。
 	close(g.done)
+	// 在 g.run() 中会监听 g.done 信号，并在完成清理工作后、退出 g.run() 之前，调用 close(g.terminated) 来解除本处的阻塞。
 	<-g.terminated
 }
 
@@ -614,18 +628,17 @@ func (g *Group) CopyState(from *Group) {
 
 	g.evaluationDuration = from.evaluationDuration
 
-	ruleMap := make(map[string][]int, len(from.rules))
 
+	//
+	ruleMap := make(map[string][]int, len(from.rules))
 
 
 	for fromIdx, fromRule := range from.rules {
 
 		// 规则格式: rule_name{"key"="value", ..., }
 		nameAndLabels := nameAndLabels(fromRule)
-
 		//
-		l := ruleMap[nameAndLabels]
-		ruleMap[nameAndLabels] = append(l, fromIdx)
+		ruleMap[nameAndLabels] = append(ruleMap[nameAndLabels], fromIdx)
 	}
 
 
@@ -659,6 +672,8 @@ func (g *Group) CopyState(from *Group) {
 
 	// Handle deleted and unmatched duplicate rules.
 	g.staleSeries = from.staleSeries
+
+
 	for fi, fromRule := range from.rules {
 
 		nameAndLabels := nameAndLabels(fromRule)
@@ -695,10 +710,8 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 
 		func(i int, rule Rule) {
 
-
 			sp, ctx := opentracing.StartSpanFromContext(ctx, "rule")
 			sp.SetTag("name", rule.Name())
-
 
 			defer func(t time.Time) {
 				sp.Finish()
@@ -749,11 +762,12 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 					level.Warn(g.logger).Log("msg", "Rule sample appending failed", "err", err)
 					return
 				}
-				// 保存本次 rule.Eval() 返回的、且成功写入到 storage 中的告警数据
+				// 保存本次 rule.Eval() 返回的、且成功写入到 storage 中的告警数据，以支持 stale 处理。
 				g.seriesInPreviousEval[i] = seriesReturned
 			}()
 
-			// 将本次 rule.Eval() 返回的告警数据保存到 storage 中。
+
+			// 将本次 rule.Eval() 返回的告警数据保存到 storage 中，并将保存成功的告警数据存入 seriesReturned 中，以支持 stale 处理。
 			for _, s := range vector {
 
 				if _, err := app.Add(s.Metric, s.T, s.V); err != nil {
@@ -788,8 +802,7 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 					// Series no longer exposed, mark it stale.
 					// 标记为 stale
 					_, err = app.Add(lset, timestamp.FromTime(ts), math.Float64frombits(value.StaleNaN))
-
-					// 如果出错，忽略
+					// 如果标记出错，忽略
 					switch errors.Cause(err) {
 					case nil:
 					case storage.ErrOutOfOrderSample, storage.ErrDuplicateSampleForTimestamp:
@@ -802,9 +815,13 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 		}(i, rule)
 	}
 
+	// 把 g.staleSeries 中存储的警报的状态置为 StaleNaN 。
 	g.cleanupStaleSeries(ts)
 }
 
+
+
+// 把 g.staleSeries 中存储的警报的状态置为 StaleNaN 。
 func (g *Group) cleanupStaleSeries(ts time.Time) {
 
 	if len(g.staleSeries) == 0 {
@@ -830,6 +847,7 @@ func (g *Group) cleanupStaleSeries(ts time.Time) {
 	if err := app.Commit(); err != nil {
 		level.Warn(g.logger).Log("msg", "Stale sample appending for previous configuration failed", "err", err)
 	} else {
+		// 重置 g.staleSeries 为 nil 。
 		g.staleSeries = nil
 	}
 }
@@ -1175,7 +1193,7 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
-	// 从配置文件 files 加载规则组，每个配置文件可能包含多个组，key = file_name + group_name 。
+	// 从配置文件 files 加载规则组，每个配置文件可能包含多个组，group_key = file_name + group_name 。
 	groups, errs := m.LoadGroups(interval, externalLabels, files...)
 	if errs != nil {
 		for _, e := range errs {
@@ -1184,13 +1202,13 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 		return errors.New("error loading rules, previous rule set restored")
 	}
 
-	//
+	// ?
 	m.restored = true
 
 	var wg sync.WaitGroup
 
 
-	// 遍历每个组
+	// 遍历新加载的每个组
 	for _, newg := range groups {
 
 		//If there is an old group with the same identifier,
@@ -1198,34 +1216,33 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 		//If not equals, stop it and wait for it to finish the current iteration.
 		//Then copy it into the new group.
 
-
-
-		// 如果当前组 newg 已存在于 m.groups 中（ oldg ），且 oldg 和 newg 完全相同，则 continue 。
 		gn := groupKey(newg.file, newg.name)
 		oldg, ok := m.groups[gn]
+		// 从 m.groups[] 中移除 newg，确保 newg 仅存在于 groups 中，而不存在于 m.groups 中。
 		delete(m.groups, gn)
+		// 如果 newg 已存在于 m.groups 中（ oldg ），且 oldg 和 newg 完全相同，则不做处理，直接 continue 。
 		if ok && oldg.Equals(newg) {
 			groups[gn] = oldg
 			continue
 		}
 
-		// 否则，
+		// 至此：
+		// (1) 若 newg 为新 group，需要启动它；
+		// (2) 若存在和 newg 的 group_key 相同的 oldg，需要先停掉 oldg 并把状态拷贝到 newg 上，然后在启动 newg 。
 
 		wg.Add(1)
 		go func(newg *Group) {
 
-			// 若存在 oldg ，停掉它，并把其内部状态拷贝到 newg 中。
+			// (1) 若存在 oldg ，停掉它，并把其内部状态拷贝到 newg 中。
 			if ok {
 				oldg.stop()
 				newg.CopyState(oldg)
 			}
 
-			//
+			// (2) 启动 newg
 			go func() {
-
 				// Wait with starting evaluation until the rule manager is told to run.
 				// This is necessary to avoid running queries against a bootstrapping storage.
-
 				<-m.block
 				newg.run(m.opts.Context)
 			}()
@@ -1237,15 +1254,14 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 
 
 	// Stop remaining old groups.
+	//
+	// 至此，m.groups 中存储的都是需要移除的 oldg，把这些 group 逐个停止 。
+	//
 	wg.Add(len(m.groups))
-
-
 	for n, oldg := range m.groups {
-
-
 		go func(n string, g *Group) {
 
-
+			//
 			g.stopAndMakeStale()
 
 			if m := g.metrics; m != nil {
@@ -1258,13 +1274,12 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 			}
 
 			wg.Done()
-
-
 		}(n, oldg)
 	}
 
-
 	wg.Wait()
+
+	// 更新 m.groups
 	m.groups = groups
 
 	return nil
@@ -1289,7 +1304,7 @@ func (m *Manager) LoadGroups(
 	// 逐个配置文件进行解析，构造规则组 Groups 。
 	for _, fn := range filenames {
 
-		// 解析规则文件
+		// 解析规则文件，得到一组配置 []rulefmt.RuleGroup
 		rgs, errs := rulefmt.ParseFile(fn)
 		if errs != nil {
 			return nil, errs
@@ -1298,14 +1313,16 @@ func (m *Manager) LoadGroups(
 		// 遍历组
 		for _, rg := range rgs.Groups {
 
+
 			itv := interval
 			if rg.Interval != 0 {
 				itv = time.Duration(rg.Interval)
 			}
 
+
 			rules := make([]Rule, 0, len(rg.Rules))
 
-			// 遍历规则
+			// 遍历组内的规则
 			for _, r := range rg.Rules {
 
 				// 构造查询语句解析器
@@ -1336,7 +1353,6 @@ func (m *Manager) LoadGroups(
 					labels.FromMap(r.Labels),
 				))
 			}
-
 
 			// 保存组信息：file+name => Group
 			groups[groupKey(fn, rg.Name)] = NewGroup(GroupOptions{

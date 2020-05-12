@@ -407,22 +407,16 @@ func (m *Manager) TargetsAll() map[string][]*Target {
 // TargetsActive returns the active targets currently being scraped.
 func (m *Manager) TargetsActive() map[string][]*Target {
 
-
 	m.mtxScrape.Lock()
 	defer m.mtxScrape.Unlock()
-
 
 	var (
 		wg  sync.WaitGroup
 		mtx sync.Mutex
 	)
 
-
 	targets := make(map[string][]*Target, len(m.scrapePools))
 	wg.Add(len(m.scrapePools))
-
-
-
 
 	for tset, sp := range m.scrapePools {
 
