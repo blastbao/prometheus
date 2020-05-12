@@ -403,10 +403,15 @@ func (g *Group) run(ctx context.Context) {
 		//
 		go func(now time.Time) {
 
+
 			for _, rule := range g.seriesInPreviousEval {
+
 				for _, r := range rule {
+
 					g.staleSeries = append(g.staleSeries, r)
+
 				}
+
 			}
 
 			// That can be garbage collected at this point.
@@ -675,9 +680,11 @@ func (g *Group) CopyState(from *Group) {
 // Eval runs a single evaluation cycle in which all rules are evaluated sequentially.
 func (g *Group) Eval(ctx context.Context, ts time.Time) {
 
+
 	// 按序依次评估 group 中的每个 rule，通过调用 rule.Eval() 函数产生告警结果，
 	// 然后判断是否是告警规则，如果是，则调用 NotifyFunc 产生告警通知。
 	for i, rule := range g.rules {
+
 
 		select {
 		case <-g.done:
@@ -688,8 +695,10 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 
 		func(i int, rule Rule) {
 
+
 			sp, ctx := opentracing.StartSpanFromContext(ctx, "rule")
 			sp.SetTag("name", rule.Name())
+
 
 			defer func(t time.Time) {
 				sp.Finish()
@@ -703,6 +712,7 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 				rule.SetEvaluationTimestamp(t)
 
 			}(time.Now())
+
 
 			// 上报 evalTotal
 			g.metrics.evalTotal.WithLabelValues(groupKey(g.File(), g.Name())).Inc()
@@ -720,6 +730,7 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 				return
 			}
 
+
 			// [!] 检查如果是 `警报规则`，则调用 rule.sendAlerts() 将需要发送通知的告警发送到 alertManager。
 			if ar, ok := rule.(*AlertingRule); ok {
 				ar.sendAlerts(ctx, ts, g.opts.ResendDelay, g.interval, g.opts.NotifyFunc)
@@ -733,15 +744,18 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 			app := g.opts.Appendable.Appender()
 			seriesReturned := make(map[string]labels.Labels, len(g.seriesInPreviousEval[i]))
 			defer func() {
+				// 提交 storage
 				if err := app.Commit(); err != nil {
 					level.Warn(g.logger).Log("msg", "Rule sample appending failed", "err", err)
 					return
 				}
+				// 保存本次 rule.Eval() 返回的、且成功写入到 storage 中的告警数据
 				g.seriesInPreviousEval[i] = seriesReturned
 			}()
 
-			// 将本次返回的告警数据保存到 storage 中。
+			// 将本次 rule.Eval() 返回的告警数据保存到 storage 中。
 			for _, s := range vector {
+
 				if _, err := app.Add(s.Metric, s.T, s.V); err != nil {
 					switch errors.Cause(err) {
 					case storage.ErrOutOfOrderSample:
@@ -759,7 +773,6 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 				}
 			}
 
-
 			if numOutOfOrder > 0 {
 				level.Warn(g.logger).Log("msg", "Error on ingesting out-of-order result from rule evaluation", "numDropped", numOutOfOrder)
 			}
@@ -768,13 +781,12 @@ func (g *Group) Eval(ctx context.Context, ts time.Time) {
 				level.Warn(g.logger).Log("msg", "Error on ingesting results from rule evaluation with different value but same timestamp", "numDropped", numDuplicates)
 			}
 
-			// 比较近两次执行规则 i 返回的告警数据，如果上次某个数据在此次消失了，就从 storage 中删除它。
+			// 比较近两次执行规则 g.rules[i] 返回的告警数据
 			for metric, lset := range g.seriesInPreviousEval[i] {
-
+				// 如果上次某个告警数据在本次消失了，就在 storage 中标记其为 stale 。
 				if _, ok := seriesReturned[metric]; !ok {
-
 					// Series no longer exposed, mark it stale.
-					// 标记为 stale，等于删除
+					// 标记为 stale
 					_, err = app.Add(lset, timestamp.FromTime(ts), math.Float64frombits(value.StaleNaN))
 
 					// 如果出错，忽略
@@ -921,8 +933,6 @@ func (g *Group) RestoreForState(ts time.Time) {
 			continue
 		}
 
-
-
 		// 遍历 alertRule.active 中每个活跃的 alert
 		alertRule.ForEachActiveAlert(func(a *Alert) {
 
@@ -962,7 +972,6 @@ func (g *Group) RestoreForState(ts time.Time) {
 			if !seriesFound {
 				return
 			}
-
 
 			// Series found for the 'for' state.
 			var t int64
@@ -1031,9 +1040,10 @@ func (g *Group) RestoreForState(ts time.Time) {
 				restoredActiveAt = restoredActiveAt.Add(downDuration)
 			}
 
+
+			//
 			a.ActiveAt = restoredActiveAt
-			level.Debug(g.logger).Log("msg", "'for' state restored",
-				labels.AlertName, alertRule.Name(), "restored_time", a.ActiveAt.Format(time.RFC850), "labels", a.Labels.String())
+			level.Debug(g.logger).Log("msg", "'for' state restored", labels.AlertName, alertRule.Name(), "restored_time", a.ActiveAt.Format(time.RFC850), "labels", a.Labels.String())
 
 		})
 
@@ -1271,7 +1281,10 @@ func (m *Manager) LoadGroups(
 ) {
 
 	groups := make(map[string]*Group)
+
+
 	shouldRestore := !m.restored
+
 
 	// 逐个配置文件进行解析，构造规则组 Groups 。
 	for _, fn := range filenames {
