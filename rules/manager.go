@@ -294,7 +294,7 @@ type GroupOptions struct {
 	File          string
 	Interval      time.Duration
 	Rules         []Rule
-	ShouldRestore bool
+	ShouldRestore bool 				// 默认为 true
 	Opts          *ManagerOptions
 	done          chan struct{}
 }
@@ -348,7 +348,6 @@ func (g *Group) Interval() time.Duration { return g.interval }
 
 
 func (g *Group) run(ctx context.Context) {
-
 
 	// g.run() 的退出，只可能是由 g.done 被触发导致的，而触发 g.done 只能通过 g.stopAndMakeStale() 或 g.stop() 函数，
 	// 这两个函数会阻塞在 g.terminated 管道上。所以，在 run() 退出前调用 close(g.terminated) 来解除它们的阻塞。
@@ -434,29 +433,22 @@ func (g *Group) run(ctx context.Context) {
 		}(time.Now())
 	}
 
-
-
 	// 首次执行 g.Eval()，同步调用，可能耗时较久，超过 g.interval 。
 	iter()
 
 
 
-	//
+	// 如果 prometheus 重启之后，需要恢复当前 active 的 alert 的 pending 时间
 	if g.shouldRestore {
 
-
 		// If we have to restore, we wait for another Eval to finish.
-
 		// The reason behind this is, during first eval (or before it)
 		// we might not have enough data scraped, and recording rules would not
 		// have updated the latest values, on which some alerts might depend.
-
 		select {
 		case stale := <-g.done:
 			makeStale(stale)
 			return
-
-		//
 		case <-tick.C:
 			missed := (time.Since(evalTimestamp) / g.interval) - 1
 			if missed > 0 {
@@ -467,9 +459,12 @@ func (g *Group) run(ctx context.Context) {
 			iter()
 		}
 
+		//
 		g.RestoreForState(time.Now())
 		g.shouldRestore = false
 	}
+
+
 
 
 
@@ -503,12 +498,6 @@ func (g *Group) run(ctx context.Context) {
 
 		}
 	}
-
-
-
-
-
-
 }
 
 func (g *Group) stopAndMakeStale() {
@@ -908,6 +897,15 @@ func (g *Group) cleanupStaleSeries(ts time.Time) {
 
 
 
+
+
+
+
+//步骤：
+// 1. 确定查询时间窗口 [ts-g.opts.OutageTolerance, ts]，创建 storage 查询器 q
+// 2. 遍历 g.rules ，对每个 rule ， 根据其当前 active 的 alert 去查询 storage 获取告警状态信息
+// 3. 根据 storage 返回的数据确定 alert 是否应该 firing，并更新 alert 的状态
+//
 func (g *Group) RestoreForState(ts time.Time) {
 
 	// We allow restoration only if alerts were active before after certain time.
@@ -940,6 +938,7 @@ func (g *Group) RestoreForState(ts time.Time) {
 		// 取出 alert 从 “Pending” 转为 “Firing” 状态前需要持续的时间，也即 `for` 时间间隔 D 。
 		alertHoldDuration := alertRule.HoldDuration()
 
+
 		// 如果 `for` 时间间隔 D < ForGracePeriod，则立即 firing 。
 		if alertHoldDuration < g.opts.ForGracePeriod {
 
@@ -950,6 +949,7 @@ func (g *Group) RestoreForState(ts time.Time) {
 			alertRule.SetRestored(true)
 			continue
 		}
+
 
 		// 遍历 alertRule.active 中每个活跃的 alert
 		alertRule.ForEachActiveAlert(func(a *Alert) {
@@ -1058,7 +1058,6 @@ func (g *Group) RestoreForState(ts time.Time) {
 				restoredActiveAt = restoredActiveAt.Add(downDuration)
 			}
 
-
 			//
 			a.ActiveAt = restoredActiveAt
 			level.Debug(g.logger).Log("msg", "'for' state restored", labels.AlertName, alertRule.Name(), "restored_time", a.ActiveAt.Format(time.RFC850), "labels", a.Labels.String())
@@ -1111,7 +1110,7 @@ type Manager struct {
 	block    chan struct{}
 	done     chan struct{}
 
-	restored bool
+	restored bool // 默认 false
 
 	logger log.Logger
 }
@@ -1182,12 +1181,21 @@ func (m *Manager) Stop() {
 	level.Info(m.logger).Log("msg", "Rule manager stopped")
 }
 
+
+
+
 // Update the rule manager's state as the config requires.
-//
-//
 // If loading the new rules failed the old rule set is restored.
 //
 //
+// 如果是首次调用 m.Update() ，那么 m.restored 默认值为 false ，m.LoadGroups() 函数中 "!m.restored" 为 true，
+// 这意味着在 m.LoadGroups() 中创建的 group 的 group.ShouldRestore 均为 true，这会使得 group.run() 函数在执行
+// 定时的 group.Eval() 之前，需要调用 group.RestoreForState() 从 local storage 中获取 group.active[] 中的 alert
+// 的 pending 时间，来更新 alert 的状态，然后把  group.ShouldRestore 置为 false，也即后续不再从 storage 中恢复状态。
+//
+//
+// 在首次调用 m.Update() 之后， m.restored 被置为 true，后续调用 Update() 新创建的 group 不会再执行上面的状态恢复逻辑。
+
 func (m *Manager) Update(interval time.Duration, files []string, externalLabels labels.Labels) error {
 
 	m.mtx.Lock()
@@ -1202,11 +1210,11 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 		return errors.New("error loading rules, previous rule set restored")
 	}
 
-	// ?
+
+	// m.restored 的默认值是 false，这里把 m.restored 被置为 true，以判断是否首次调用。
 	m.restored = true
 
 	var wg sync.WaitGroup
-
 
 	// 遍历新加载的每个组
 	for _, newg := range groups {
@@ -1244,7 +1252,12 @@ func (m *Manager) Update(interval time.Duration, files []string, externalLabels 
 				// Wait with starting evaluation until the rule manager is told to run.
 				// This is necessary to avoid running queries against a bootstrapping storage.
 				<-m.block
+
+
+				// g.run() 函数运行在独立的 goroutine 中。
 				newg.run(m.opts.Context)
+
+
 			}()
 
 			wg.Done()
@@ -1297,9 +1310,8 @@ func (m *Manager) LoadGroups(
 
 	groups := make(map[string]*Group)
 
-
+	// m.restored 默认值为 false，因此 shouldRestore 为 true 。
 	shouldRestore := !m.restored
-
 
 	// 逐个配置文件进行解析，构造规则组 Groups 。
 	for _, fn := range filenames {
@@ -1333,6 +1345,7 @@ func (m *Manager) LoadGroups(
 
 				// 1. 如果告警规则名非空，则构造 & 保存 `告警规则`
 				if r.Alert.Value != "" {
+
 					rules = append(rules, NewAlertingRule(
 						r.Alert.Value,
 						expr,
@@ -1340,9 +1353,10 @@ func (m *Manager) LoadGroups(
 						labels.FromMap(r.Labels),
 						labels.FromMap(r.Annotations),
 						externalLabels,
-						m.restored,
+						m.restored, // 默认为 false
 						log.With(m.logger, "alert", r.Alert),
 					))
+
 					continue
 				}
 
@@ -1354,13 +1368,14 @@ func (m *Manager) LoadGroups(
 				))
 			}
 
+
 			// 保存组信息：file+name => Group
 			groups[groupKey(fn, rg.Name)] = NewGroup(GroupOptions{
 				Name:          rg.Name,			// 组名
 				File:          fn,				// 配置文件
 				Interval:      itv,				// 执行间隔
 				Rules:         rules,			// 规则列表
-				ShouldRestore: shouldRestore,
+				ShouldRestore: shouldRestore,   // 默认为 true
 				Opts:          m.opts,
 				done:          m.done,
 			})

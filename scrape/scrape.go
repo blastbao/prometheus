@@ -1633,63 +1633,35 @@ loop:
 				break loop
 			}
 
-
-
 			// 如果时间戳为空，会调用 sl.cache.trackStaleness 将当前指标 hash => lset 存储到 seriesCur 中。
 			if tp == nil {
 				// Bypass staleness logic if there is an explicit timestamp.
 				sl.cache.trackStaleness(hash, lset)
 			}
 
-
-
-
 			// 缓存指标的 cacheEntry 到 sl.cache 中
 			sl.cache.addRef(mets, ref, lset, hash)
-
-
-
 
 			// 增加缓存计数
 			if sampleAdded && sampleLimitErr == nil {
 				seriesAdded++
 			}
-
-
-
 		}
-
-
-
-
 
 		// Increment added even if there's a sampleLimitErr so we correctly report the number of samples scraped.
 		if sampleAdded || sampleLimitErr != nil {
 			added++
 		}
-
-
-
-
 	}
-
 
 	// 错误相关处理，不做分析。
 	if sampleLimitErr != nil {
-
-
 		if err == nil {
 			err = sampleLimitErr
 		}
-
-
 		// We only want to increment this once per scrape, so this is Inc'd outside the loop.
 		targetScrapeSampleLimit.Inc()
-
-
 	}
-
-
 
 	if appErrs.numOutOfOrder > 0 {
 		level.Warn(sl.l).Log("msg", "Error on ingesting out-of-order samples", "num_dropped", appErrs.numOutOfOrder)
