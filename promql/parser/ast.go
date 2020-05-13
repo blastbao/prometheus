@@ -37,12 +37,13 @@ import (
 // 	- ...
 //
 type Node interface {
-	// String representation of the node that returns the given node when parsed
-	// as part of a valid query.
+
+	// String representation of the node that returns the given node when parsed as part of a valid query.
 	String() string
 
 	// PositionRange returns the position of the AST Node in the query string.
 	PositionRange() PositionRange
+
 }
 
 // Statement is a generic interface for all statements.
@@ -54,27 +55,37 @@ type Statement interface {
 	stmt()
 }
 
-// EvalStmt holds an expression and information on the range it should
-// be evaluated on.
-type EvalStmt struct {
-	Expr Expr // Expression to be evaluated.
 
-	// The time boundaries for the evaluation. If Start equals End an instant
-	// is evaluated.
+
+
+// EvalStmt holds an expression and information on the range it should be evaluated on.
+type EvalStmt struct {
+
+
+	// Expression to be evaluated.
+	Expr Expr
+
+
+	// The time boundaries for the evaluation. If Start equals End an instant is evaluated.
 	Start, End time.Time
+
+
 	// Time between two evaluated instants for the range [Start:End].
 	Interval time.Duration
+
 }
 
 func (*EvalStmt) stmt() {}
 
 // Expr is a generic interface for all expression types.
 type Expr interface {
+
 	Node
 
-	// Type returns the type the expression evaluates to. It does not perform
-	// in-depth checks as this is done at parsing-time.
+	// Type returns the type the expression evaluates to.
+	// It does not perform in-depth checks as this is done at parsing-time.
 	Type() ValueType
+
 	// expr ensures that no other types accidentally implement the interface.
 	expr()
 }
@@ -84,12 +95,12 @@ type Expressions []Expr
 
 // AggregateExpr represents an aggregation operation on a Vector.
 type AggregateExpr struct {
-	Op       ItemType // The used aggregation operation.
-	Expr     Expr     // The Vector expression over which is aggregated.
-	Param    Expr     // Parameter used by some aggregators.
-	Grouping []string // The labels by which to group the Vector.
-	Without  bool     // Whether to drop the given labels rather than keep them.
-	PosRange PositionRange
+	Op       ItemType 		// The used aggregation operation.
+	Expr     Expr     		// The Vector expression over which is aggregated.
+	Param    Expr     		// Parameter used by some aggregators.
+	Grouping []string 		// The labels by which to group the Vector.
+	Without  bool     		// Whether to drop the given labels rather than keep them.
+	PosRange PositionRange	//
 }
 
 // BinaryExpr represents a binary expression between two child expressions.
@@ -107,16 +118,16 @@ type BinaryExpr struct {
 
 // Call represents a function call.
 type Call struct {
-	Func *Function   // The function that was called.
-	Args Expressions // Arguments used in the call.
+	Func *Function   		// The function that was called.
+	Args Expressions 		// Arguments used in the call.
 
 	PosRange PositionRange
 }
 
 // MatrixSelector represents a Matrix selection.
 type MatrixSelector struct {
-	// It is safe to assume that this is an VectorSelector
-	// if the parser hasn't returned an error.
+
+	// It is safe to assume that this is an VectorSelector if the parser hasn't returned an error.
 	VectorSelector Expr
 	Range          time.Duration
 

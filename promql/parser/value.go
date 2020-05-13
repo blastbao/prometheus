@@ -13,6 +13,8 @@
 
 package parser
 
+
+
 // Value is a generic interface for values resulting from a query evaluation.
 type Value interface {
 	Type() ValueType
@@ -25,11 +27,12 @@ type ValueType string
 // The valid value types.
 const (
 	ValueTypeNone   = "none"
-	ValueTypeVector = "vector"
-	ValueTypeScalar = "scalar"
-	ValueTypeMatrix = "matrix"
-	ValueTypeString = "string"
+	ValueTypeVector = "vector"	// 矢量/向量
+	ValueTypeScalar = "scalar"	// 标量
+	ValueTypeMatrix = "matrix"	// 矩阵
+	ValueTypeString = "string" 	// 字符串
 )
+
 
 // DocumentedType returns the internal type to the equivalent
 // user facing terminology as defined in the documentation.

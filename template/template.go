@@ -78,8 +78,6 @@ func (q queryResultByLabelSorter) Swap(i, j int) {
 // QueryFunc executes a PromQL query at the given time.
 type QueryFunc func(context.Context, string, time.Time) (promql.Vector, error)
 
-
-
 func query(ctx context.Context, q string, ts time.Time, queryFn QueryFunc) (queryResult, error) {
 
 	// 执行查询，返回一组 []promql.Sample 采样点
@@ -92,14 +90,21 @@ func query(ctx context.Context, q string, ts time.Time, queryFn QueryFunc) (quer
 	// promql.Vector 很难在模板中使用，因此转换为基本数据类型 queryResult 。
 	//
 	// TODO(fabxc): probably not true anymore after type rework.
+
+
 	var result = make(queryResult, len(vector))
+
 	for n, v := range vector {
+
 		s := sample{
 			Value:  v.V,
 			Labels: v.Metric.Map(),
 		}
+
 		result[n] = &s
 	}
+
+
 	return result, nil
 }
 
@@ -130,6 +135,7 @@ func NewTemplateExpander(
 		text: text,
 		name: name,
 		data: data,
+
 		funcMap: text_template.FuncMap{
 
 			"query": func(q string) (queryResult, error) {

@@ -63,6 +63,7 @@ func (s Scalar) MarshalJSON() ([]byte, error) {
 	return json.Marshal([...]interface{}{float64(s.T) / 1000, v})
 }
 
+
 // Series is a stream of data points belonging to a metric.
 type Series struct {
 	Metric labels.Labels `json:"metric"`
@@ -97,7 +98,6 @@ func (p Point) MarshalJSON() ([]byte, error) {
 // Sample is a single sample belonging to a metric.
 type Sample struct {
 	Point
-
 	Metric labels.Labels
 }
 
@@ -154,8 +154,8 @@ func (vec Vector) ContainsSameLabelset() bool {
 	return false
 }
 
-// Matrix is a slice of Series that implements sort.Interface and
-// has a String method.
+
+// Matrix is a slice of Series that implements sort.Interface and has a String method.
 type Matrix []Series
 
 func (m Matrix) String() string {
@@ -197,62 +197,77 @@ func (m Matrix) ContainsSameLabelset() bool {
 	return false
 }
 
-// Result holds the resulting value of an execution or an error
-// if any occurred.
+
+
+// Result holds the resulting value of an execution or an error if any occurred.
 type Result struct {
 	Err      error
 	Value    parser.Value
 	Warnings storage.Warnings
 }
 
-// Vector returns a Vector if the result value is one. An error is returned if
-// the result was an error or the result value is not a Vector.
+// Vector returns a Vector if the result value is one.
+// An error is returned if the result was an error or the result value is not a Vector.
 func (r *Result) Vector() (Vector, error) {
+
 	if r.Err != nil {
 		return nil, r.Err
 	}
+
 	v, ok := r.Value.(Vector)
 	if !ok {
 		return nil, errors.New("query result is not a Vector")
 	}
+
 	return v, nil
 }
 
-// Matrix returns a Matrix. An error is returned if
-// the result was an error or the result value is not a Matrix.
+// Matrix returns a Matrix.
+// An error is returned if the result was an error or the result value is not a Matrix.
 func (r *Result) Matrix() (Matrix, error) {
+
 	if r.Err != nil {
 		return nil, r.Err
 	}
+
 	v, ok := r.Value.(Matrix)
 	if !ok {
 		return nil, errors.New("query result is not a range Vector")
 	}
+
 	return v, nil
 }
 
-// Scalar returns a Scalar value. An error is returned if
-// the result was an error or the result value is not a Scalar.
+// Scalar returns a Scalar value.
+// An error is returned if the result was an error or the result value is not a Scalar.
 func (r *Result) Scalar() (Scalar, error) {
+
 	if r.Err != nil {
 		return Scalar{}, r.Err
 	}
+
 	v, ok := r.Value.(Scalar)
 	if !ok {
 		return Scalar{}, errors.New("query result is not a Scalar")
 	}
+
 	return v, nil
 }
 
 func (r *Result) String() string {
+
 	if r.Err != nil {
 		return r.Err.Error()
 	}
+
 	if r.Value == nil {
 		return ""
 	}
+
 	return r.Value.String()
 }
+
+
 
 // StorageSeries simulates promql.Series as storage.Series.
 type StorageSeries struct {

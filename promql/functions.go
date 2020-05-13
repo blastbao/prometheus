@@ -158,8 +158,9 @@ func funcIdelta(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelpe
 
 func instantValue(vals []parser.Value, out Vector, isRate bool) Vector {
 	samples := vals[0].(Matrix)[0]
-	// No sense in trying to compute a rate without at least two points. Drop
-	// this Vector element.
+
+	// No sense in trying to compute a rate without at least two points.
+	// Drop this Vector element.
 	if len(samples.Points) < 2 {
 		return out
 	}
@@ -214,6 +215,7 @@ func calcTrendValue(i int, tf, s0, s1, b float64) float64 {
 // how trends in historical data will affect the current data. A higher trend factor increases the influence.
 // of trends. Algorithm taken from https://en.wikipedia.org/wiki/Exponential_smoothing titled: "Double exponential smoothing".
 func funcHoltWinters(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+
 	samples := vals[0].(Matrix)[0]
 
 	// The smoothing factor argument.
@@ -226,6 +228,7 @@ func funcHoltWinters(vals []parser.Value, args parser.Expressions, enh *EvalNode
 	if sf <= 0 || sf >= 1 {
 		panic(errors.Errorf("invalid smoothing factor. Expected: 0 < sf < 1, got: %f", sf))
 	}
+
 	if tf <= 0 || tf >= 1 {
 		panic(errors.Errorf("invalid trend factor. Expected: 0 < tf < 1, got: %f", tf))
 	}
@@ -263,8 +266,7 @@ func funcHoltWinters(vals []parser.Value, args parser.Expressions, enh *EvalNode
 
 // === sort(node parser.ValueTypeVector) Vector ===
 func funcSort(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	// NaN should sort to the bottom, so take descending sort with NaN first and
-	// reverse it.
+	// NaN should sort to the bottom, so take descending sort with NaN first and reverse it.
 	byValueSorter := vectorByReverseValueHeap(vals[0].(Vector))
 	sort.Sort(sort.Reverse(byValueSorter))
 	return Vector(byValueSorter)
@@ -272,8 +274,7 @@ func funcSort(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper)
 
 // === sortDesc(node parser.ValueTypeVector) Vector ===
 func funcSortDesc(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	// NaN should sort to the bottom, so take ascending sort with NaN first and
-	// reverse it.
+	// NaN should sort to the bottom, so take ascending sort with NaN first and reverse it.
 	byValueSorter := vectorByValueHeap(vals[0].(Vector))
 	sort.Sort(sort.Reverse(byValueSorter))
 	return Vector(byValueSorter)
@@ -307,15 +308,19 @@ func funcClampMin(vals []parser.Value, args parser.Expressions, enh *EvalNodeHel
 
 // === round(Vector parser.ValueTypeVector, toNearest=1 Scalar) Vector ===
 func funcRound(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+
 	vec := vals[0].(Vector)
+
 	// round returns a number rounded to toNearest.
 	// Ties are solved by rounding up.
 	toNearest := float64(1)
 	if len(args) >= 2 {
 		toNearest = vals[1].(Vector)[0].Point.V
 	}
+
 	// Invert as it seems to cause fewer floating point accuracy issues.
 	toNearestInverse := 1.0 / toNearest
+
 
 	for _, el := range vec {
 		v := math.Floor(el.V*toNearestInverse+0.5) / toNearestInverse
@@ -329,122 +334,166 @@ func funcRound(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper
 
 // === Scalar(node parser.ValueTypeVector) Scalar ===
 func funcScalar(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+
 	v := vals[0].(Vector)
+
 	if len(v) != 1 {
 		return append(enh.out, Sample{
 			Point: Point{V: math.NaN()},
 		})
 	}
+
 	return append(enh.out, Sample{
 		Point: Point{V: v[0].V},
 	})
 }
 
 func aggrOverTime(vals []parser.Value, enh *EvalNodeHelper, aggrFn func([]Point) float64) Vector {
-	el := vals[0].(Matrix)[0]
-
+	series := vals[0].(Matrix)[0]
 	return append(enh.out, Sample{
-		Point: Point{V: aggrFn(el.Points)},
+		Point: 	Point{
+					V: aggrFn(series.Points),
+				},
 	})
 }
 
 // === avg_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcAvgOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		var mean, count float64
-		for _, v := range values {
-			count++
-			mean += (v.V - mean) / count
-		}
-		return mean
-	})
+	return aggrOverTime(
+		vals,
+		enh,
+		// avg()
+		func(points []Point) float64 {
+			var mean, count float64
+			for _, p := range points {
+				count++
+				mean += (p.V - mean) / count
+			}
+			return mean
+		},
+	)
 }
 
 // === count_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcCountOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		return float64(len(values))
-	})
+	return aggrOverTime(
+		vals,
+		enh,
+		// count()
+		func(points []Point) float64 {
+			return float64(len(points))
+		},
+	)
 }
 
 // === floor(Vector parser.ValueTypeVector) Vector ===
 // === max_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcMaxOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		max := values[0].V
-		for _, v := range values {
-			if v.V > max || math.IsNaN(max) {
-				max = v.V
+	return aggrOverTime(
+		vals,
+		enh,
+		// max()
+		func(points []Point) float64 {
+			max := points[0].V
+			for _, p := range points {
+				if p.V > max || math.IsNaN(max) {
+					max = p.V
+				}
 			}
-		}
-		return max
-	})
+			return max
+		},
+	)
 }
 
 // === min_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcMinOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		min := values[0].V
-		for _, v := range values {
-			if v.V < min || math.IsNaN(min) {
-				min = v.V
+	return aggrOverTime(
+		vals,
+		enh,
+		// min()
+		func(points []Point) float64 {
+			min := points[0].V
+			for _, p := range points {
+				if p.V < min || math.IsNaN(min) {
+					min = p.V
+				}
 			}
-		}
-		return min
-	})
+			return min
+		},
+	)
 }
 
 // === sum_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcSumOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		var sum float64
-		for _, v := range values {
-			sum += v.V
-		}
-		return sum
-	})
+	return aggrOverTime(
+		vals,
+		enh,
+		// sum()
+		func(points []Point) float64 {
+			var sum float64
+			for _, p := range points {
+				sum += p.V
+			}
+			return sum
+		},
+	)
+
 }
 
 // === quantile_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcQuantileOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	q := vals[0].(Vector)[0].V
+
+	q  := vals[0].(Vector)[0].V
 	el := vals[1].(Matrix)[0]
 
 	values := make(vectorByValueHeap, 0, len(el.Points))
+
 	for _, v := range el.Points {
 		values = append(values, Sample{Point: Point{V: v.V}})
 	}
+
 	return append(enh.out, Sample{
 		Point: Point{V: quantile(q, values)},
 	})
+
 }
 
 // === stddev_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcStddevOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		var aux, count, mean float64
-		for _, v := range values {
-			count++
-			delta := v.V - mean
-			mean += delta / count
-			aux += delta * (v.V - mean)
-		}
-		return math.Sqrt(aux / count)
-	})
+	return aggrOverTime(
+		vals,
+		enh,
+		// stddev()
+		func(values []Point) float64 {
+			var aux, count, mean float64
+			for _, v := range values {
+				count++
+				delta := v.V - mean
+				mean += delta / count
+				aux += delta * (v.V - mean)
+			}
+			return math.Sqrt(aux / count)
+		},
+	)
 }
 
 // === stdvar_over_time(Matrix parser.ValueTypeMatrix) Vector ===
 func funcStdvarOverTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	return aggrOverTime(vals, enh, func(values []Point) float64 {
-		var aux, count, mean float64
-		for _, v := range values {
-			count++
-			delta := v.V - mean
-			mean += delta / count
-			aux += delta * (v.V - mean)
-		}
-		return aux / count
-	})
+	return aggrOverTime(
+		vals,
+		enh,
+		// stdvar()
+		func(values []Point) float64 {
+			var aux, count, mean float64
+			for _, v := range values {
+				count++
+				delta := v.V - mean
+				mean += delta / count
+				aux += delta * (v.V - mean)
+			}
+			return aux / count
+		},
+	)
 }
 
 // === absent(Vector parser.ValueTypeVector) Vector ===
@@ -452,8 +501,7 @@ func funcAbsent(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelpe
 	if len(vals[0].(Vector)) > 0 {
 		return enh.out
 	}
-	return append(enh.out,
-		Sample{
+	return append(enh.out, Sample{
 			Metric: createLabelsForAbsentFunction(args[0]),
 			Point:  Point{V: 1},
 		})
@@ -471,13 +519,18 @@ func funcAbsentOverTime(vals []parser.Value, args parser.Expressions, enh *EvalN
 		})
 }
 
+
 func simpleFunc(vals []parser.Value, enh *EvalNodeHelper, f func(float64) float64) Vector {
+
 	for _, el := range vals[0].(Vector) {
+
 		enh.out = append(enh.out, Sample{
 			Metric: enh.dropMetricName(el.Metric),
 			Point:  Point{V: f(el.V)},
 		})
+
 	}
+
 	return enh.out
 }
 
@@ -664,9 +717,9 @@ func funcResets(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelpe
 // === changes(Matrix parser.ValueTypeMatrix) Vector ===
 func funcChanges(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
 	samples := vals[0].(Matrix)[0]
-
 	changes := 0
 	prev := samples.Points[0].V
+
 	for _, sample := range samples.Points[1:] {
 		current := sample.V
 		if current != prev && !(math.IsNaN(current) && math.IsNaN(prev)) {

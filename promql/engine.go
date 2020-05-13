@@ -250,13 +250,17 @@ func contextErr(err error, env string) error {
 
 // EngineOpts contains configuration options used when creating a new Engine.
 type EngineOpts struct {
+
 	Logger             log.Logger
+
 	Reg                prometheus.Registerer
+
 	MaxSamples         int
 	Timeout            time.Duration
 	ActiveQueryTracker *ActiveQueryTracker
-	// LookbackDelta determines the time since the last sample after which a time
-	// series is considered stale.
+
+
+	// LookbackDelta determines the time since the last sample after which a time series is considered stale.
 	LookbackDelta time.Duration
 }
 
@@ -380,6 +384,7 @@ func NewEngine(opts EngineOpts) *Engine {
 	}
 }
 
+
 // SetQueryLogger sets the query logger.
 func (ng *Engine) SetQueryLogger(l QueryLogger) {
 
@@ -446,6 +451,7 @@ func (ng *Engine) NewRangeQuery(q storage.Queryable, qs string, start, end time.
 
 func (ng *Engine) newQuery(q storage.Queryable, expr parser.Expr, start, end time.Time, interval time.Duration) *query {
 
+	//
 	es := &parser.EvalStmt{
 		Expr:     expr,		// 表达式
 		Start:    start,	// 开始时间
@@ -453,12 +459,14 @@ func (ng *Engine) newQuery(q storage.Queryable, expr parser.Expr, start, end tim
 		Interval: interval,	// 时间间隔
 	}
 
+	//
 	qry := &query{
 		stmt:      es,
 		ng:        ng,
 		stats:     stats.NewQueryTimers(),
 		queryable: q,
 	}
+
 	return qry
 }
 
@@ -471,6 +479,11 @@ func (ng *Engine) newTestQuery(f func(context.Context) error) Query {
 	}
 	return qry
 }
+
+
+
+
+
 
 // exec executes the query.
 //
@@ -500,7 +513,6 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 				params["end"] = formatDate(eq.End)
 				params["step"] = int64(eq.Interval / (time.Second / time.Nanosecond)) // The step provided by the user is in seconds.
 			}
-
 
 			f := []interface{}{"params", params}
 			if err != nil {
@@ -582,6 +594,9 @@ func durationMilliseconds(d time.Duration) int64 {
 
 // execEvalStmt evaluates the expression of an evaluation statement for the given time range.
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, storage.Warnings, error) {
+
+
+
 	prepareSpanTimer, ctxPrepare := query.stats.GetSpanTimer(ctx, stats.QueryPreparationTime, ng.metrics.queryPrepareTime)
 	mint := ng.findMinTime(s)
 
@@ -848,9 +863,11 @@ func expandSeriesSet(ctx context.Context, it storage.SeriesSet) (res []storage.S
 	return res, it.Err()
 }
 
-// An evaluator evaluates given expressions over given fixed timestamps. It
-// is attached to an engine through which it connects to a querier and reports
-// errors. On timeout or cancellation of its context it terminates.
+// An evaluator evaluates given expressions over given fixed timestamps.
+//
+// It is attached to an engine through which it connects to a querier and reports errors.
+//
+// On timeout or cancellation of its context it terminates.
 type evaluator struct {
 	ctx context.Context
 
@@ -864,6 +881,7 @@ type evaluator struct {
 	logger              log.Logger
 	lookbackDelta       time.Duration
 }
+
 
 // errorf causes a panic with the input formatted into an error.
 func (ev *evaluator) errorf(format string, args ...interface{}) {
@@ -898,20 +916,30 @@ func (ev *evaluator) Eval(expr parser.Expr) (v parser.Value, err error) {
 	return ev.eval(expr), nil
 }
 
+
+
+
 // EvalNodeHelper stores extra information and caches for evaluating a single node across steps.
+//
+//
 type EvalNodeHelper struct {
+
 	// Evaluation timestamp.
 	ts int64
+
 	// Vector that can be used for output.
 	out Vector
 
 	// Caches.
 	// dropMetricName and label_*.
 	dmn map[uint64]labels.Labels
+
 	// signatureFunc.
 	sigf map[uint64]uint64
+
 	// funcHistogramQuantile.
 	signatureToMetricWithBuckets map[uint64]*metricWithBuckets
+
 	// label_replace.
 	regex *regexp.Regexp
 
@@ -919,6 +947,7 @@ type EvalNodeHelper struct {
 	rightSigs    map[uint64]Sample
 	matchedSigs  map[uint64]map[uint64]struct{}
 	resultMetric map[uint64]labels.Labels
+
 }
 
 // dropMetricName is a cached version of dropMetricName.
@@ -1098,21 +1127,28 @@ func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelec
 
 // eval evaluates the given expression as the given AST expression node requires.
 func (ev *evaluator) eval(expr parser.Expr) parser.Value {
+
+
 	// This is the top-level evaluation method.
 	// Thus, we check for timeout/cancellation here.
+
+
 	if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
 		ev.error(err)
 	}
+
 	numSteps := int((ev.endTimestamp-ev.startTimestamp)/ev.interval) + 1
 
 	switch e := expr.(type) {
 	case *parser.AggregateExpr:
+
 		unwrapParenExpr(&e.Param)
 		if s, ok := e.Param.(*parser.StringLiteral); ok {
 			return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
 				return ev.aggregation(e.Op, e.Grouping, e.Without, s.Val, v[0].(Vector), enh)
 			}, e.Expr)
 		}
+
 		return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
 			var param float64
 			if e.Param != nil {
@@ -1120,6 +1156,7 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			}
 			return ev.aggregation(e.Op, e.Grouping, e.Without, param, v[1].(Vector), enh)
 		}, e.Param, e.Expr)
+
 
 	case *parser.Call:
 		call := FunctionCalls[e.Func.Name]

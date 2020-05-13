@@ -229,6 +229,7 @@ type Pos int
 
 // Lexer holds the state of the scanner.
 type Lexer struct {
+
 	input       string  // The string being scanned.
 	state       stateFn // The next lexing function to enter.
 	pos         Pos     // Current position in the input.
@@ -251,13 +252,18 @@ type Lexer struct {
 
 // next returns the next rune in the input.
 func (l *Lexer) next() rune {
+
 	if int(l.pos) >= len(l.input) {
 		l.width = 0
 		return eof
 	}
+
 	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
+
 	l.width = Pos(w)
+
 	l.pos += l.width
+
 	return r
 }
 
@@ -339,11 +345,16 @@ func Lex(input string) *Lexer {
 // lineComment is the character that starts a line comment.
 const lineComment = "#"
 
+
+
+
 // lexStatements is the top-level state for lexing.
 func lexStatements(l *Lexer) stateFn {
+
 	if l.braceOpen {
 		return lexInsideBraces
 	}
+
 	if strings.HasPrefix(l.input[l.pos:], lineComment) {
 		return lexLineComment
 	}
@@ -457,15 +468,20 @@ func lexStatements(l *Lexer) stateFn {
 	default:
 		return l.errorf("unexpected character: %q", r)
 	}
+
 	return lexStatements
 }
 
-// lexInsideBraces scans the inside of a vector selector. Keywords are ignored and
-// scanned as identifiers.
+
+// lexInsideBraces scans the inside of a vector selector.
+// Keywords are ignored and scanned as identifiers.
 func lexInsideBraces(l *Lexer) stateFn {
+
+
 	if strings.HasPrefix(l.input[l.pos:], lineComment) {
 		return lexLineComment
 	}
+
 
 	switch r := l.next(); {
 	case r == eof:
@@ -514,6 +530,7 @@ func lexInsideBraces(l *Lexer) stateFn {
 	}
 	return lexInsideBraces
 }
+
 
 // lexValueSequence scans a value sequence of a series description.
 func lexValueSequence(l *Lexer) stateFn {

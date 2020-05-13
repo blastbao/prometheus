@@ -462,9 +462,11 @@ func main() {
 			queryEngine.SetQueryLogger(l)
 			return nil
 		},
+
 		// The Scrape and notifier managers need to reload before the Discovery manager as
 		// they need to read the most updated config when receiving the new targets list.
 		scrapeManager.ApplyConfig,
+
 		func(cfg *config.Config) error {
 			c := make(map[string]sd_config.ServiceDiscoveryConfig)
 			for _, v := range cfg.ScrapeConfigs {
@@ -512,10 +514,12 @@ func main() {
 		once  sync.Once
 		Close func()
 	}
+
 	// Wait until the server is ready to handle reloading.
 	reloadReady := &closeOnce{
 		C: make(chan struct{}),
 	}
+
 	reloadReady.Close = func() {
 		reloadReady.once.Do(func() {
 			close(reloadReady.C)
@@ -677,6 +681,7 @@ func main() {
 			},
 		)
 	}
+
 	{
 		// Rule manager.
 		// TODO(krasi) refactor ruleManager.Run() to be blocking to avoid using an extra blocking channel.
@@ -694,6 +699,7 @@ func main() {
 			},
 		)
 	}
+
 	{
 		// TSDB.
 		opts := cfg.tsdb.ToTSDBOptions()
@@ -821,7 +827,10 @@ func openDBWithMetrics(dir string, logger log.Logger, reg prometheus.Registerer,
 }
 
 func reloadConfig(filename string, logger log.Logger, rls ...func(*config.Config) error) (err error) {
+
+
 	level.Info(logger).Log("msg", "Loading configuration file", "filename", filename)
+
 
 	defer func() {
 		if err == nil {
@@ -832,10 +841,12 @@ func reloadConfig(filename string, logger log.Logger, rls ...func(*config.Config
 		}
 	}()
 
+
 	conf, err := config.LoadFile(filename)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't load configuration (--config.file=%q)", filename)
 	}
+
 
 	failed := false
 	for _, rl := range rls {
@@ -844,11 +855,15 @@ func reloadConfig(filename string, logger log.Logger, rls ...func(*config.Config
 			failed = true
 		}
 	}
+
+
 	if failed {
 		return errors.Errorf("one or more errors occurred while applying the new configuration (--config.file=%q)", filename)
 	}
 
+
 	promql.SetDefaultEvaluationInterval(time.Duration(conf.GlobalConfig.EvaluationInterval))
+
 	level.Info(logger).Log("msg", "Completed loading of configuration file", "filename", filename)
 	return nil
 }
