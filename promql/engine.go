@@ -1988,6 +1988,11 @@ type groupedAggregation struct {
 	reverseHeap vectorByReverseValueHeap
 }
 
+
+
+
+
+
 // aggregation evaluates an aggregation operation on a Vector.
 func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without bool, param interface{}, vec Vector, enh *EvalNodeHelper) Vector {
 

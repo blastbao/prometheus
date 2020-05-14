@@ -35,7 +35,9 @@ var parserPool = sync.Pool{
 	},
 }
 
+
 type parser struct {
+
 	lex Lexer
 
 	inject    ItemType
@@ -51,13 +53,16 @@ type parser struct {
 	parseErrors           ParseErrors
 }
 
+
 // ParseErr wraps a parsing error with line and position context.
 type ParseErr struct {
+
 	PositionRange PositionRange
 	Err           error
 	Query         string
 
-	// LineOffset is an additional line offset to be added. Only used inside unit tests.
+	// LineOffset is an additional line offset to be added.
+	// Only used inside unit tests.
 	LineOffset int
 }
 
@@ -85,6 +90,8 @@ func (e *ParseErr) Error() string {
 	return fmt.Sprintf("%s parse error: %s", positionStr, e.Err)
 }
 
+
+
 type ParseErrors []ParseErr
 
 // Since producing multiple error messages might look weird when combined with error wrapping,
@@ -92,23 +99,33 @@ type ParseErrors []ParseErr
 // If getting the full error list is desired, it is recommended to typecast the error returned
 // by the parser to ParseErrors and work with the underlying slice.
 func (errs ParseErrors) Error() string {
+
 	if len(errs) != 0 {
 		return errs[0].Error()
 	}
+
 	// Should never happen
-	// Panicking while printing an error seems like a bad idea, so the
-	// situation is explained in the error message instead.
+	// Panicking while printing an error seems like a bad idea,
+	// so the situation is explained in the error message instead.
 	return "error contains no error message"
 }
 
+
+
+
 // ParseExpr returns the expression parsed from the input.
 func ParseExpr(input string) (expr Expr, err error) {
-	p := newParser(input)
-	defer parserPool.Put(p)
-	defer p.recover(&err)
 
+	p := newParser(input)
+
+	defer parserPool.Put(p)	// 回收 parser
+	defer p.recover(&err)	// 如果 panic，把 panic 信息转换成 error 赋值给 err
+
+
+	// input 是表达式，所以按表达式来解析
 	parseResult := p.parseGenerated(START_EXPRESSION)
 
+	// 获取表达式
 	if parseResult != nil {
 		expr = parseResult.(Expr)
 	}
@@ -143,8 +160,8 @@ func ParseMetric(input string) (m labels.Labels, err error) {
 	return m, err
 }
 
-// ParseMetricSelector parses the provided textual metric selector into a list of
-// label matchers.
+
+// ParseMetricSelector parses the provided textual metric selector into a list of label matchers.
 func ParseMetricSelector(input string) (m []*labels.Matcher, err error) {
 	p := newParser(input)
 	defer parserPool.Put(p)
@@ -164,6 +181,9 @@ func ParseMetricSelector(input string) (m []*labels.Matcher, err error) {
 
 // newParser returns a new parser.
 func newParser(input string) *parser {
+
+
+	// 取出一个可用 parser
 	p := parserPool.Get().(*parser)
 
 	p.injecting = false
@@ -174,6 +194,7 @@ func newParser(input string) *parser {
 		input: input,
 		state: lexStatements,
 	}
+
 	return p
 }
 
@@ -266,7 +287,9 @@ var errUnexpected = errors.New("unexpected error")
 
 // recover is the handler that turns panics into returns from the top level of Parse.
 func (p *parser) recover(errp *error) {
+
 	e := recover()
+
 	if _, ok := e.(runtime.Error); ok {
 		// Print the stack trace but do not inhibit the running application.
 		buf := make([]byte, 64<<10)
@@ -288,41 +311,60 @@ func (p *parser) recover(errp *error) {
 // and error handling.
 //
 // For more information, see https://godoc.org/golang.org/x/tools/cmd/goyacc.
+
+//
+//
+//
 func (p *parser) Lex(lval *yySymType) int {
+
 	var typ ItemType
 
 	if p.injecting {
 		p.injecting = false
 		return int(p.inject)
 	}
+
 	// Skip comments.
 	for {
+
 		p.lex.NextItem(&lval.item)
 		typ = lval.item.Typ
+
 		if typ != COMMENT {
 			break
 		}
+
 	}
 
+
+
 	switch typ {
+
 	case ERROR:
+
 		pos := PositionRange{
 			Start: p.lex.start,
 			End:   Pos(len(p.lex.input)),
 		}
 		p.addParseErr(pos, errors.New(p.yyParser.lval.item.Val))
-
 		// Tells yacc that this is the end of input.
 		return 0
+
+
+	// 如果读取到文件末尾，需要返回0， parser 就会知道已完结。
 	case EOF:
+
 		lval.item.Typ = EOF
 		p.InjectItem(0)
+
 	case RIGHT_BRACE, RIGHT_PAREN, RIGHT_BRACKET, DURATION:
 		p.lastClosing = lval.item.Pos + Pos(len(lval.item.Val))
 	}
 
+
 	return int(typ)
 }
+
 
 // Error is expected by the yyLexer interface of the yacc generated parser.
 //
@@ -332,14 +374,21 @@ func (p *parser) Lex(lval *yySymType) int {
 func (p *parser) Error(e string) {
 }
 
+
+
 // InjectItem allows injecting a single Item at the beginning of the token stream
 // consumed by the generated parser.
+//
 // This allows having multiple start symbols as described in
 // https://www.gnu.org/software/bison/manual/html_node/Multiple-start_002dsymbols.html .
+//
 // Only the Lex function used by the generated parser is affected by this injected Item.
+//
 // Trying to inject when a previously injected Item has not yet been consumed will panic.
+//
 // Only Item types that are supposed to be used as start symbols are allowed as an argument.
 func (p *parser) InjectItem(typ ItemType) {
+
 	if p.injecting {
 		panic("cannot inject multiple Items into the token stream")
 	}
@@ -351,6 +400,7 @@ func (p *parser) InjectItem(typ ItemType) {
 	p.inject = typ
 	p.injecting = true
 }
+
 func (p *parser) newBinaryExpression(lhs Node, op Item, modifiers Node, rhs Node) *BinaryExpr {
 	ret := modifiers.(*BinaryExpr)
 
@@ -371,8 +421,15 @@ func (p *parser) assembleVectorSelector(vs *VectorSelector) {
 	}
 }
 
+
+
+
 func (p *parser) newAggregateExpr(op Item, modifier Node, args Node) (ret *AggregateExpr) {
+
+
+
 	ret = modifier.(*AggregateExpr)
+
 	arguments := args.(Expressions)
 
 	ret.PosRange = PositionRange{
@@ -615,6 +672,8 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 	return
 }
 
+
+
 func (p *parser) unquoteString(s string) string {
 	unquoted, err := strutil.Unquote(s)
 	if err != nil {
@@ -634,14 +693,20 @@ func parseDuration(ds string) (time.Duration, error) {
 	return time.Duration(dur), nil
 }
 
+
 // parseGenerated invokes the yacc generated parser.
+//
 // The generated parser gets the provided startSymbol injected into
 // the lexer stream, based on which grammar will be used.
 func (p *parser) parseGenerated(startSymbol ItemType) interface{} {
+
+	// 设置 start 符号
 	p.InjectItem(startSymbol)
 
+	// 执行解析
 	p.yyParser.Parse(p)
 
+	// 获取解析结果
 	return p.generatedParserResult
 
 }

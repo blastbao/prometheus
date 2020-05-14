@@ -33,6 +33,8 @@ type yySymType struct {
 	duration time.Duration
 }
 
+
+//
 const ASSIGN = 57346
 const BLANK = 57347
 const COLON = 57348
@@ -54,38 +56,45 @@ const SEMICOLON = 57363
 const SPACE = 57364
 const STRING = 57365
 const TIMES = 57366
+
+// 操作符
 const operatorsStart = 57367
-const ADD = 57368
-const DIV = 57369
-const EQL = 57370
-const EQL_REGEX = 57371
-const GTE = 57372
-const GTR = 57373
-const LAND = 57374
-const LOR = 57375
-const LSS = 57376
-const LTE = 57377
-const LUNLESS = 57378
-const MOD = 57379
-const MUL = 57380
-const NEQ = 57381
-const NEQ_REGEX = 57382
-const POW = 57383
-const SUB = 57384
+const ADD = 57368			// +
+const DIV = 57369			// /
+
+const EQL = 57370			// ==
+const EQL_REGEX = 57371		// =～
+const GTE = 57372			// >=
+const GTR = 57373			// >
+const LAND = 57374			// and
+const LOR = 57375			// or
+const LSS = 57376			// <
+const LTE = 57377			// <=
+const LUNLESS = 57378		// unless
+const MOD = 57379			// %
+const MUL = 57380			// *
+const NEQ = 57381			// !=
+const NEQ_REGEX = 57382		// !~
+const POW = 57383			// ^
+const SUB = 57384			// -
 const operatorsEnd = 57385
+
+// 聚合函数
 const aggregatorsStart = 57386
 const AVG = 57387
-const BOTTOMK = 57388
+const BOTTOMK = 57388			// 带参数
 const COUNT = 57389
-const COUNT_VALUES = 57390
+const COUNT_VALUES = 57390		// 带参数
 const MAX = 57391
 const MIN = 57392
-const QUANTILE = 57393
+const QUANTILE = 57393			// 带参数
 const STDDEV = 57394
 const STDVAR = 57395
 const SUM = 57396
-const TOPK = 57397
+const TOPK = 57397				// 带参数
 const aggregatorsEnd = 57398
+
+// 关键字
 const keywordsStart = 57399
 const BOOL = 57400
 const BY = 57401
@@ -96,6 +105,8 @@ const OFFSET = 57405
 const ON = 57406
 const WITHOUT = 57407
 const keywordsEnd = 57408
+
+// Start
 const startSymbolsStart = 57409
 const START_METRIC = 57410
 const START_SERIES_DESCRIPTION = 57411
