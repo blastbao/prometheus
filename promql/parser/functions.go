@@ -16,10 +16,10 @@ package parser
 
 // Function represents a function of the expression language and is used by function nodes.
 type Function struct {
-	Name       string
-	ArgTypes   []ValueType
-	Variadic   int
-	ReturnType ValueType
+	Name       string		// 函数名
+	ArgTypes   []ValueType	// 参数表
+	Variadic   int			// 可变参数的最大数目，默认为 0 即不支持可变参数
+	ReturnType ValueType	// 返回值类型
 }
 
 // Functions is a list of all functions supported by PromQL, including their types.

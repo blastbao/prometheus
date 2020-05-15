@@ -387,13 +387,10 @@ func NewEngine(opts EngineOpts) *Engine {
 
 // SetQueryLogger sets the query logger.
 func (ng *Engine) SetQueryLogger(l QueryLogger) {
-
 	ng.queryLoggerLock.Lock()
 	defer ng.queryLoggerLock.Unlock()
 
-
 	if ng.queryLogger != nil {
-
 		// An error closing the old file descriptor should not make reload fail; only log a warning.
 		err := ng.queryLogger.Close()
 		if err != nil {
@@ -402,7 +399,6 @@ func (ng *Engine) SetQueryLogger(l QueryLogger) {
 	}
 
 	ng.queryLogger = l
-
 	if l != nil {
 		ng.metrics.queryLogEnabled.Set(1)
 	} else {
@@ -415,14 +411,15 @@ func (ng *Engine) SetQueryLogger(l QueryLogger) {
 // NewInstantQuery returns an evaluation query for the given expression at the given time.
 func (ng *Engine) NewInstantQuery(q storage.Queryable, qs string, ts time.Time) (Query, error) {
 
+	// 表达式解析
 	expr, err := parser.ParseExpr(qs)
 	if err != nil {
 		return nil, err
 	}
 
-	//
+	// 构造查询对象
 	qry := ng.newQuery(q, expr, ts, ts, 0)
-	qry.q = qs
+	qry.q = qs 	// 设置原始查询语句
 
 	return qry, nil
 }
@@ -430,28 +427,27 @@ func (ng *Engine) NewInstantQuery(q storage.Queryable, qs string, ts time.Time) 
 // NewRangeQuery returns an evaluation query for the given time range and with the resolution set by the interval.
 func (ng *Engine) NewRangeQuery(q storage.Queryable, qs string, start, end time.Time, interval time.Duration) (Query, error) {
 
-
+	// 表达式解析
 	expr, err := parser.ParseExpr(qs)
 	if err != nil {
 		return nil, err
 	}
 
-
+	// 表达式类型是 矢量 或 标量
 	if expr.Type() != parser.ValueTypeVector && expr.Type() != parser.ValueTypeScalar {
 		return nil, errors.Errorf("invalid expression type %q for range query, must be Scalar or instant Vector", parser.DocumentedType(expr.Type()))
 	}
 
-
+	// 构造查询对象
 	qry := ng.newQuery(q, expr, start, end, interval)
-	qry.q = qs
-
+	qry.q = qs	// 设置原始查询语句
 
 	return qry, nil
 }
 
 func (ng *Engine) newQuery(q storage.Queryable, expr parser.Expr, start, end time.Time, interval time.Duration) *query {
 
-	//
+	// EvalStmt 保存了表达式和求值范围信息。
 	es := &parser.EvalStmt{
 		Expr:     expr,		// 表达式
 		Start:    start,	// 开始时间
@@ -459,12 +455,12 @@ func (ng *Engine) newQuery(q storage.Queryable, expr parser.Expr, start, end tim
 		Interval: interval,	// 时间间隔
 	}
 
-	//
+	// 构造查询对象
 	qry := &query{
-		stmt:      es,
-		ng:        ng,
-		stats:     stats.NewQueryTimers(),
-		queryable: q,
+		stmt:      es,						// 表达式及查询区间
+		ng:        ng,						// engine 的引用
+		stats:     stats.NewQueryTimers(),	// 查询统计信息
+		queryable: q,						// storage 查询器
 	}
 
 	return qry
@@ -574,12 +570,16 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 		return nil, nil, err
 	}
 
+
+
 	switch s := q.Statement().(type) {
 	case *parser.EvalStmt:
 		return ng.execEvalStmt(ctx, q, s)
 	case parser.TestStmt:
 		return nil, nil, s(ctx)
 	}
+
+
 
 	panic(errors.Errorf("promql.Engine.exec: unhandled statement of type %T", q.Statement()))
 }
@@ -588,16 +588,21 @@ func timeMilliseconds(t time.Time) int64 {
 	return t.UnixNano() / int64(time.Millisecond/time.Nanosecond)
 }
 
+// time.Duration => millisecond
 func durationMilliseconds(d time.Duration) int64 {
 	return int64(d / (time.Millisecond / time.Nanosecond))
 }
 
 // execEvalStmt evaluates the expression of an evaluation statement for the given time range.
+//
+// execEvalStmt 执行指定时间范围的表达式查询语句。
+//
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, storage.Warnings, error) {
 
 
 
 	prepareSpanTimer, ctxPrepare := query.stats.GetSpanTimer(ctx, stats.QueryPreparationTime, ng.metrics.queryPrepareTime)
+
 	mint := ng.findMinTime(s)
 
 
@@ -610,16 +615,29 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 
 
 	warnings, err := ng.populateSeries(ctxPrepare, querier, s)
+
+
 	prepareSpanTimer.Finish()
+
 
 	if err != nil {
 		return nil, warnings, err
 	}
 
+
+
 	evalSpanTimer, ctxInnerEval := query.stats.GetSpanTimer(ctx, stats.InnerEvalTime, ng.metrics.queryInnerEval)
-	// Instant evaluation. This is executed as a range evaluation with one step.
+
+
+	// Instant evaluation.
+	//
+	// This is executed as a range evaluation with one step.
+	//
+
 	if s.Start == s.End && s.Interval == 0 {
+
 		start := timeMilliseconds(s.Start)
+
 		evaluator := &evaluator{
 			startTimestamp:      start,
 			endTimestamp:        start,
@@ -631,10 +649,13 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 			lookbackDelta:       ng.lookbackDelta,
 		}
 
+
+		//
 		val, err := evaluator.Eval(s.Expr)
 		if err != nil {
 			return nil, warnings, err
 		}
+
 
 		evalSpanTimer.Finish()
 
@@ -649,25 +670,38 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 			panic(errors.Errorf("promql.Engine.exec: invalid expression type %q", val.Type()))
 		}
 
+
 		query.matrix = mat
 		switch s.Expr.Type() {
 		case parser.ValueTypeVector:
+
 			// Convert matrix with one value per series into vector.
+
 			vector := make(Vector, len(mat))
+
 			for i, s := range mat {
-				// Point might have a different timestamp, force it to the evaluation
-				// timestamp as that is when we ran the evaluation.
+				// Point might have a different timestamp,
+				// force it to the evaluation timestamp as that is when we ran the evaluation.
 				vector[i] = Sample{Metric: s.Metric, Point: Point{V: s.Points[0].V, T: start}}
 			}
+
 			return vector, warnings, nil
+
 		case parser.ValueTypeScalar:
-			return Scalar{V: mat[0].Points[0].V, T: start}, warnings, nil
+
+			return Scalar{
+				V: mat[0].Points[0].V,
+				T: start,
+			}, warnings, nil
+
 		case parser.ValueTypeMatrix:
 			return mat, warnings, nil
+
 		default:
 			panic(errors.Errorf("promql.Engine.exec: unexpected expression type %q", s.Expr.Type()))
 		}
 	}
+
 
 	// Range evaluation.
 	evaluator := &evaluator{
@@ -680,16 +714,20 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 		logger:              ng.logger,
 		lookbackDelta:       ng.lookbackDelta,
 	}
+
 	val, err := evaluator.Eval(s.Expr)
 	if err != nil {
 		return nil, warnings, err
 	}
+
 	evalSpanTimer.Finish()
 
 	mat, ok := val.(Matrix)
 	if !ok {
 		panic(errors.Errorf("promql.Engine.exec: invalid expression type %q", val.Type()))
 	}
+
+
 	query.matrix = mat
 
 	if err := contextDone(ctx, "expression evaluation"); err != nil {
@@ -705,18 +743,20 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 }
 
 // cumulativeSubqueryOffset returns the sum of range and offset of all subqueries in the path.
+//
+// 确保最终的 timeRange 能够覆盖整个搜索路径的所有上层子查询。
 func (ng *Engine) cumulativeSubqueryOffset(path []parser.Node) time.Duration {
-
 
 	var subqOffset time.Duration
 
+	// 遍历搜索路径上所以的上层子查询，每个子查询有独立的 timeRange 和 timeOffset ，
+	// 这里累加所有子查询的  timeRange 和 timeOffset 。
 	for _, node := range path {
 		switch n := node.(type) {
 		case *parser.SubqueryExpr:
 			subqOffset += n.Range + n.Offset
 		}
 	}
-
 	return subqOffset
 }
 
@@ -725,37 +765,49 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 
 	var maxOffset time.Duration
 
+	// parser.Inspect() 调用 parser.Walk() 深度优先遍历 AST ，在深搜过程中，会对每个 node 调用 f 进行处理。
 	parser.Inspect(
 
-		//
+		// 根节点
 		s.Expr,
 
-		//
+		// f(node, path) error
 		func(node parser.Node, path []parser.Node) error {
 
+
+			//
 			subqOffset := ng.cumulativeSubqueryOffset(path)
 
+
+
+
 			switch n := node.(type) {
+
+			// foo{bar="baz"}
 			case *parser.VectorSelector:
 
-				if maxOffset < ng.lookbackDelta+subqOffset {
+				if maxOffset < ng.lookbackDelta + subqOffset {
 					maxOffset = ng.lookbackDelta + subqOffset
 				}
 
-				if n.Offset+ng.lookbackDelta+subqOffset > maxOffset {
-					maxOffset = n.Offset + ng.lookbackDelta + subqOffset
-				}
+				m := n.Offset + ng.lookbackDelta + subqOffset
 
-			case *parser.MatrixSelector:
-
-				if maxOffset < n.Range+subqOffset {
-					maxOffset = n.Range + subqOffset
-				}
-
-				if m := n.VectorSelector.(*parser.VectorSelector).Offset + n.Range + subqOffset; m > maxOffset {
+				if m > maxOffset {
 					maxOffset = m
 				}
 
+			// foo{bar="baz"}[2s]
+			case *parser.MatrixSelector:
+
+				if maxOffset < n.Range + subqOffset {
+					maxOffset = n.Range + subqOffset
+				}
+
+				m := n.VectorSelector.(*parser.VectorSelector).Offset + n.Range + subqOffset
+
+				if m > maxOffset {
+					maxOffset = m
+				}
 			}
 
 			return nil
@@ -769,64 +821,114 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 
 
 	var (
+
 		// Whenever a MatrixSelector is evaluated, evalRange is set to the corresponding range.
-		// The evaluation of the VectorSelector inside then evaluates the given range and unsets
-		// the variable.
+		// The evaluation of the VectorSelector inside then evaluates the given range and unsets the variable.
+		//
+		// 当执行 MatrixSelector 时，evaluationRange 设置为相应的时间范围。
+		// 当执行 MatrixSelector 内含的 VectorSelector 时，这个时间范围被忽略？
+
 		evalRange time.Duration
 		warnings  storage.Warnings
 		err       error
 	)
 
-	parser.Inspect(s.Expr,
 
+	// parser.Inspect() 调用 parser.Walk() 深度优先遍历 AST ，在深搜过程中，会对每个 node 调用 f 进行处理。
+	parser.Inspect(
+
+		// 根 node
+		s.Expr,
+
+		// f
 		func(node parser.Node, path []parser.Node) error {
 
 			var set storage.SeriesSet
 			var wrn storage.Warnings
 
+			// 构造查询条件
 			hints := &storage.SelectHints{
-				Start: timestamp.FromTime(s.Start),
-				End:   timestamp.FromTime(s.End),
-				Step:  durationToInt64Millis(s.Interval),
+				Start: timestamp.FromTime(s.Start),			// 开始时间戳
+				End:   timestamp.FromTime(s.End),			// 结束时间戳
+				Step:  durationToInt64Millis(s.Interval),	// 步长
 			}
 
 
 			// We need to make sure we select the timerange selected by the subquery.
+			// 我们需要确保我们选择了子查询所选择的时间范围。
+			//
 			// TODO(gouthamve): cumulativeSubqueryOffset gives the sum of range and the offset
-			// we can optimise it by separating out the range and offsets, and subtracting the offsets
-			// from end also.
+			// TODO(gouthamve): cumulativeSubqueryOffset 给出 range 和 offset 的总和
+			//
+			// we can optimise it by separating out the range and offsets, and subtracting the offsets from end also.
+			// 我们可以通过分离出 range 和 offsets 来优化它，并将 offsets 从 end 减去。
+
+
+
+			// 一条搜索路径上可能包含若干个子查询，每个子查询指定了独立的 timeRange ，但是，
+			// 上层查询是基于下层查询的返回结果，所以，需要确保下层查询的 timeRange 一定能
+			// 覆盖上层查询的 timeRange 。
 			subqOffset := ng.cumulativeSubqueryOffset(path)
+
+			// time.Duration => millisecond
 			offsetMilliseconds := durationMilliseconds(subqOffset)
+
+			// 放大查询范围，以覆盖 path 上所有子查询
 			hints.Start = hints.Start - offsetMilliseconds
 
+
 			switch n := node.(type) {
+
+			// foo{bar="baz"}
 			case *parser.VectorSelector:
+
 				if evalRange == 0 {
+
 					hints.Start = hints.Start - durationMilliseconds(ng.lookbackDelta)
+
 				} else {
+
 					hints.Range = durationMilliseconds(evalRange)
-					// For all matrix queries we want to ensure that we have (end-start) + range selected
+
+
+					// For all matrix queries we want to ensure that we have (end-start) + range selected ,
 					// this way we have `range` data before the start time
 					hints.Start = hints.Start - durationMilliseconds(evalRange)
+
+
 					evalRange = 0
+
 				}
 
+				// 在 path 上回溯的查找第一个 函数/聚合 的实例。
 				hints.Func = extractFuncFromPath(path)
+				//
 				hints.By, hints.Grouping = extractGroupsFromPath(path)
+
+
+				//
 				if n.Offset > 0 {
 					offsetMilliseconds := durationMilliseconds(n.Offset)
 					hints.Start = hints.Start - offsetMilliseconds
 					hints.End = hints.End - offsetMilliseconds
 				}
 
+				// 根据指定的搜索条件(hints)查询时序数据，返回数据的样式即 promQL 页面返回的格式。
 				set, wrn, err = querier.Select(false, hints, n.LabelMatchers...)
+
+				// 保存警告
 				warnings = append(warnings, wrn...)
+
+				// 错误检查
 				if err != nil {
 					level.Error(ng.logger).Log("msg", "error selecting series set", "err", err)
 					return err
 				}
+
+				// 保存时序数据
 				n.UnexpandedSeriesSet = set
 
+			// foo{bar="baz"}[2s]
 			case *parser.MatrixSelector:
 				evalRange = n.Range
 			}
@@ -834,37 +936,59 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 			return nil
 		},
 	)
+
+
 	return warnings, err
 }
 
-// extractFuncFromPath walks up the path and searches for the first instance of
-// a function or aggregation.
-func extractFuncFromPath(p []parser.Node) string {
-	if len(p) == 0 {
+// extractFuncFromPath walks up the path and searches for the first instance of a function or aggregation.
+//
+// extractFuncFromPath 会在路径上寻找第一个 函数/聚合 的实例。
+//
+func extractFuncFromPath(path []parser.Node) string {
+
+	// 递归出口，返回空
+	if len(path) == 0 {
 		return ""
 	}
-	switch n := p[len(p)-1].(type) {
+
+	// 检查 path 最后的 node
+	switch n := path[len(path)-1].(type) {
+
+	// 聚合表达式，返回操作名
 	case *parser.AggregateExpr:
 		return n.Op.String()
+
+	// 函数调用，返回函数名
 	case *parser.Call:
 		return n.Func.Name
+
+	// 二元表达式，返回空
 	case *parser.BinaryExpr:
-		// If we hit a binary expression we terminate since we only care about functions
-		// or aggregations over a single metric.
+
+		// If we hit a binary expression we terminate since we only care about
+		// functions or aggregations over a single metric.
+		//
+		// 如果是二元表达式，就直接 return，因为只关心在单个 metric 上的函数或聚合操作。
 		return ""
 	}
-	return extractFuncFromPath(p[:len(p)-1])
+
+	// 递归查询
+	return extractFuncFromPath(path[:len(path)-1])
 }
 
 // extractGroupsFromPath parses vector outer function and extracts grouping information if by or without was used.
 func extractGroupsFromPath(p []parser.Node) (bool, []string) {
+
 	if len(p) == 0 {
 		return false, nil
 	}
+
 	switch n := p[len(p)-1].(type) {
 	case *parser.AggregateExpr:
 		return !n.Without, n.Grouping
 	}
+
 	return false, nil
 }
 
@@ -945,11 +1069,11 @@ func (ev *evaluator) recover(errp *error) {
 }
 
 func (ev *evaluator) Eval(expr parser.Expr) (v parser.Value, err error) {
+
 	defer ev.recover(&err)
+
 	return ev.eval(expr), nil
 }
-
-
 
 
 // EvalNodeHelper stores extra information and caches for evaluating a single node across steps.

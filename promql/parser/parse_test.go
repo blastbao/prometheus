@@ -2774,18 +2774,20 @@ func TestRecoverParserError(t *testing.T) {
 func TestParser(t *testing.T) {
 
 	input := "sum by (foo,bar,)(some_metric)"
+
+	input = "sum without(and, by, avg, count, alert, annotations)(some_metric)"
+	input = `min_over_time(rate(foo{bar="baz"}[2s])[5m:5s])`
 	expr, err := ParseExpr(input)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if e, ok := expr.(*AggregateExpr); ok {
-		fmt.Println("xxx")
-		fmt.Println(e)
-		fmt.Println("xxx")
-	}
 
+
+	fmt.Println("xxx")
+	fmt.Println(Tree(expr))
+	fmt.Println("xxx")
 
 }
 

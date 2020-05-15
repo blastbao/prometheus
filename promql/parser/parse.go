@@ -37,20 +37,33 @@ var parserPool = sync.Pool{
 
 type parser struct {
 
+	// 词法分析器
 	lex Lexer
 
+
+	//
 	inject    ItemType
 	injecting bool
 
-	// Everytime an Item is lexed that could be the end
-	// of certain expressions its end position is stored here.
+
+	// Everytime an Item is lexed that could be the end of certain expressions its end position is stored here.
+	//
+	// 每当一个 Item 可能是某些表达式的结尾的词条时，它的结尾位置就会被存储在这里。
+	//
 	lastClosing Pos
 
+
+
+	// 语法分析器
 	yyParser yyParserImpl
 
+	// 语法分析结果
 	generatedParserResult interface{}
+
+	// 语法分析错误
 	parseErrors           ParseErrors
 }
+
 
 
 // ParseErr wraps a parsing error with line and position context.
@@ -65,7 +78,10 @@ type ParseErr struct {
 	LineOffset int
 }
 
+
+
 func (e *ParseErr) Error() string {
+
 	pos := int(e.PositionRange.Start)
 	lastLineBreak := -1
 	line := e.LineOffset + 1
@@ -95,15 +111,19 @@ type ParseErrors []ParseErr
 
 // Since producing multiple error messages might look weird when combined with error wrapping,
 // only the first error produced by the parser is included in the error string.
+//
+//
 // If getting the full error list is desired, it is recommended to typecast the error returned
 // by the parser to ParseErrors and work with the underlying slice.
+//
+//
 func (errs ParseErrors) Error() string {
 
 	if len(errs) != 0 {
 		return errs[0].Error()
 	}
 
-	// Should never happen
+	// Should never happen.
 	// Panicking while printing an error seems like a bad idea,
 	// so the situation is explained in the error message instead.
 	return "error contains no error message"
@@ -113,23 +133,29 @@ func (errs ParseErrors) Error() string {
 
 
 // ParseExpr returns the expression parsed from the input.
+//
+// 1. 词法分析 + 语法分析
+// 2. 语法检查
+//
 func ParseExpr(input string) (expr Expr, err error) {
 
+	// 构造语法分析器
 	p := newParser(input)
 
 	defer parserPool.Put(p)	// 回收 parser
 	defer p.recover(&err)	// 如果 panic，把 panic 信息转换成 error 赋值给 err
 
-
-	// input 是表达式，所以按表达式来解析
+	// input 是表达式，按 START_EXPRESSION 规则解析，返回结果是 Expr 表达式
 	parseResult := p.parseGenerated(START_EXPRESSION)
 
-	// 获取表达式
+	// 获取解析结果，转成 Expr 类型
 	if parseResult != nil {
 		expr = parseResult.(Expr)
 	}
 
 	// Only typecheck when there are no syntax errors.
+	//
+	// 当语法分析成功后，进行类型检查
 	if len(p.parseErrors) == 0 {
 		p.checkAST(expr)
 	}
@@ -138,15 +164,24 @@ func ParseExpr(input string) (expr Expr, err error) {
 		err = p.parseErrors
 	}
 
+	// 返回解析结果和错误信息
 	return expr, err
 }
 
+
+
+
 // ParseMetric parses the input into a metric
 func ParseMetric(input string) (m labels.Labels, err error) {
+
+	// 创建语法分析器
 	p := newParser(input)
+
 	defer parserPool.Put(p)
 	defer p.recover(&err)
 
+
+	// input 是 metric 名，按 START_METRIC 规则解析，返回结果是一组 labels
 	parseResult := p.parseGenerated(START_METRIC)
 	if parseResult != nil {
 		m = parseResult.(labels.Labels)
@@ -165,30 +200,27 @@ func ParseMetricSelector(input string) (m []*labels.Matcher, err error) {
 	p := newParser(input)
 	defer parserPool.Put(p)
 	defer p.recover(&err)
-
 	parseResult := p.parseGenerated(START_METRIC_SELECTOR)
 	if parseResult != nil {
 		m = parseResult.(*VectorSelector).LabelMatchers
 	}
-
 	if len(p.parseErrors) != 0 {
 		err = p.parseErrors
 	}
-
 	return m, err
 }
 
 // newParser returns a new parser.
 func newParser(input string) *parser {
 
-
-	// 取出一个可用 parser
+	// 取一个可用 parser
 	p := parserPool.Get().(*parser)
 
+	// 重置 parser 成员变量
 	p.injecting = false
 	p.parseErrors = nil
 
-	// Clear lexer struct before reusing.
+	// 初始化词法解析器
 	p.lex = Lexer{
 		input: input,
 		state: lexStatements,
@@ -198,6 +230,7 @@ func newParser(input string) *parser {
 }
 
 // SequenceValue is an omittable value in a sequence of time series values.
+//
 type SequenceValue struct {
 	Value   float64
 	Omitted bool
@@ -376,6 +409,9 @@ func (p *parser) Error(e string) {
 // InjectItem allows injecting a single Item at the beginning of the token stream
 // consumed by the generated parser.
 //
+// InjectItem 允许在生成的解析器所消费的 token 流的开头注入一个单一的 Item 。
+//
+//
 // This allows having multiple start symbols as described in
 // https://www.gnu.org/software/bison/manual/html_node/Multiple-start_002dsymbols.html .
 //
@@ -409,11 +445,14 @@ func (p *parser) newBinaryExpression(lhs Node, op Item, modifiers Node, rhs Node
 }
 
 func (p *parser) assembleVectorSelector(vs *VectorSelector) {
+
 	if vs.Name != "" {
+
 		nameMatcher, err := labels.NewMatcher(labels.MatchEqual, labels.MetricName, vs.Name)
 		if err != nil {
 			panic(err) // Must not happen with labels.MatchEqual
 		}
+
 		vs.LabelMatchers = append(vs.LabelMatchers, nameMatcher)
 	}
 }
@@ -491,6 +530,9 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 	// Lists do not have a type but are not invalid either.
 
 
+
+	// 1. 确认 node 类型
+
 	// 对于 Expr ，类型由其 Type() 确定。
 	// 对于 Expressions ，类型为 "none" 。
 	switch n := node.(type) {
@@ -502,10 +544,10 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		p.addParseErrf(node.PositionRange(), "unknown node type: %T", node)
 	}
 
-
 	// Recursively check correct typing for child nodes and raise errors in case of bad typing.
-	//
-	// 递归检查子节点是否正确，并在发现错误时报错。
+
+
+	// 2. 检查子节点是否语法正确，在发现语法错误时保存错误信息。
 
 	switch n := node.(type) {
 
@@ -631,42 +673,58 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 
 	case *Call:
 
+
+		// 1. 函数参数数目检查
+
+		// 函数参数表长度
 		nargs := len(n.Func.ArgTypes)
 
+		// 非可变参数
 		if n.Func.Variadic == 0 {
-
+			// 检查参数数目和函数参数表长度是否相同，不匹配则报错
 			if nargs != len(n.Args) {
 				p.addParseErrf(n.PositionRange(), "expected %d argument(s) in call to %q, got %d", nargs, n.Func.Name, len(n.Args))
 			}
 
+		// 可变参数
 		} else {
 
+			// 因为是可变参数，函数参数表的最后一个参数为可变参数，可以不传，所以需要至少传递 nargs - 1 个参数。
 			na := nargs - 1
+
+			// 如果传递的参数少于 nargs - 1 ，则参数不足，报错。
 			if na > len(n.Args) {
 				p.addParseErrf(n.PositionRange(), "expected at least %d argument(s) in call to %q, got %d", na, n.Func.Name, len(n.Args))
-			} else if nargsmax := na + n.Func.Variadic; n.Func.Variadic > 0 && nargsmax < len(n.Args) {
-				p.addParseErrf(n.PositionRange(), "expected at most %d argument(s) in call to %q, got %d", nargsmax, n.Func.Name, len(n.Args))
-			}
+			} else {
+				if nargsmax := na + n.Func.Variadic; n.Func.Variadic > 0 && nargsmax < len(n.Args) {
+					p.addParseErrf(n.PositionRange(), "expected at most %d argument(s) in call to %q, got %d", nargsmax, n.Func.Name, len(n.Args))
 
+				}
+			}
 		}
 
+		// 2. 函数参数类型检查
 
+		// 遍历每个参数
 		for i, arg := range n.Args {
 
+			// 如果当前参数是可变参数，则对应的参数描述是参数列表的最后一个元素，也即 idx = len(n.Func.ArgTypes) - 1 。
 			if i >= len(n.Func.ArgTypes) {
-
+				// Variadic == 0 意味着 n.Func 不是一个 vararg 函数，所以不应该检查额外参数的类型，直接 break 。
 				if n.Func.Variadic == 0 {
 					// This is not a vararg function so we should not check the type of the extra arguments.
 					break
 				}
-
+				// 确定参数列表中的对应项
 				i = len(n.Func.ArgTypes) - 1
 			}
 
+			// 检查参数类型是否匹配
 			p.expectType(arg, n.Func.ArgTypes[i], fmt.Sprintf("call to function %q", n.Func.Name))
 		}
 
 	case *ParenExpr:
+
 		p.checkAST(n.Expr)
 
 	case *UnaryExpr:
@@ -681,11 +739,14 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 
 	case *SubqueryExpr:
 
+
 		ty := p.checkAST(n.Expr)
+
 
 		if ty != ValueTypeVector {
 			p.addParseErrf(n.PositionRange(), "subquery is only allowed on instant vector, got %s in %q instead", ty, n.String())
 		}
+
 
 	case *MatrixSelector:
 
@@ -696,6 +757,8 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		// A Vector selector must contain at least one non-empty matcher to prevent
 		// implicit selection of all metrics (e.g. by a typo).
 
+
+		// VectorSelector 应该至少包含一个非空的 matcher ，以防止默认取查询所有 metrics 。
 		notEmpty := false
 		for _, lm := range n.LabelMatchers {
 			if lm != nil && !lm.Matches("") {
@@ -704,6 +767,7 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 			}
 		}
 
+		// 如果 VectorSelector 中不含 matchers 或者都是空的 matchers ，则报错。
 		if !notEmpty {
 			p.addParseErrf(n.PositionRange(), "vector selector must contain at least one non-empty matcher")
 		}
@@ -711,7 +775,12 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		if n.Name != "" {
 
 			// In this case the last LabelMatcher is checking for the metric name set outside the braces.
-			// This checks if the name has already been set previously
+			// This checks if the name has already been set previously.
+
+
+			// 在这种情况下，最后的那个 LabelMatcher 正在匹配 {} 外的 metric 名。
+			// 若前面的某个 matcher 也在匹配 metric 名，则重复，报错。
+
 			for _, m := range n.LabelMatchers[0 : len(n.LabelMatchers)-1] {
 				if m != nil && m.Name == labels.MetricName {
 					p.addParseErrf(n.PositionRange(), "metric name must not be set twice: %q or %q", n.Name, m.Value)
@@ -719,12 +788,15 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 			}
 		}
 
+
+
 	case *NumberLiteral, *StringLiteral:
 		// Nothing to do for terminals.
 
 	default:
 		p.addParseErrf(n.PositionRange(), "unknown node type: %T", node)
 	}
+
 	return
 }
 
@@ -737,8 +809,9 @@ func (p *parser) unquoteString(s string) string {
 	return unquoted
 }
 
+
+// string => duration
 func parseDuration(ds string) (time.Duration, error) {
-	// string => duration
 	dur, err := model.ParseDuration(ds)
 	if err != nil {
 		return 0, err
@@ -750,10 +823,13 @@ func parseDuration(ds string) (time.Duration, error) {
 }
 
 
+
 // parseGenerated invokes the yacc generated parser.
+// The generated parser gets the provided startSymbol injected into the lexer stream, based on which grammar will be used.
 //
-// The generated parser gets the provided startSymbol injected into the lexer stream,
-// based on which grammar will be used.
+// parseGenerated 调用 yacc 生成的语法解析器 yyParser 进行语法解析，并返回解析结果。
+// p.InjectItem() 在 yyParser 所消费的 token 流的开头注入一个 Item ，以影响 parser 的起始规则。
+//
 func (p *parser) parseGenerated(startSymbol ItemType) interface{} {
 
 	// 设置 start 符号
@@ -804,21 +880,31 @@ func (p *parser) newLabelMatcher(label Item, operator Item, value Item) *labels.
 }
 
 func (p *parser) addOffset(e Node, offset time.Duration) {
+
+
 	var offsetp *time.Duration
 	var endPosp *Pos
 
+
 	switch s := e.(type) {
+
+	//
 	case *VectorSelector:
 		offsetp = &s.Offset
 		endPosp = &s.PosRange.End
+
+	//
 	case *MatrixSelector:
 		if vs, ok := s.VectorSelector.(*VectorSelector); ok {
 			offsetp = &vs.Offset
 		}
 		endPosp = &s.EndPos
+
+	//
 	case *SubqueryExpr:
 		offsetp = &s.Offset
 		endPosp = &s.EndPos
+
 	default:
 		p.addParseErrf(e.PositionRange(), "offset modifier must be preceded by an instant or range selector, but follows a %T instead", e)
 		return

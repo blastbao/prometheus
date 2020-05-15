@@ -67,6 +67,7 @@ type Statement interface {
 // EvalStmt holds an expression and information on the range it should be evaluated on.
 //
 // EvalStmt 保存了表达式和它的求值范围。
+//
 type EvalStmt struct {
 
 
@@ -138,11 +139,14 @@ type BinaryExpr struct {
 	ReturnBool bool
 }
 
+
+
+
 // Call represents a function call.
 type Call struct {
-	Func *Function   		// The function that was called.
-	Args Expressions 		// Arguments used in the call.
-	PosRange PositionRange
+	Func *Function   		// 函数原型描述  			// The function that was called.
+	Args Expressions 		// 参数					// Arguments used in the call.
+	PosRange PositionRange	// 位于输入字符串的位置
 }
 
 
@@ -158,13 +162,17 @@ type MatrixSelector struct {
 
 // SubqueryExpr represents a subquery.
 type SubqueryExpr struct {
+
 	Expr   Expr
-	Range  time.Duration
-	Offset time.Duration
-	Step   time.Duration
+
+
+	Range  time.Duration 	// time range
+	Offset time.Duration	// time offset
+	Step   time.Duration	//
 
 	EndPos Pos
 }
+
 
 // NumberLiteral represents a number.
 type NumberLiteral struct {
@@ -201,7 +209,9 @@ type UnaryExpr struct {
 
 // VectorSelector represents a Vector selection.
 type VectorSelector struct {
+
 	Name          string
+
 	Offset        time.Duration
 	LabelMatchers []*labels.Matcher
 
@@ -217,40 +227,40 @@ type VectorSelector struct {
 type TestStmt func(context.Context) error
 
 func (TestStmt) String() string { return "test statement" }
-func (TestStmt) stmt()          {}
-
+func (TestStmt) stmt() {}
 func (TestStmt) PositionRange() PositionRange {
 	return PositionRange{
 		Start: -1,
 		End:   -1,
 	}
 }
-func (e *AggregateExpr) Type() ValueType  { return ValueTypeVector }
-func (e *Call) Type() ValueType           { return e.Func.ReturnType }
-func (e *MatrixSelector) Type() ValueType { return ValueTypeMatrix }
-func (e *SubqueryExpr) Type() ValueType   { return ValueTypeMatrix }
-func (e *NumberLiteral) Type() ValueType  { return ValueTypeScalar }
-func (e *ParenExpr) Type() ValueType      { return e.Expr.Type() }
-func (e *StringLiteral) Type() ValueType  { return ValueTypeString }
-func (e *UnaryExpr) Type() ValueType      { return e.Expr.Type() }
-func (e *VectorSelector) Type() ValueType { return ValueTypeVector }
-func (e *BinaryExpr) Type() ValueType {
+
+func (e *AggregateExpr) 	Type() ValueType  	{ return ValueTypeVector }
+func (e *Call) 				Type() ValueType	{ return e.Func.ReturnType }
+func (e *MatrixSelector) 	Type() ValueType 	{ return ValueTypeMatrix }
+func (e *SubqueryExpr) 		Type() ValueType  	{ return ValueTypeMatrix }
+func (e *NumberLiteral) 	Type() ValueType  	{ return ValueTypeScalar }
+func (e *ParenExpr) 		Type() ValueType  	{ return e.Expr.Type() }
+func (e *StringLiteral) 	Type() ValueType  	{ return ValueTypeString }
+func (e *UnaryExpr) 		Type() ValueType  	{ return e.Expr.Type() }
+func (e *VectorSelector) 	Type() ValueType 	{ return ValueTypeVector }
+func (e *BinaryExpr) 		Type() ValueType 	{
 	if e.LHS.Type() == ValueTypeScalar && e.RHS.Type() == ValueTypeScalar {
 		return ValueTypeScalar
 	}
 	return ValueTypeVector
 }
 
-func (*AggregateExpr) expr()  {}
-func (*BinaryExpr) expr()     {}
-func (*Call) expr()           {}
-func (*MatrixSelector) expr() {}
-func (*SubqueryExpr) expr()   {}
-func (*NumberLiteral) expr()  {}
-func (*ParenExpr) expr()      {}
-func (*StringLiteral) expr()  {}
-func (*UnaryExpr) expr()      {}
-func (*VectorSelector) expr() {}
+func (*AggregateExpr) 	expr()  {}
+func (*BinaryExpr) 		expr() 	{}
+func (*Call) 			expr()	{}
+func (*MatrixSelector) 	expr() 	{}
+func (*SubqueryExpr) 	expr() 	{}
+func (*NumberLiteral) 	expr()  {}
+func (*ParenExpr) 		expr() 	{}
+func (*StringLiteral) 	expr()	{}
+func (*UnaryExpr) 		expr() 	{}
+func (*VectorSelector)	expr() 	{}
 
 
 // VectorMatchCardinality describes the cardinality relationship of two Vectors in a binary operation.
@@ -329,6 +339,8 @@ type Visitor interface {
 //
 // 深度优先遍历 AST
 //
+//
+//
 func Walk(v Visitor, node Node, path []Node) error {
 
 	var err error
@@ -354,7 +366,6 @@ func Walk(v Visitor, node Node, path []Node) error {
 	return err
 }
 
-
 type inspector func(Node, []Node) error
 
 // 访问节点 node，实际上就是对 node 执行函数 f 。
@@ -370,7 +381,9 @@ func (f inspector) Visit(node Node, path []Node) (Visitor, error) {
 // If f returns a nil error, Inspect invokes f for all the non-nil children of node, recursively.
 //
 //
-// Inspect() 调用 Walk 深度优先遍历 AST 。 在深搜的过程中，会对每个 node 调用 f 进行处理。
+// Inspect() 调用 Walk 深度优先遍历 AST 。
+//
+// 在深搜的过程中，会对每个 node 调用 f 进行处理。
 //
 func Inspect(node Node, f inspector) {
 	// inspector 实现了 Visit() 函数。
@@ -386,15 +399,21 @@ func Inspect(node Node, f inspector) {
 //
 func Children(node Node) []Node {
 
+
+
+
 	// For some reasons these switches have significantly better performance than interfaces
 	//
 	// 由于某些原因，使用 switch 的性能明显优于 interface 的性能。
 	//
 
+
+
+
 	switch n := node.(type) {
 
 	case *EvalStmt:
-		return []Node{n.Expr}
+		return []Node{ n.Expr }
 
 	case Expressions:
 		// golang cannot convert slices of interfaces
@@ -406,9 +425,11 @@ func Children(node Node) []Node {
 
 	case *AggregateExpr:
 
+
 		// While this does not look nice, it should avoid unnecessary allocations caused by slice resizing.
 		//
-		// 虽然这看起来并不美观，但应该可以避免因切片大小调整造成的不必要的分配。
+		// 虽然这看起来并不美观，但可以避免因切片大小调整造成的不必要的分配。
+		//
 
 		if n.Expr == nil && n.Param == nil {
 			return nil

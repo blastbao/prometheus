@@ -172,12 +172,17 @@ func ensureMonotonic(buckets buckets) {
 	}
 }
 
+
+
+
 // quantile calculates the given quantile of a vector of samples.
 //
 // The Vector will be sorted.
 // If 'values' has zero elements, NaN is returned.
 // If q<0, -Inf is returned.
 // If q>1, +Inf is returned.
+//
+//
 func quantile(q float64, values vectorByValueHeap) float64 {
 
 	if len(values) == 0 {
