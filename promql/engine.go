@@ -706,42 +706,68 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 
 // cumulativeSubqueryOffset returns the sum of range and offset of all subqueries in the path.
 func (ng *Engine) cumulativeSubqueryOffset(path []parser.Node) time.Duration {
+
+
 	var subqOffset time.Duration
+
 	for _, node := range path {
 		switch n := node.(type) {
 		case *parser.SubqueryExpr:
 			subqOffset += n.Range + n.Offset
 		}
 	}
+
 	return subqOffset
 }
 
 func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
+
+
 	var maxOffset time.Duration
-	parser.Inspect(s.Expr, func(node parser.Node, path []parser.Node) error {
-		subqOffset := ng.cumulativeSubqueryOffset(path)
-		switch n := node.(type) {
-		case *parser.VectorSelector:
-			if maxOffset < ng.lookbackDelta+subqOffset {
-				maxOffset = ng.lookbackDelta + subqOffset
+
+	parser.Inspect(
+
+		//
+		s.Expr,
+
+		//
+		func(node parser.Node, path []parser.Node) error {
+
+			subqOffset := ng.cumulativeSubqueryOffset(path)
+
+			switch n := node.(type) {
+			case *parser.VectorSelector:
+
+				if maxOffset < ng.lookbackDelta+subqOffset {
+					maxOffset = ng.lookbackDelta + subqOffset
+				}
+
+				if n.Offset+ng.lookbackDelta+subqOffset > maxOffset {
+					maxOffset = n.Offset + ng.lookbackDelta + subqOffset
+				}
+
+			case *parser.MatrixSelector:
+
+				if maxOffset < n.Range+subqOffset {
+					maxOffset = n.Range + subqOffset
+				}
+
+				if m := n.VectorSelector.(*parser.VectorSelector).Offset + n.Range + subqOffset; m > maxOffset {
+					maxOffset = m
+				}
+
 			}
-			if n.Offset+ng.lookbackDelta+subqOffset > maxOffset {
-				maxOffset = n.Offset + ng.lookbackDelta + subqOffset
-			}
-		case *parser.MatrixSelector:
-			if maxOffset < n.Range+subqOffset {
-				maxOffset = n.Range + subqOffset
-			}
-			if m := n.VectorSelector.(*parser.VectorSelector).Offset + n.Range + subqOffset; m > maxOffset {
-				maxOffset = m
-			}
-		}
-		return nil
-	})
+
+			return nil
+		},
+	)
+
 	return s.Start.Add(-maxOffset)
 }
 
 func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s *parser.EvalStmt) (storage.Warnings, error) {
+
+
 	var (
 		// Whenever a MatrixSelector is evaluated, evalRange is set to the corresponding range.
 		// The evaluation of the VectorSelector inside then evaluates the given range and unsets
@@ -751,56 +777,63 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 		err       error
 	)
 
-	parser.Inspect(s.Expr, func(node parser.Node, path []parser.Node) error {
-		var set storage.SeriesSet
-		var wrn storage.Warnings
-		hints := &storage.SelectHints{
-			Start: timestamp.FromTime(s.Start),
-			End:   timestamp.FromTime(s.End),
-			Step:  durationToInt64Millis(s.Interval),
-		}
+	parser.Inspect(s.Expr,
 
-		// We need to make sure we select the timerange selected by the subquery.
-		// TODO(gouthamve): cumulativeSubqueryOffset gives the sum of range and the offset
-		// we can optimise it by separating out the range and offsets, and subtracting the offsets
-		// from end also.
-		subqOffset := ng.cumulativeSubqueryOffset(path)
-		offsetMilliseconds := durationMilliseconds(subqOffset)
-		hints.Start = hints.Start - offsetMilliseconds
+		func(node parser.Node, path []parser.Node) error {
 
-		switch n := node.(type) {
-		case *parser.VectorSelector:
-			if evalRange == 0 {
-				hints.Start = hints.Start - durationMilliseconds(ng.lookbackDelta)
-			} else {
-				hints.Range = durationMilliseconds(evalRange)
-				// For all matrix queries we want to ensure that we have (end-start) + range selected
-				// this way we have `range` data before the start time
-				hints.Start = hints.Start - durationMilliseconds(evalRange)
-				evalRange = 0
+			var set storage.SeriesSet
+			var wrn storage.Warnings
+
+			hints := &storage.SelectHints{
+				Start: timestamp.FromTime(s.Start),
+				End:   timestamp.FromTime(s.End),
+				Step:  durationToInt64Millis(s.Interval),
 			}
 
-			hints.Func = extractFuncFromPath(path)
-			hints.By, hints.Grouping = extractGroupsFromPath(path)
-			if n.Offset > 0 {
-				offsetMilliseconds := durationMilliseconds(n.Offset)
-				hints.Start = hints.Start - offsetMilliseconds
-				hints.End = hints.End - offsetMilliseconds
+
+			// We need to make sure we select the timerange selected by the subquery.
+			// TODO(gouthamve): cumulativeSubqueryOffset gives the sum of range and the offset
+			// we can optimise it by separating out the range and offsets, and subtracting the offsets
+			// from end also.
+			subqOffset := ng.cumulativeSubqueryOffset(path)
+			offsetMilliseconds := durationMilliseconds(subqOffset)
+			hints.Start = hints.Start - offsetMilliseconds
+
+			switch n := node.(type) {
+			case *parser.VectorSelector:
+				if evalRange == 0 {
+					hints.Start = hints.Start - durationMilliseconds(ng.lookbackDelta)
+				} else {
+					hints.Range = durationMilliseconds(evalRange)
+					// For all matrix queries we want to ensure that we have (end-start) + range selected
+					// this way we have `range` data before the start time
+					hints.Start = hints.Start - durationMilliseconds(evalRange)
+					evalRange = 0
+				}
+
+				hints.Func = extractFuncFromPath(path)
+				hints.By, hints.Grouping = extractGroupsFromPath(path)
+				if n.Offset > 0 {
+					offsetMilliseconds := durationMilliseconds(n.Offset)
+					hints.Start = hints.Start - offsetMilliseconds
+					hints.End = hints.End - offsetMilliseconds
+				}
+
+				set, wrn, err = querier.Select(false, hints, n.LabelMatchers...)
+				warnings = append(warnings, wrn...)
+				if err != nil {
+					level.Error(ng.logger).Log("msg", "error selecting series set", "err", err)
+					return err
+				}
+				n.UnexpandedSeriesSet = set
+
+			case *parser.MatrixSelector:
+				evalRange = n.Range
 			}
 
-			set, wrn, err = querier.Select(false, hints, n.LabelMatchers...)
-			warnings = append(warnings, wrn...)
-			if err != nil {
-				level.Error(ng.logger).Log("msg", "error selecting series set", "err", err)
-				return err
-			}
-			n.UnexpandedSeriesSet = set
-
-		case *parser.MatrixSelector:
-			evalRange = n.Range
-		}
-		return nil
-	})
+			return nil
+		},
+	)
 	return warnings, err
 }
 

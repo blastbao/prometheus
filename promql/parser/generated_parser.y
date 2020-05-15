@@ -355,8 +355,7 @@ binary_expr     : expr ADD     bin_modifier expr { $$ = yylex.(*parser).newBinar
                 | expr SUB     bin_modifier expr { $$ = yylex.(*parser).newBinaryExpression($1, $2, $3, $4) }
                 ;
 
-// Using left recursion for the modifier rules, helps to keep the parser stack small and
-// reduces allocations
+// Using left recursion for the modifier rules, helps to keep the parser stack small and reduces allocations
 bin_modifier    : group_modifiers;
 
 bool_modifier   : /* empty */
@@ -401,7 +400,6 @@ group_modifiers : bool_modifier /* empty */
                     }
                 ;
 
-
 grouping_labels : LEFT_PAREN grouping_label_list RIGHT_PAREN
                         { $$ = $2 }
                 | LEFT_PAREN grouping_label_list COMMA RIGHT_PAREN
@@ -430,12 +428,15 @@ grouping_label_list : grouping_label_list COMMA grouping_label
 grouping_label  : maybe_label
                     {
                         if !isLabel($1.Val) { // 检查是否合法 label 名称
-                                yylex.(*parser).unexpected("grouping opts", "label")
+                            yylex.(*parser).unexpected("grouping opts", "label")
                         }
                         $$ = $1
                     }
                 | error
-                        { yylex.(*parser).unexpected("grouping opts", "label"); $$ = Item{} }
+                    {
+                        yylex.(*parser).unexpected("grouping opts", "label");
+                        $$ = Item{}
+                    }
                 ;
 
 /*
@@ -666,6 +667,7 @@ label_match_list: label_match_list COMMA label_matcher
 
 label_matcher   : IDENTIFIER match_op STRING
                     {
+                        // 构造标签匹配的 matcher
                         $$ = yylex.(*parser).newLabelMatcher($1, $2, $3);
                     }
                 | IDENTIFIER match_op error

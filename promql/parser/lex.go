@@ -71,7 +71,6 @@ func (i Item) desc() string {
 	return fmt.Sprintf("%s %s", i.Typ.desc(), i)
 }
 
-
 type ItemType int
 
 // isOperator returns true if the Item corresponds to a arithmetic or set operator.
@@ -647,6 +646,8 @@ func lexValueSequence(l *Lexer) stateFn {
 // None of the actual escaping/quoting logic was changed in this function -
 // it was only modified to integrate with our lexer.
 //
+//
+// 识别转义字符
 func lexEscape(l *Lexer) stateFn {
 	var n int
 	var base, max uint32
@@ -719,6 +720,8 @@ func skipSpaces(l *Lexer) {
 }
 
 // lexString scans a quoted string. The initial quote has already been seen.
+//
+// 识别引号中的文本，包括单双引号
 func lexString(l *Lexer) stateFn {
 Loop:
 	for {
@@ -739,6 +742,8 @@ Loop:
 }
 
 // lexRawString scans a raw quoted string. The initial quote has already been seen.
+//
+// 识别原始的文本
 func lexRawString(l *Lexer) stateFn {
 Loop:
 	for {
@@ -757,7 +762,10 @@ Loop:
 	return lexStatements
 }
 
-// lexSpace scans a run of space characters. One space has already been seen.
+// lexSpace scans a run of space characters.
+// One space has already been seen.
+//
+// 识别空白字符
 func lexSpace(l *Lexer) stateFn {
 	for isSpace(l.peek()) {
 		l.next()
@@ -793,6 +801,8 @@ func lexLineComment(l *Lexer) stateFn {
 	return lexStatements
 }
 
+
+// 识别时间区间 smhdwy
 func lexDuration(l *Lexer) stateFn {
 	if l.scanNumber() {
 		return l.errorf("missing unit character in duration")
@@ -810,6 +820,8 @@ func lexDuration(l *Lexer) stateFn {
 }
 
 // lexNumber scans a number: decimal, hex, oct or float.
+//
+// 识别数字
 func lexNumber(l *Lexer) stateFn {
 	if !l.scanNumber() {
 		return l.errorf("bad number syntax: %q", l.input[l.start:l.pos])
@@ -819,6 +831,8 @@ func lexNumber(l *Lexer) stateFn {
 }
 
 // lexNumberOrDuration scans a number or a duration Item.
+//
+// 识别数组或者时间区间
 func lexNumberOrDuration(l *Lexer) stateFn {
 	if l.scanNumber() {
 		l.emit(NUMBER)
@@ -866,6 +880,8 @@ func (l *Lexer) scanNumber() bool {
 // lexIdentifier scans an alphanumeric identifier.
 //
 // The next character is known to be a letter.
+//
+// 识别字母、数字、标记符号
 func lexIdentifier(l *Lexer) stateFn {
 
 	// 不断读取 rune，遇到非字母、非数字的字符时停止。
@@ -889,6 +905,8 @@ func lexIdentifier(l *Lexer) stateFn {
 // If the identifier is a keyword the respective keyword Item is scanned.
 //
 // lexKeywordOrIdentifier 扫描一个可能包含冒号的字母数字标识符。 如果标识符是一个关键字，则会扫描相应的关键字。
+//
+// 别字母、数字、标记符号（labelname）或关键字。
 func lexKeywordOrIdentifier(l *Lexer) stateFn {
 
 
@@ -937,8 +955,8 @@ func isAlphaNumeric(r rune) bool {
 }
 
 // isDigit reports whether r is a digit. Note: we cannot use unicode.IsDigit()
-// instead because that also classifies non-Latin digits as digits. See
-// https://github.com/blastbao/prometheus/issues/939.
+// instead because that also classifies non-Latin digits as digits.
+// See https://github.com/blastbao/prometheus/issues/939.
 func isDigit(r rune) bool {
 	return '0' <= r && r <= '9'
 }

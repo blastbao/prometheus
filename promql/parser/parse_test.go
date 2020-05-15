@@ -14,6 +14,7 @@
 package parser
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -2026,6 +2027,7 @@ var testExpr = []struct {
 				End:   6,
 			},
 		},
+
 	}, {
 		input: `floor(some_metric{foo!="bar"})`,
 		expected: &Call{
@@ -2767,3 +2769,37 @@ func TestRecoverParserError(t *testing.T) {
 
 	panic(e)
 }
+
+
+func TestParser(t *testing.T) {
+
+	input := "sum by (foo,bar,)(some_metric)"
+	expr, err := ParseExpr(input)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if e, ok := expr.(*AggregateExpr); ok {
+		fmt.Println("xxx")
+		fmt.Println(e)
+		fmt.Println("xxx")
+	}
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

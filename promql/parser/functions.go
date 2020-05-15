@@ -13,8 +13,8 @@
 
 package parser
 
-// Function represents a function of the expression language and is
-// used by function nodes.
+
+// Function represents a function of the expression language and is used by function nodes.
 type Function struct {
 	Name       string
 	ArgTypes   []ValueType

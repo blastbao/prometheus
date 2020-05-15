@@ -21,16 +21,19 @@ import (
 // ErrSyntax indicates that a value does not have the right syntax for the target type.
 var ErrSyntax = errors.New("invalid syntax")
 
+
 // Unquote interprets s as a single-quoted, double-quoted, or backquoted
-// Prometheus query language string literal, returning the string value that s
-// quotes.
+// Prometheus query language string literal, returning the string value that s quotes.
+//
+// Unquote 将 s 解释为单引号、双引号或反引号的查询语句，返回被包含的字符串值。
 //
 // NOTE: This function as well as the necessary helper functions below
 // (unquoteChar, contains, unhex) and associated tests have been adapted from
 // the corresponding functions in the "strconv" package of the Go standard
-// library to work for Prometheus-style strings. Go's special-casing for single
-// quotes was removed and single quoted strings are now treated the same as
-// double quoted ones.
+// library to work for Prometheus-style strings.
+//
+// Go's special-casing for single quotes was removed and single quoted strings
+// are now treated the same as double quoted ones.
 func Unquote(s string) (t string, err error) {
 	n := len(s)
 	if n < 2 {

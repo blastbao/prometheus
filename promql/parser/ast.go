@@ -23,6 +23,9 @@ import (
 	"github.com/blastbao/prometheus/storage"
 )
 
+
+
+
 // Node is a generic interface for all nodes in an AST.
 //
 // Whenever numerous nodes are listed such as in a switch-case statement
@@ -38,7 +41,6 @@ import (
 //
 
 
-
 type Node interface {
 
 	// String representation of the node that returns the given node when parsed as part of a valid query.
@@ -51,6 +53,7 @@ type Node interface {
 
 // Statement is a generic interface for all statements.
 type Statement interface {
+
 	Node
 
 	// stmt ensures that no other type accidentally implements the interface
@@ -62,6 +65,8 @@ type Statement interface {
 
 
 // EvalStmt holds an expression and information on the range it should be evaluated on.
+//
+// EvalStmt 保存了表达式和它的求值范围。
 type EvalStmt struct {
 
 
@@ -82,6 +87,8 @@ type EvalStmt struct {
 
 func (*EvalStmt) stmt() {}
 
+
+
 // Expr is a generic interface for all expression types.
 type Expr interface {
 
@@ -95,22 +102,32 @@ type Expr interface {
 	expr()
 }
 
+
 // Expressions is a list of expression nodes that implements Node.
 type Expressions []Expr
 
 // AggregateExpr represents an aggregation operation on a Vector.
 type AggregateExpr struct {
+	// 操作符
 	Op       ItemType 		// The used aggregation operation.
+	// 表达式
 	Expr     Expr     		// The Vector expression over which is aggregated.
+	// 参数
 	Param    Expr     		// Parameter used by some aggregators.
+	// 聚合
 	Grouping []string 		// The labels by which to group the Vector.
+	// 删除的 labels
 	Without  bool     		// Whether to drop the given labels rather than keep them.
-	PosRange PositionRange	//
+	// 表达式位置
+	PosRange PositionRange
 }
 
 // BinaryExpr represents a binary expression between two child expressions.
 type BinaryExpr struct {
+
+	// 操作符
 	Op       ItemType // The operation of the expression.
+	// 左/右 子表达式
 	LHS, RHS Expr     // The operands on the respective sides of the operator.
 
 	// The matching behavior for the operation if both operands are Vectors.
@@ -125,9 +142,9 @@ type BinaryExpr struct {
 type Call struct {
 	Func *Function   		// The function that was called.
 	Args Expressions 		// Arguments used in the call.
-
 	PosRange PositionRange
 }
+
 
 // MatrixSelector represents a Matrix selection.
 type MatrixSelector struct {
@@ -151,13 +168,17 @@ type SubqueryExpr struct {
 
 // NumberLiteral represents a number.
 type NumberLiteral struct {
+
 	Val float64
 
 	PosRange PositionRange
 }
 
-// ParenExpr wraps an expression so it cannot be disassembled as a consequence
-// of operator precedence.
+
+// ParenExpr wraps an expression so it cannot be disassembled as a consequence of operator precedence.
+//
+// ParenExpr 包装了一个表达式，不能因为算符优先级而将其分解。
+//
 type ParenExpr struct {
 	Expr     Expr
 	PosRange PositionRange
@@ -231,12 +252,15 @@ func (*StringLiteral) expr()  {}
 func (*UnaryExpr) expr()      {}
 func (*VectorSelector) expr() {}
 
-// VectorMatchCardinality describes the cardinality relationship
-// of two Vectors in a binary operation.
+
+// VectorMatchCardinality describes the cardinality relationship of two Vectors in a binary operation.
+//
+// VectorMatchCardinality 描述了二元操作中两个 Vector 的基数(cardinality)关系。
+//
 type VectorMatchCardinality int
 
 const (
-	CardOneToOne VectorMatchCardinality = iota
+	CardOneToOne 	VectorMatchCardinality = iota
 	CardManyToOne
 	CardOneToMany
 	CardManyToMany
@@ -256,113 +280,166 @@ func (vmc VectorMatchCardinality) String() string {
 	panic("promql.VectorMatchCardinality.String: unknown match cardinality")
 }
 
-// VectorMatching describes how elements from two Vectors in a binary
-// operation are supposed to be matched.
+
+
+// VectorMatching describes how elements from two Vectors in a binary operation are supposed to be matched.
+//
+// VectorMatching 描述了一个二元操作中的两个 Vectors 的元素应该如何匹配。
+//
 type VectorMatching struct {
+
 	// The cardinality of the two Vectors.
+	// 两个 Vectors 的基数关系。
 	Card VectorMatchCardinality
-	// MatchingLabels contains the labels which define equality of a pair of
-	// elements from the Vectors.
+
+	// MatchingLabels contains the labels which define equality of a pair of elements from the Vectors.
 	MatchingLabels []string
-	// On includes the given label names from matching,
-	// rather than excluding them.
+
+	// On includes the given label names from matching, rather than excluding them.
 	On bool
-	// Include contains additional labels that should be included in
-	// the result from the side with the lower cardinality.
+
+	// Include contains additional labels that should be included in the result from the side with the lower cardinality.
 	Include []string
 }
 
-// Visitor allows visiting a Node and its child nodes. The Visit method is
-// invoked for each node with the path leading to the node provided additionally.
-// If the result visitor w is not nil and no error, Walk visits each of the children
-// of node with the visitor w, followed by a call of w.Visit(nil, nil).
+
+
+// Visitor allows visiting a Node and its child nodes.
+//
+// The Visit method is invoked for each node with the path leading to the node provided additionally.
+//
+// If the result visitor w is not nil and no error,
+// Walk visits each of the children of node with the visitor w,
+// followed by a call of w.Visit(nil, nil).
+//
+//
+// Visitor 访问一个节点。
+//
 type Visitor interface {
 	Visit(node Node, path []Node) (w Visitor, err error)
 }
 
-// Walk traverses an AST in depth-first order: It starts by calling
-// v.Visit(node, path); node must not be nil. If the visitor w returned by
-// v.Visit(node, path) is not nil and the visitor returns no error, Walk is
-// invoked recursively with visitor w for each of the non-nil children of node,
+// Walk traverses an AST in depth-first order:
+// It starts by calling v.Visit(node, path); node must not be nil.
+//
+// If the visitor w returned by v.Visit(node, path) is not nil and the visitor returns no error,
+// Walk is invoked recursively with visitor w for each of the non-nil children of node,
 // followed by a call of w.Visit(nil), returning an error
 // As the tree is descended the path of previous nodes is provided.
+//
+// 深度优先遍历 AST
+//
 func Walk(v Visitor, node Node, path []Node) error {
+
 	var err error
+
+	// 访问当前节点 node
 	if v, err = v.Visit(node, path); v == nil || err != nil {
 		return err
 	}
+
+	// 更新当前的搜索路径
 	path = append(path, node)
 
+	// 逐个 Walk 当前节点 node 的子节点
 	for _, e := range Children(node) {
 		if err := Walk(v, e, path); err != nil {
 			return err
 		}
 	}
 
+	// 当前 node 深搜结束
 	_, err = v.Visit(nil, nil)
+
 	return err
 }
 
+
 type inspector func(Node, []Node) error
 
+// 访问节点 node，实际上就是对 node 执行函数 f 。
 func (f inspector) Visit(node Node, path []Node) (Visitor, error) {
 	if err := f(node, path); err != nil {
 		return nil, err
 	}
-
 	return f, nil
 }
 
-// Inspect traverses an AST in depth-first order: It starts by calling
-// f(node, path); node must not be nil. If f returns a nil error, Inspect invokes f
-// for all the non-nil children of node, recursively.
+// Inspect traverses an AST in depth-first order:
+// It starts by calling f(node, path); node must not be nil.
+// If f returns a nil error, Inspect invokes f for all the non-nil children of node, recursively.
+//
+//
+// Inspect() 调用 Walk 深度优先遍历 AST 。 在深搜的过程中，会对每个 node 调用 f 进行处理。
+//
 func Inspect(node Node, f inspector) {
+	// inspector 实现了 Visit() 函数。
+	visitor := inspector(f)
 	//nolint: errcheck
-	Walk(inspector(f), node, nil)
+	_ = Walk(visitor, node, nil)
 }
 
+
 // Children returns a list of all child nodes of a syntax tree node.
+//
+// Children 返回一个语法树节点的子节点列表。
+//
 func Children(node Node) []Node {
+
 	// For some reasons these switches have significantly better performance than interfaces
+	//
+	// 由于某些原因，使用 switch 的性能明显优于 interface 的性能。
+	//
+
 	switch n := node.(type) {
+
 	case *EvalStmt:
 		return []Node{n.Expr}
+
 	case Expressions:
 		// golang cannot convert slices of interfaces
-		ret := make([]Node, len(n))
+		exps := make([]Node, len(n))
 		for i, e := range n {
-			ret[i] = e
+			exps[i] = e
 		}
-		return ret
+		return exps
+
 	case *AggregateExpr:
-		// While this does not look nice, it should avoid unnecessary allocations
-		// caused by slice resizing
+
+		// While this does not look nice, it should avoid unnecessary allocations caused by slice resizing.
+		//
+		// 虽然这看起来并不美观，但应该可以避免因切片大小调整造成的不必要的分配。
+
 		if n.Expr == nil && n.Param == nil {
 			return nil
 		} else if n.Expr == nil {
-			return []Node{n.Param}
+			return []Node{ n.Param }
 		} else if n.Param == nil {
-			return []Node{n.Expr}
+			return []Node{ n.Expr }
 		} else {
-			return []Node{n.Expr, n.Param}
+			return []Node{ n.Expr, n.Param }
 		}
+
 	case *BinaryExpr:
-		return []Node{n.LHS, n.RHS}
+		return []Node{ n.LHS, n.RHS }
+
 	case *Call:
+
 		// golang cannot convert slices of interfaces
-		ret := make([]Node, len(n.Args))
+		args := make([]Node, len(n.Args))
 		for i, e := range n.Args {
-			ret[i] = e
+			args[i] = e
 		}
-		return ret
+		return args
+
 	case *SubqueryExpr:
-		return []Node{n.Expr}
+		return []Node{ n.Expr }
 	case *ParenExpr:
-		return []Node{n.Expr}
+		return []Node{ n.Expr }
 	case *UnaryExpr:
-		return []Node{n.Expr}
+		return []Node{ n.Expr }
 	case *MatrixSelector:
-		return []Node{n.VectorSelector}
+		return []Node{ n.VectorSelector }
 	case *NumberLiteral, *StringLiteral, *VectorSelector:
 		// nothing to do
 		return []Node{}
@@ -372,14 +449,17 @@ func Children(node Node) []Node {
 }
 
 // PositionRange describes a position in the input string of the parser.
+//
+// PositionRange 描述的输入字符串的位置。
+//
 type PositionRange struct {
 	Start Pos
 	End   Pos
 }
 
+
 // mergeRanges is a helper function to merge the PositionRanges of two Nodes.
-// Note that the arguments must be in the same order as they
-// occur in the input string.
+// Note that the arguments must be in the same order as they occur in the input string.
 func mergeRanges(first Node, last Node) PositionRange {
 	return PositionRange{
 		Start: first.PositionRange().Start,
@@ -389,6 +469,8 @@ func mergeRanges(first Node, last Node) PositionRange {
 
 // Item implements the Node interface.
 // This makes it possible to call mergeRanges on them.
+//
+//
 func (i *Item) PositionRange() PositionRange {
 	return PositionRange{
 		Start: i.Pos,

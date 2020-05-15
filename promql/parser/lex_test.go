@@ -14,6 +14,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/blastbao/prometheus/util/testutil"
@@ -687,12 +688,16 @@ var tests = []struct {
 	},
 }
 
-// TestLexer tests basic functionality of the lexer. More elaborate tests are implemented
-// for the parser to avoid duplicated effort.
+// TestLexer tests basic functionality of the lexer.
+// More elaborate tests are implemented for the parser to avoid duplicated effort.
 func TestLexer(t *testing.T) {
+
 	for _, typ := range tests {
+
 		t.Run(typ.name, func(t *testing.T) {
+
 			for i, test := range typ.tests {
+
 				l := &Lexer{
 					input:      test.input,
 					seriesDesc: test.seriesDesc,
@@ -721,6 +726,7 @@ func TestLexer(t *testing.T) {
 					}
 					continue
 				}
+
 				if lastItem.Typ == ERROR {
 					t.Logf("%d: input %q", i, test.input)
 					t.Fatalf("unexpected lexing error at position %d: %s", lastItem.Pos, lastItem)
@@ -735,3 +741,36 @@ func TestLexer(t *testing.T) {
 		})
 	}
 }
+
+
+func TestTokenize(t *testing.T){
+
+	input:=`min_over_time(rate(foo{bar="baz"}[2s])[5m:] offset 6m)[4m:3s]`
+
+	l := &Lexer{
+		input: input,
+	}
+
+	var out []Item
+
+	for l.state = lexStatements; l.state != nil; {
+		out = append(out, Item{})
+		l.NextItem(&out[len(out)-1])
+	}
+
+	for _, item := range out {
+		fmt.Println(item.Val, item.Pos)
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
