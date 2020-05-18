@@ -106,6 +106,7 @@ func getMMapedFile(filename string, filesize int, logger log.Logger) ([]byte, er
 }
 
 func NewActiveQueryTracker(localStoragePath string, maxConcurrent int, logger log.Logger) *ActiveQueryTracker {
+
 	err := os.MkdirAll(localStoragePath, 0777)
 	if err != nil {
 		level.Error(logger).Log("msg", "Failed to create directory for logging active queries")

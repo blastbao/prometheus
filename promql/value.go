@@ -19,13 +19,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/blastbao/prometheus/tsdb/chunkenc"
-
 	"github.com/blastbao/prometheus/pkg/labels"
 	"github.com/blastbao/prometheus/promql/parser"
 	"github.com/blastbao/prometheus/storage"
+	"github.com/blastbao/prometheus/tsdb/chunkenc"
+	"github.com/pkg/errors"
 )
 
 func (Matrix) Type() parser.ValueType { return parser.ValueTypeMatrix }
@@ -62,7 +60,6 @@ func (s Scalar) MarshalJSON() ([]byte, error) {
 	v := strconv.FormatFloat(s.V, 'f', -1, 64)
 	return json.Marshal([...]interface{}{float64(s.T) / 1000, v})
 }
-
 
 // Series is a stream of data points belonging to a metric.
 type Series struct {
@@ -154,7 +151,6 @@ func (vec Vector) ContainsSameLabelset() bool {
 	return false
 }
 
-
 // Matrix is a slice of Series that implements sort.Interface and has a String method.
 type Matrix []Series
 
@@ -196,8 +192,6 @@ func (m Matrix) ContainsSameLabelset() bool {
 	}
 	return false
 }
-
-
 
 // Result holds the resulting value of an execution or an error if any occurred.
 type Result struct {
@@ -266,8 +260,6 @@ func (r *Result) String() string {
 
 	return r.Value.String()
 }
-
-
 
 // StorageSeries simulates promql.Series as storage.Series.
 type StorageSeries struct {

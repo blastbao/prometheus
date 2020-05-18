@@ -29,21 +29,26 @@ func Tree(node Node) string {
 }
 
 func tree(node Node, level string) string {
+
+	// 递归出口
 	if node == nil {
 		return fmt.Sprintf("%s |---- %T\n", level, node)
 	}
+
 	typs := strings.Split(fmt.Sprintf("%T", node), ".")[1]
 
 	t := fmt.Sprintf("%s |---- %s :: %s\n", level, typs, node)
 
 	level += " · · ·"
 
-	for _, e := range Children(node) {
+	// 深度优先搜索（递归）
+	for _, e := range Children(node) { 	// Children(node) 返回一个 node 节点的子节点列表。
 		t += tree(e, level)
 	}
 
 	return t
 }
+
 
 func (node *EvalStmt) String() string {
 	return "EVAL " + node.Expr.String()
@@ -80,8 +85,12 @@ func (node *AggregateExpr) String() string {
 	return aggrString
 }
 
+
 func (node *BinaryExpr) String() string {
+
+
 	returnBool := ""
+
 	if node.ReturnBool {
 		returnBool = " bool"
 	}
@@ -106,6 +115,8 @@ func (node *BinaryExpr) String() string {
 	}
 	return fmt.Sprintf("%s %s%s%s %s", node.LHS, node.Op, returnBool, matching, node.RHS)
 }
+
+
 
 func (node *Call) String() string {
 	return fmt.Sprintf("%s(%s)", node.Func.Name, node.Args)

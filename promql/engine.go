@@ -905,7 +905,6 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 				//
 				hints.By, hints.Grouping = extractGroupsFromPath(path)
 
-
 				//
 				if n.Offset > 0 {
 					offsetMilliseconds := durationMilliseconds(n.Offset)
@@ -1440,11 +1439,16 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 		putPointSlice(points)
 
-		// The absent_over_time function returns 0 or 1 series. So far, the matrix
-		// contains multiple series. The following code will create a new series
-		// with values of 1 for the timestamps where no series has value.
+
+		// The absent_over_time function returns 0 or 1 series.
+		//
+		// So far, the matrix contains multiple series.
+		//
+		// The following code will create a new series with values of 1 for the timestamps where no series has value.
 		if e.Func.Name == "absent_over_time" {
+
 			steps := int(1 + (ev.endTimestamp-ev.startTimestamp)/ev.interval)
+
 			// Iterate once to look for a complete series.
 			for _, s := range mat {
 				if len(s.Points) == steps {
@@ -1550,7 +1554,9 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		mat := make(Matrix, 0, len(e.Series))
 		it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
 		for i, s := range e.Series {
+
 			it.Reset(s.Iterator())
+
 			ss := Series{
 				Metric: e.Series[i].Labels(),
 				Points: getPointSlice(numSteps),
@@ -1622,16 +1628,23 @@ func durationToInt64Millis(d time.Duration) int64 {
 	return int64(d / time.Millisecond)
 }
 
+
+
 // vectorSelector evaluates a *parser.VectorSelector expression.
 func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vector {
+
+
 	checkForSeriesSetExpansion(ev.ctx, node)
 
 	var (
 		vec = make(Vector, 0, len(node.Series))
 	)
 
+
 	it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
+
 	for i, s := range node.Series {
+
 		it.Reset(s.Iterator())
 
 		t, v, ok := ev.vectorSelectorSingle(it, node, ts)
@@ -1739,16 +1752,21 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 // single time series, with points retrieved from an iterator.
 //
 // As an optimization, the matrix vector may already contain points of the same
-// time series from the evaluation of an earlier step (with lower mint and maxt
-// values). Any such points falling before mint are discarded; points that fall
-// into the [mint, maxt] range are retained; only points with later timestamps
+// time series from the evaluation of an earlier step (with lower mint and maxt values).
+//
+// Any such points falling before mint are discarded;
+// points that fall into the [mint, maxt] range are retained; only points with later timestamps
 // are populated from the iterator.
 func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, maxt int64, out []Point) []Point {
 	if len(out) > 0 && out[len(out)-1].T >= mint {
-		// There is an overlap between previous and current ranges, retain common
-		// points. In most such cases:
+
+
+		// There is an overlap between previous and current ranges, retain common points.
+		//
+		// In most such cases:
 		//   (a) the overlap is significantly larger than the eval step; and/or
 		//   (b) the number of samples is relatively small.
+		//
 		// so a linear search will be as fast as a binary search.
 		var drop int
 		for drop = 0; out[drop].T < mint; drop++ {
@@ -1798,13 +1816,17 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 }
 
 func (ev *evaluator) VectorAnd(lhs, rhs Vector, matching *parser.VectorMatching, enh *EvalNodeHelper) Vector {
+
 	if matching.Card != parser.CardManyToMany {
 		panic("set operations must only use many-to-many matching")
 	}
+
 	sigf := enh.signatureFunc(matching.On, matching.MatchingLabels...)
+
 
 	// The set of signatures for the right-hand side Vector.
 	rightSigs := map[uint64]struct{}{}
+
 	// Add all rhs samples to a map so we can easily find matches later.
 	for _, rs := range rhs {
 		rightSigs[sigf(rs.Metric)] = struct{}{}
@@ -1861,14 +1883,16 @@ func (ev *evaluator) VectorUnless(lhs, rhs Vector, matching *parser.VectorMatchi
 
 // VectorBinop evaluates a binary operation between two Vectors, excluding set operators.
 func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *parser.VectorMatching, returnBool bool, enh *EvalNodeHelper) Vector {
+
 	if matching.Card == parser.CardManyToMany {
 		panic("many-to-many only allowed for set operators")
 	}
+
 	sigf := enh.signatureFunc(matching.On, matching.MatchingLabels...)
 
+
 	// The control flow below handles one-to-one or many-to-one matching.
-	// For one-to-many, swap sidedness and account for the swap when calculating
-	// values.
+	// For one-to-many, swap sidedness and account for the swap when calculating values.
 	if matching.Card == parser.CardOneToMany {
 		lhs, rhs = rhs, lhs
 	}
@@ -1883,11 +1907,18 @@ func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *
 	}
 	rightSigs := enh.rightSigs
 
+
+
+
+
 	// Add all rhs samples to a map so we can easily find matches later.
 	for _, rs := range rhs {
+
 		sig := sigf(rs.Metric)
-		// The rhs is guaranteed to be the 'one' side. Having multiple samples
-		// with the same signature means that the matching is many-to-many.
+
+		// The rhs is guaranteed to be the 'one' side.
+		//
+		// Having multiple samples with the same signature means that the matching is many-to-many.
 		if duplSample, found := rightSigs[sig]; found {
 			// oneSide represents which side of the vector represents the 'one' in the many-to-one relationship.
 			oneSide := "right"
@@ -1902,8 +1933,13 @@ func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *
 		rightSigs[sig] = rs
 	}
 
-	// Tracks the match-signature. For one-to-one operations the value is nil. For many-to-one
-	// the value is a set of signatures to detect duplicated result elements.
+
+
+
+	// Tracks the match-signature.
+	//
+	// For one-to-one operations the value is nil.
+	// For many-to-one the value is a set of signatures to detect duplicated result elements.
 	if enh.matchedSigs == nil {
 		enh.matchedSigs = make(map[uint64]map[uint64]struct{}, len(rightSigs))
 	} else {
@@ -1913,10 +1949,10 @@ func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *
 	}
 	matchedSigs := enh.matchedSigs
 
-	// For all lhs samples find a respective rhs sample and perform
-	// the binary operation.
+	// For all lhs samples find a respective rhs sample and perform the binary operation.
 	for _, ls := range lhs {
 		sig := sigf(ls.Metric)
+
 
 		rs, found := rightSigs[sig] // Look for a match in the rhs Vector.
 		if !found {
@@ -1942,14 +1978,22 @@ func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *
 
 		insertedSigs, exists := matchedSigs[sig]
 		if matching.Card == parser.CardOneToOne {
+
+
 			if exists {
 				ev.errorf("multiple matches for labels: many-to-one matching must be explicit (group_left/group_right)")
 			}
 			matchedSigs[sig] = nil // Set existence to true.
+
+
 		} else {
-			// In many-to-one matching the grouping labels have to ensure a unique metric
-			// for the result Vector. Check whether those labels have already been added for
-			// the same matching labels.
+
+
+
+
+			// In many-to-one matching the grouping labels have to ensure a unique metric for the result Vector.
+			//
+			// Check whether those labels have already been added for the same matching labels.
 			insertSig := metric.Hash()
 
 			if !exists {
@@ -1969,32 +2013,50 @@ func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *
 	return enh.out
 }
 
-// signatureFunc returns a function that calculates the signature for a metric
-// ignoring the provided labels. If on, then the given labels are only used instead.
+
+
+
+
+// signatureFunc returns a function that calculates the signature for a metric ignoring the provided labels.
+// If on, then the given labels are only used instead.
 func signatureFunc(on bool, names ...string) func(labels.Labels) uint64 {
+
 	sort.Strings(names)
+
 	if on {
 		return func(lset labels.Labels) uint64 {
 			h, _ := lset.HashForLabels(make([]byte, 0, 1024), names...)
 			return h
 		}
 	}
+
+
 	return func(lset labels.Labels) uint64 {
 		h, _ := lset.HashWithoutLabels(make([]byte, 0, 1024), names...)
 		return h
 	}
+
+
 }
+
+
+
+
 
 // resultMetric returns the metric for the given sample(s) based on the Vector
 // binary operation and the matching options.
 func resultMetric(lhs, rhs labels.Labels, op parser.ItemType, matching *parser.VectorMatching, enh *EvalNodeHelper) labels.Labels {
+
+
+
 	if enh.resultMetric == nil {
 		enh.resultMetric = make(map[uint64]labels.Labels, len(enh.out))
 	}
-	// op and matching are always the same for a given node, so
-	// there's no need to include them in the hash key.
-	// If the lhs and rhs are the same then the xor would be 0,
-	// so add in one side to protect against that.
+
+
+
+	// op and matching are always the same for a given node, so there's no need to include them in the hash key.
+	// If the lhs and rhs are the same then the xor would be 0, so add in one side to protect against that.
 	lh := lhs.Hash()
 	h := (lh ^ rhs.Hash()) + lh
 	if ret, ok := enh.resultMetric[h]; ok {
@@ -2038,14 +2100,23 @@ func resultMetric(lhs, rhs labels.Labels, op parser.ItemType, matching *parser.V
 
 // VectorscalarBinop evaluates a binary operation between a Vector and a Scalar.
 func (ev *evaluator) VectorscalarBinop(op parser.ItemType, lhs Vector, rhs Scalar, swap, returnBool bool, enh *EvalNodeHelper) Vector {
+
+
+
 	for _, lhsSample := range lhs {
+
+
+
 		lv, rv := lhsSample.V, rhs.V
-		// lhs always contains the Vector. If the original position was different
-		// swap for calculating the value.
+
+
+		// lhs always contains the Vector. If the original position was different swap for calculating the value.
 		if swap {
 			lv, rv = rv, lv
 		}
 		value, keep := vectorElemBinop(op, lv, rv)
+
+
 		// Catch cases where the scalar is the LHS in a scalar-vector comparison operation.
 		// We want to always keep the vector element value as the output value, even if it's on the RHS.
 		if op.IsComparisonOperator() && swap {
@@ -2145,12 +2216,9 @@ type groupedAggregation struct {
 	reverseHeap vectorByReverseValueHeap
 }
 
-
-
-
-
-
 // aggregation evaluates an aggregation operation on a Vector.
+//
+//
 func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without bool, param interface{}, vec Vector, enh *EvalNodeHelper) Vector {
 
 	result := map[uint64]*groupedAggregation{}
@@ -2369,8 +2437,9 @@ func btos(b bool) float64 {
 	return 0
 }
 
-// shouldDropMetricName returns whether the metric name should be dropped in the
-// result of the op operation.
+// shouldDropMetricName returns whether the metric name should be dropped in the result of the op operation.
+//
+//
 func shouldDropMetricName(op parser.ItemType) bool {
 	switch op {
 	case parser.ADD, parser.SUB, parser.DIV, parser.MUL, parser.POW, parser.MOD:

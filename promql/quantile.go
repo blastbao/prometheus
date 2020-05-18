@@ -200,9 +200,11 @@ func quantile(q float64, values vectorByValueHeap) float64 {
 	sort.Sort(values)
 
 	n := float64(len(values))
-	// When the quantile lies between two samples,
-	// we use a weighted average of the two samples.
+
+
+	// When the quantile lies between two samples, we use a weighted average of the two samples.
 	rank := q * (n - 1)
+
 
 	lowerIndex := math.Max(0, math.Floor(rank))
 	upperIndex := math.Min(n-1, lowerIndex+1)

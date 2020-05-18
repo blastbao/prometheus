@@ -91,6 +91,7 @@ func (i ItemType) IsAggregatorWithParam() bool {
 // Returns false otherwise.
 func (i ItemType) IsKeyword() bool { return i > keywordsStart && i < keywordsEnd }
 
+
 // IsComparisonOperator returns true if the Item corresponds to a comparison operator.
 // Returns false otherwise.
 func (i ItemType) IsComparisonOperator() bool {
@@ -101,6 +102,7 @@ func (i ItemType) IsComparisonOperator() bool {
 		return false
 	}
 }
+
 
 // isSetOperator returns whether the Item corresponds to a set operator.
 func (i ItemType) IsSetOperator() bool {

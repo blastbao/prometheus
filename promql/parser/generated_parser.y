@@ -298,10 +298,9 @@ aggregate_expr  : aggregate_op aggregate_modifier function_call_body
 
                         // $1: 聚合操作符
                         // $2: 聚合修饰符
-                        // $3:
-
-
+                        // $3: 函数参数
                         $$ = yylex.(*parser).newAggregateExpr($1, $2, $3)
+
                     }
                 | aggregate_op function_call_body aggregate_modifier
                     {
@@ -321,14 +320,14 @@ aggregate_expr  : aggregate_op aggregate_modifier function_call_body
 aggregate_modifier: BY grouping_labels
                         {
                             $$ = &AggregateExpr{
-                                    Grouping: $2,
+                                Grouping: $2,
                             }
                         }
                     | WITHOUT grouping_labels
                         {
                             $$ = &AggregateExpr{
-                                    Grouping: $2,
-                                    Without:  true,
+                                Grouping: $2,
+                                Without:  true,
                             }
                         }
                     ;
@@ -359,23 +358,25 @@ binary_expr     : expr ADD     bin_modifier expr { $$ = yylex.(*parser).newBinar
 bin_modifier    : group_modifiers;
 
 bool_modifier   : /* empty */
-                        { $$ = &BinaryExpr{
-                        VectorMatching: &VectorMatching{Card: CardOneToOne},
+                    {
+                        $$ = &BinaryExpr{
+                            VectorMatching: &VectorMatching{Card: CardOneToOne},
                         }
-                        }
+                    }
                 | BOOL
-                        { $$ = &BinaryExpr{
-                        VectorMatching: &VectorMatching{Card: CardOneToOne},
-                        ReturnBool:     true,
+                    {
+                        $$ = &BinaryExpr{
+                            VectorMatching: &VectorMatching{Card: CardOneToOne},
+                            ReturnBool: true,
                         }
-                        }
+                    }
                 ;
 
 on_or_ignoring  : bool_modifier IGNORING grouping_labels
-                        {
+                    {
                         $$ = $1
                         $$.(*BinaryExpr).VectorMatching.MatchingLabels = $3
-                        }
+                    }
                 | bool_modifier ON grouping_labels
                     {
                         $$ = $1
@@ -401,13 +402,21 @@ group_modifiers : bool_modifier /* empty */
                 ;
 
 grouping_labels : LEFT_PAREN grouping_label_list RIGHT_PAREN
-                        { $$ = $2 }
+                    {
+                        $$ = $2
+                    }
                 | LEFT_PAREN grouping_label_list COMMA RIGHT_PAREN
-                        { $$ = $2 }
+                    {
+                        $$ = $2
+                    }
                 | LEFT_PAREN RIGHT_PAREN
-                        { $$ = []string{} }
+                    {
+                        $$ = []string{}
+                    }
                 | error
-                        { yylex.(*parser).unexpected("grouping opts", "\"(\""); $$ = nil }
+                    {
+                        yylex.(*parser).unexpected("grouping opts", "\"(\""); $$ = nil
+                    }
                 ;
 
 grouping_label_list : grouping_label_list COMMA grouping_label
@@ -448,16 +457,16 @@ function_call   : IDENTIFIER function_call_body
                         fn, exist := getFunction($1.Val)
 
                         if !exist{
-                                yylex.(*parser).addParseErrf($1.PositionRange(),"unknown function with name %q", $1.Val)
+                            yylex.(*parser).addParseErrf($1.PositionRange(),"unknown function with name %q", $1.Val)
                         }
 
                         $$ = &Call{
-                                Func: fn,
-                                Args: $2.(Expressions),
-                                PosRange: PositionRange{
-                                        Start: $1.Pos,
-                                        End:   yylex.(*parser).lastClosing,
-                                },
+                            Func: fn,
+                            Args: $2.(Expressions),
+                            PosRange: PositionRange{
+                                Start: $1.Pos,
+                                End: yylex.(*parser).lastClosing,
+                            },
                         }
                     }
                 ;
@@ -495,9 +504,9 @@ function_call_args  : function_call_args COMMA expr
 paren_expr      : LEFT_PAREN expr RIGHT_PAREN
                     {
                         $$ = &ParenExpr{
-                                Expr: $2.(Expr),
-                                PosRange: mergeRanges(&$1, &$3),
-                             }
+                            Expr: $2.(Expr),
+                            PosRange: mergeRanges(&$1, &$3),
+                        }
                     }
                 ;
 
@@ -555,13 +564,25 @@ subquery_expr   : expr LEFT_BRACKET duration COLON maybe_duration RIGHT_BRACKET
                         }
                     }
                 | expr LEFT_BRACKET duration COLON duration error
-                    { yylex.(*parser).unexpected("subquery selector", "\"]\""); $$ = $1 }
+                    {
+                        yylex.(*parser).unexpected("subquery selector", "\"]\"");
+                        $$ = $1
+                    }
                 | expr LEFT_BRACKET duration COLON error
-                    { yylex.(*parser).unexpected("subquery selector", "duration or \"]\""); $$ = $1 }
+                    {
+                        yylex.(*parser).unexpected("subquery selector", "duration or \"]\"");
+                        $$ = $1
+                    }
                 | expr LEFT_BRACKET duration error
-                    { yylex.(*parser).unexpected("subquery or range", "\":\" or \"]\""); $$ = $1 }
+                    {
+                        yylex.(*parser).unexpected("subquery or range", "\":\" or \"]\"");
+                        $$ = $1
+                    }
                 | expr LEFT_BRACKET error
-                    { yylex.(*parser).unexpected("subquery selector", "duration"); $$ = $1 }
+                    {
+                        yylex.(*parser).unexpected("subquery selector", "duration");
+                        $$ = $1
+                    }
                 ;
 
 /*
@@ -573,13 +594,13 @@ unary_expr      :
                 unary_op expr %prec MUL
                     {
                         if nl, ok := $2.(*NumberLiteral); ok {
-                                if $1.Typ == SUB {
-                                        nl.Val *= -1
-                                }
-                                nl.PosRange.Start = $1.Pos
-                                $$ = nl
+                            if $1.Typ == SUB {
+                                nl.Val *= -1
+                            }
+                            nl.PosRange.Start = $1.Pos
+                            $$ = nl
                         } else {
-                                $$ = &UnaryExpr{Op: $1.Typ, Expr: $2.(Expr), StartPos: $1.Pos}
+                            $$ = &UnaryExpr{Op: $1.Typ, Expr: $2.(Expr), StartPos: $1.Pos}
                         }
                     }
                 ;
@@ -764,9 +785,9 @@ label_set_list  : label_set_list COMMA label_set_item
 label_set_item  : IDENTIFIER EQL STRING
                     {
                         $$ = labels.Label{
-                                Name: $1.Val,
-                                Value: yylex.(*parser).unquoteString($3.Val),
-                             }
+                            Name: $1.Val,
+                            Value: yylex.(*parser).unquoteString($3.Val),
+                        }
                     }
                 | IDENTIFIER EQL error
                     {
@@ -929,8 +950,8 @@ match_op        : EQL
 number_literal  : NUMBER
                     {
                         $$ = &NumberLiteral{
-                                Val: yylex.(*parser).number($1.Val),
-                                PosRange: $1.PositionRange(),
+                            Val: yylex.(*parser).number($1.Val),
+                            PosRange: $1.PositionRange(),
                         }
                     }
                 ;
@@ -948,9 +969,13 @@ number          : NUMBER
 // 有符号数
 
 signed_number   : ADD number
-                    { $$ = $2 }
+                    {
+                        $$ = $2
+                    }
                 | SUB number
-                    { $$ = -$2 }
+                    {
+                        $$ = -$2
+                    }
                 ;
 
 
@@ -985,9 +1010,9 @@ duration        : DURATION
 string_literal  : STRING
                     {
                         $$ = &StringLiteral{
-                                Val: yylex.(*parser).unquoteString($1.Val),
-                                PosRange: $1.PositionRange(),
-                             }
+                            Val: yylex.(*parser).unquoteString($1.Val),
+                            PosRange: $1.PositionRange(),
+                        }
                     }
                 ;
 
@@ -996,7 +1021,9 @@ string_literal  : STRING
  */
 
 maybe_duration  : /* empty */
-                    {$$ = 0}
+                    {
+                        $$ = 0
+                    }
                 | duration
                 ;
 

@@ -40,19 +40,15 @@ type parser struct {
 	// 词法分析器
 	lex Lexer
 
-
 	//
 	inject    ItemType
 	injecting bool
-
 
 	// Everytime an Item is lexed that could be the end of certain expressions its end position is stored here.
 	//
 	// 每当一个 Item 可能是某些表达式的结尾的词条时，它的结尾位置就会被存储在这里。
 	//
 	lastClosing Pos
-
-
 
 	// 语法分析器
 	yyParser yyParserImpl
@@ -92,6 +88,7 @@ func (e *ParseErr) Error() string {
 		positionStr = "invalid position:"
 	} else {
 
+		//
 		for i, c := range e.Query[:e.PositionRange.Start] {
 			if c == '\n' {
 				lastLineBreak = i
@@ -124,13 +121,11 @@ func (errs ParseErrors) Error() string {
 	}
 
 	// Should never happen.
+	//
 	// Panicking while printing an error seems like a bad idea,
 	// so the situation is explained in the error message instead.
 	return "error contains no error message"
 }
-
-
-
 
 // ParseExpr returns the expression parsed from the input.
 //
@@ -457,6 +452,8 @@ func (p *parser) assembleVectorSelector(vs *VectorSelector) {
 	}
 }
 
+
+
 func (p *parser) newAggregateExpr(op Item, modifier Node, args Node) (ret *AggregateExpr) {
 
 	ret = modifier.(*AggregateExpr)
@@ -470,29 +467,34 @@ func (p *parser) newAggregateExpr(op Item, modifier Node, args Node) (ret *Aggre
 
 	ret.Op = op.Typ
 
+	// 聚合操作符必须有参数
 	if len(arguments) == 0 {
 		p.addParseErrf(ret.PositionRange(), "no arguments for aggregate expression provided")
-
 		// Prevents invalid array accesses.
 		return
 	}
 
+
+	// 通常聚合操作需要一个表达式参数，对于 TOPK/BOTTOMK/COUNT_VALUES/QUANTILE 需要两个表达式参数
 	desiredArgs := 1
 	if ret.Op.IsAggregatorWithParam() {
 		desiredArgs = 2
-
 		ret.Param = arguments[0]
 	}
 
+	// 参数数目是否正确
 	if len(arguments) != desiredArgs {
 		p.addParseErrf(ret.PositionRange(), "wrong number of arguments for aggregate expression provided, expected %d, got %d", desiredArgs, len(arguments))
 		return
 	}
 
+	//
 	ret.Expr = arguments[desiredArgs-1]
 
 	return ret
 }
+
+
 
 // number parses a number.
 //
@@ -518,6 +520,14 @@ func (p *parser) expectType(node Node, want ValueType, context string) {
 		p.addParseErrf(node.PositionRange(), "expected type %s in %s, got %s", DocumentedType(want), context, DocumentedType(t))
 	}
 }
+
+
+
+
+
+
+
+
 
 // checkAST checks the sanity of the provided AST.
 // This includes type checking.
@@ -591,15 +601,20 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 
 	case *BinaryExpr:
 
-
+		// 递归检查左、右子表达式合法性
 		lt := p.checkAST(n.LHS)
 		rt := p.checkAST(n.RHS)
+
+
+
+
 
 		// opRange returns the PositionRange of the operator part of the BinaryExpr.
 		// This is made a function instead of a variable, so it is lazily evaluated on demand.
 		opRange := func() (r PositionRange) {
 
 			// Remove whitespace at the beginning and end of the range.
+
 			for r.Start = n.LHS.PositionRange().End; isSpace(rune(p.lex.input[r.Start])); r.Start++ {
 			}
 
@@ -610,9 +625,14 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		}
 
 
+
+		// 如果 n.Op 不是比较操作符，且
+
 		if n.ReturnBool && !n.Op.IsComparisonOperator() {
 			p.addParseErrf(opRange(), "bool modifier can only be used on comparison operators")
 		}
+
+
 
 
 		if n.Op.IsComparisonOperator() && !n.ReturnBool && n.RHS.Type() == ValueTypeScalar && n.LHS.Type() == ValueTypeScalar {
@@ -620,36 +640,53 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		}
 
 
+
 		if n.Op.IsSetOperator() && n.VectorMatching.Card == CardOneToOne {
 			n.VectorMatching.Card = CardManyToMany
 		}
 
 
+
+
 		for _, l1 := range n.VectorMatching.MatchingLabels {
+
 			for _, l2 := range n.VectorMatching.Include {
+
 				if l1 == l2 && n.VectorMatching.On {
+
 					p.addParseErrf(opRange(), "label %q must not occur in ON and GROUP clause at once", l1)
+
 				}
+
 			}
 		}
+
+
 
 		if !n.Op.IsOperator() {
 			p.addParseErrf(n.PositionRange(), "binary expression does not support operator %q", n.Op)
 		}
 
+
+
 		if lt != ValueTypeScalar && lt != ValueTypeVector {
 			p.addParseErrf(n.LHS.PositionRange(), "binary expression must contain only scalar and instant vector types")
 		}
+
 
 		if rt != ValueTypeScalar && rt != ValueTypeVector {
 			p.addParseErrf(n.RHS.PositionRange(), "binary expression must contain only scalar and instant vector types")
 		}
 
+
 		if (lt != ValueTypeVector || rt != ValueTypeVector) && n.VectorMatching != nil {
+
 			if len(n.VectorMatching.MatchingLabels) > 0 {
 				p.addParseErrf(n.PositionRange(), "vector matching only allowed between instant vectors")
 			}
+
 			n.VectorMatching = nil
+
 		} else {
 
 			// Both operands are Vectors.
@@ -742,7 +779,6 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 
 		ty := p.checkAST(n.Expr)
 
-
 		if ty != ValueTypeVector {
 			p.addParseErrf(n.PositionRange(), "subquery is only allowed on instant vector, got %s in %q instead", ty, n.String())
 		}
@@ -754,10 +790,10 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 
 	case *VectorSelector:
 
+
 		// A Vector selector must contain at least one non-empty matcher to prevent
 		// implicit selection of all metrics (e.g. by a typo).
-
-
+		//
 		// VectorSelector 应该至少包含一个非空的 matcher ，以防止默认取查询所有 metrics 。
 		notEmpty := false
 		for _, lm := range n.LabelMatchers {
@@ -772,13 +808,14 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 			p.addParseErrf(n.PositionRange(), "vector selector must contain at least one non-empty matcher")
 		}
 
+
 		if n.Name != "" {
 
 			// In this case the last LabelMatcher is checking for the metric name set outside the braces.
 			// This checks if the name has already been set previously.
 
 
-			// 在这种情况下，最后的那个 LabelMatcher 正在匹配 {} 外的 metric 名。
+			// 在这种情况下，最后的那个 LabelMatcher 正在匹配 {...} 外的 metric 名。
 			// 若前面的某个 matcher 也在匹配 metric 名，则重复，报错。
 
 			for _, m := range n.LabelMatchers[0 : len(n.LabelMatchers)-1] {
@@ -879,12 +916,15 @@ func (p *parser) newLabelMatcher(label Item, operator Item, value Item) *labels.
 	return m
 }
 
+
+
+
+
 func (p *parser) addOffset(e Node, offset time.Duration) {
 
 
 	var offsetp *time.Duration
 	var endPosp *Pos
-
 
 	switch s := e.(type) {
 
@@ -909,6 +949,9 @@ func (p *parser) addOffset(e Node, offset time.Duration) {
 		p.addParseErrf(e.PositionRange(), "offset modifier must be preceded by an instant or range selector, but follows a %T instead", e)
 		return
 	}
+
+
+
 
 
 	// it is already ensured by parseDuration func that there never will be a zero offset modifier

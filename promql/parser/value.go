@@ -33,7 +33,6 @@ const (
 	ValueTypeString = "string" 	// 字符串
 )
 
-
 // DocumentedType returns the internal type to the equivalent
 // user facing terminology as defined in the documentation.
 func DocumentedType(t ValueType) string {

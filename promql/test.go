@@ -110,16 +110,20 @@ func raise(line int, format string, v ...interface{}) error {
 }
 
 func parseLoad(lines []string, i int) (int, *loadCmd, error) {
+
 	if !patLoad.MatchString(lines[i]) {
 		return i, nil, raise(i, "invalid load command. (load <step:duration>)")
 	}
+
 	parts := patLoad.FindStringSubmatch(lines[i])
 
 	gap, err := model.ParseDuration(parts[1])
 	if err != nil {
 		return i, nil, raise(i, "invalid step definition %q: %s", parts[1], err)
 	}
+
 	cmd := newLoadCmd(time.Duration(gap))
+
 	for i+1 < len(lines) {
 		i++
 		defLine := lines[i]

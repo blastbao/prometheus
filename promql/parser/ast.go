@@ -108,6 +108,8 @@ type Expr interface {
 type Expressions []Expr
 
 // AggregateExpr represents an aggregation operation on a Vector.
+//
+//
 type AggregateExpr struct {
 	// 操作符
 	Op       ItemType 		// The used aggregation operation.
@@ -128,24 +130,29 @@ type BinaryExpr struct {
 
 	// 操作符
 	Op       ItemType // The operation of the expression.
-	// 左/右 子表达式
+
+	// 左、右子表达式
 	LHS, RHS Expr     // The operands on the respective sides of the operator.
+
 
 	// The matching behavior for the operation if both operands are Vectors.
 	// If they are not this field is nil.
+	//
+	//
 	VectorMatching *VectorMatching
 
+
 	// If a comparison operator, return 0/1 rather than filtering.
+	//
+	// 如果是二元比较操作符，则它可能被 bool 修饰，需要将比较操作结果转换为 0(false) 和 1(true) 。
 	ReturnBool bool
 }
 
 
-
-
 // Call represents a function call.
 type Call struct {
-	Func *Function   		// 函数原型描述  			// The function that was called.
-	Args Expressions 		// 参数					// Arguments used in the call.
+	Func *Function   		// 函数原型
+	Args Expressions 		// 函数参数
 	PosRange PositionRange	// 位于输入字符串的位置
 }
 
@@ -154,17 +161,21 @@ type Call struct {
 type MatrixSelector struct {
 
 	// It is safe to assume that this is an VectorSelector if the parser hasn't returned an error.
+	// 在正确解析的情况下，MatrixSelector 会包含 VectorSelector 对象，所以这里成员变量名这么起。
 	VectorSelector Expr
+
+	// 时间区间
 	Range          time.Duration
 
+	// ???
 	EndPos Pos
 }
 
 // SubqueryExpr represents a subquery.
 type SubqueryExpr struct {
 
+	// 子查询
 	Expr   Expr
-
 
 	Range  time.Duration 	// time range
 	Offset time.Duration	// time offset
@@ -208,6 +219,8 @@ type UnaryExpr struct {
 }
 
 // VectorSelector represents a Vector selection.
+//
+//
 type VectorSelector struct {
 
 	Name          string
@@ -245,9 +258,11 @@ func (e *StringLiteral) 	Type() ValueType  	{ return ValueTypeString }
 func (e *UnaryExpr) 		Type() ValueType  	{ return e.Expr.Type() }
 func (e *VectorSelector) 	Type() ValueType 	{ return ValueTypeVector }
 func (e *BinaryExpr) 		Type() ValueType 	{
+	// 二元运算的 left 和 right 都是标量，则结果是标量
 	if e.LHS.Type() == ValueTypeScalar && e.RHS.Type() == ValueTypeScalar {
 		return ValueTypeScalar
 	}
+	// 否则，结果是矢量
 	return ValueTypeVector
 }
 
@@ -303,6 +318,8 @@ type VectorMatching struct {
 	Card VectorMatchCardinality
 
 	// MatchingLabels contains the labels which define equality of a pair of elements from the Vectors.
+	//
+	//
 	MatchingLabels []string
 
 	// On includes the given label names from matching, rather than excluding them.
