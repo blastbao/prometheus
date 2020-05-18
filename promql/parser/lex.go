@@ -75,6 +75,8 @@ type ItemType int
 
 // isOperator returns true if the Item corresponds to a arithmetic or set operator.
 // Returns false otherwise.
+//
+// 操作符
 func (i ItemType) IsOperator() bool { return i > operatorsStart && i < operatorsEnd }
 
 // isAggregator returns true if the Item belongs to the aggregator functions.
@@ -94,6 +96,8 @@ func (i ItemType) IsKeyword() bool { return i > keywordsStart && i < keywordsEnd
 
 // IsComparisonOperator returns true if the Item corresponds to a comparison operator.
 // Returns false otherwise.
+//
+// 比较类二元操作符
 func (i ItemType) IsComparisonOperator() bool {
 	switch i {
 	case EQL, NEQ, LTE, LSS, GTE, GTR:
@@ -105,6 +109,8 @@ func (i ItemType) IsComparisonOperator() bool {
 
 
 // isSetOperator returns whether the Item corresponds to a set operator.
+//
+// 逻辑类二元操作符
 func (i ItemType) IsSetOperator() bool {
 	switch i {
 	case LAND, LOR, LUNLESS:

@@ -606,9 +606,6 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		rt := p.checkAST(n.RHS)
 
 
-
-
-
 		// opRange returns the PositionRange of the operator part of the BinaryExpr.
 		// This is made a function instead of a variable, so it is lazily evaluated on demand.
 		opRange := func() (r PositionRange) {
@@ -624,30 +621,22 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 			return
 		}
 
-
-
-		// 如果 n.Op 不是比较操作符，且
-
+		// 只有二元比较操作符，才可能被 bool 修饰。
 		if n.ReturnBool && !n.Op.IsComparisonOperator() {
 			p.addParseErrf(opRange(), "bool modifier can only be used on comparison operators")
 		}
 
-
-
-
+		// 如果是二元比较操作符，且两个操作数均为标量，则必须被 bool 修饰。
 		if n.Op.IsComparisonOperator() && !n.ReturnBool && n.RHS.Type() == ValueTypeScalar && n.LHS.Type() == ValueTypeScalar {
 			p.addParseErrf(opRange(), "comparisons between scalars must use BOOL modifier")
 		}
 
-
-
+		// 如果是二元逻辑操作符，匹配模式不能是 one to one
 		if n.Op.IsSetOperator() && n.VectorMatching.Card == CardOneToOne {
 			n.VectorMatching.Card = CardManyToMany
 		}
 
-
-
-
+		//
 		for _, l1 := range n.VectorMatching.MatchingLabels {
 
 			for _, l2 := range n.VectorMatching.Include {
@@ -662,36 +651,38 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		}
 
 
-
+		//
 		if !n.Op.IsOperator() {
 			p.addParseErrf(n.PositionRange(), "binary expression does not support operator %q", n.Op)
 		}
 
 
-
-		if lt != ValueTypeScalar && lt != ValueTypeVector {
+		// 左 操作数/表达式 类型检查
+ 		if lt != ValueTypeScalar && lt != ValueTypeVector {
 			p.addParseErrf(n.LHS.PositionRange(), "binary expression must contain only scalar and instant vector types")
 		}
 
-
+		// 右 操作数/表达式 类型检查
 		if rt != ValueTypeScalar && rt != ValueTypeVector {
 			p.addParseErrf(n.RHS.PositionRange(), "binary expression must contain only scalar and instant vector types")
 		}
 
 
 		if (lt != ValueTypeVector || rt != ValueTypeVector) && n.VectorMatching != nil {
-
+			// 如果某个操作数（表达式）为标量
 			if len(n.VectorMatching.MatchingLabels) > 0 {
 				p.addParseErrf(n.PositionRange(), "vector matching only allowed between instant vectors")
 			}
-
 			n.VectorMatching = nil
-
 		} else {
 
-			// Both operands are Vectors.
+			// 两个操作数（表达式）均为矢量 	// Both operands are Vectors.
+
+
+			// 检查是否为二元逻辑操作符
 			if n.Op.IsSetOperator() {
 
+				//
 				if n.VectorMatching.Card == CardOneToMany || n.VectorMatching.Card == CardManyToOne {
 					p.addParseErrf(n.PositionRange(), "no grouping allowed for %q operation", n.Op)
 				}

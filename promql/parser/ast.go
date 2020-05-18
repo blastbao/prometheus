@@ -305,27 +305,33 @@ func (vmc VectorMatchCardinality) String() string {
 	panic("promql.VectorMatchCardinality.String: unknown match cardinality")
 }
 
-
-
 // VectorMatching describes how elements from two Vectors in a binary operation are supposed to be matched.
 //
-// VectorMatching 描述了一个二元操作中的两个 Vectors 的元素应该如何匹配。
-//
+// VectorMatching 描述了一个二元操作中的两个 Vectors 的元素应该如何匹配：
+//	1. one to one
+//  2. one to many
+// 	3. many to one
+//  4. many to many
 type VectorMatching struct {
 
 	// The cardinality of the two Vectors.
 	// 两个 Vectors 的基数关系。
 	Card VectorMatchCardinality
 
+
 	// MatchingLabels contains the labels which define equality of a pair of elements from the Vectors.
 	//
-	//
+	// MatchingLabels 包含了定义一对向量元素的平等的标签。
 	MatchingLabels []string
 
 	// On includes the given label names from matching, rather than excluding them.
+	//
+	//
 	On bool
 
 	// Include contains additional labels that should be included in the result from the side with the lower cardinality.
+	//
+	//
 	Include []string
 }
 
