@@ -132,15 +132,26 @@ func (ls Labels) Hash() uint64 {
 
 // HashForLabels returns a hash value for the labels matching the provided names.
 // 'names' have to be sorted in ascending order.
+//
+// HashForLabels 返回 ls 中与 names 匹配的标签集合的 hash 值。
+//
 func (ls Labels) HashForLabels(b []byte, names ...string) (uint64, []byte) {
+
+	// 重置字节数组（清空）
 	b = b[:0]
+
+	// 重置字符串数组下标
 	i, j := 0, 0
+
+	// ls 和 names 都是有序的（字典序）
 	for i < len(ls) && j < len(names) {
+
 		if names[j] < ls[i].Name {
 			j++
 		} else if ls[i].Name < names[j] {
 			i++
 		} else {
+			// 如果 ls[i].Name == names[j] ，发生匹配，则将当前 label 添加到 b 中。
 			b = append(b, ls[i].Name...)
 			b = append(b, sep)
 			b = append(b, ls[i].Value...)
@@ -149,27 +160,45 @@ func (ls Labels) HashForLabels(b []byte, names ...string) (uint64, []byte) {
 			j++
 		}
 	}
+
+	// 计算 hash 值
 	return xxhash.Sum64(b), b
 }
 
-// HashWithoutLabels returns a hash value for all labels except those matching
-// the provided names.
+// HashWithoutLabels returns a hash value for all labels except those matching the provided names.
 // 'names' have to be sorted in ascending order.
+//
+// HashWithoutLabels 返回 ls 中与 names 不匹配的标签集合的 hash 值，注意，也会忽略 "__name__" 标签。
+//
 func (ls Labels) HashWithoutLabels(b []byte, names ...string) (uint64, []byte) {
+
 	b = b[:0]
+
 	j := 0
+
+	// 遍历 labels
 	for i := range ls {
+
+		// 遍历 names
 		for j < len(names) && names[j] < ls[i].Name {
 			j++
 		}
+
+		// 至此，要么 j >= len(names)，要么  names[j] >= ls[i].Name
+
+
+		// 对于 "__name__" 标签和其它匹配的标签，直接忽略
 		if ls[i].Name == MetricName || (j < len(names) && ls[i].Name == names[j]) {
 			continue
 		}
+
+		// 将当前 label 添加到 b 中。
 		b = append(b, ls[i].Name...)
 		b = append(b, sep)
 		b = append(b, ls[i].Value...)
 		b = append(b, sep)
 	}
+
 	return xxhash.Sum64(b), b
 }
 
@@ -338,6 +367,7 @@ func (b *Builder) Reset(base Labels) {
 	b.base = base
 	b.del = b.del[:0]
 	b.add = b.add[:0]
+	// 移除值为空的标签
 	for _, l := range b.base {
 		if l.Value == "" {
 			b.del = append(b.del, l.Name)

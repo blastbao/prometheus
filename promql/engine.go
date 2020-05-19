@@ -433,7 +433,7 @@ func (ng *Engine) NewRangeQuery(q storage.Queryable, qs string, start, end time.
 		return nil, err
 	}
 
-	// 表达式类型是 矢量 或 标量
+	// 表达式类型必须是 矢量 或 标量
 	if expr.Type() != parser.ValueTypeVector && expr.Type() != parser.ValueTypeScalar {
 		return nil, errors.Errorf("invalid expression type %q for range query, must be Scalar or instant Vector", parser.DocumentedType(expr.Type()))
 	}
@@ -490,17 +490,20 @@ func (ng *Engine) newTestQuery(f func(context.Context) error) Query {
 //
 func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage.Warnings, err error) {
 
+	// metrics
 	ng.metrics.currentQueries.Inc()
 	defer ng.metrics.currentQueries.Dec()
 
+	// ctx
 	ctx, cancel := context.WithTimeout(ctx, ng.timeout)
 	q.cancel = cancel
 
+	// logger
 	defer func() {
+
 		ng.queryLoggerLock.RLock()
 
 		if l := ng.queryLogger; l != nil {
-
 
 			params := make(map[string]interface{}, 4)
 			params["query"] = q.q
@@ -526,24 +529,18 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 				ng.metrics.queryLogFailures.Inc()
 				level.Error(ng.logger).Log("msg", "can't log query", "err", err)
 			}
-
 		}
-
-
 		ng.queryLoggerLock.RUnlock()
 	}()
 
-
+	// statistics
 	execSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.ExecTotalTime)
 	defer execSpanTimer.Finish()
-
-
 	queueSpanTimer, _ := q.stats.GetSpanTimer(ctx, stats.ExecQueueTime, ng.metrics.queryQueueTime)
 
-
-	// Log query in active log. The active log guarantees that we don't run over MaxConcurrent queries.
+	// Log query in active log.
+	// The active log guarantees that we don't run over MaxConcurrent queries.
 	if ng.activeQueryTracker != nil {
-
 		queryIndex, err := ng.activeQueryTracker.Insert(ctx, q.q)
 		if err != nil {
 			queueSpanTimer.Finish()
@@ -556,21 +553,15 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 	// Cancel when execution is done or an error was raised.
 	defer q.cancel()
 
-
-
 	const env = "query execution"
 
 	evalSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.EvalTotalTime)
 	defer evalSpanTimer.Finish()
 
-
-
 	// The base context might already be canceled on the first iteration (e.g. during shutdown).
 	if err := contextDone(ctx, env); err != nil {
 		return nil, nil, err
 	}
-
-
 
 	switch s := q.Statement().(type) {
 	case *parser.EvalStmt:
@@ -579,11 +570,10 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 		return nil, nil, s(ctx)
 	}
 
-
-
 	panic(errors.Errorf("promql.Engine.exec: unhandled statement of type %T", q.Statement()))
 }
 
+// time.Time => millisecond
 func timeMilliseconds(t time.Time) int64 {
 	return t.UnixNano() / int64(time.Millisecond/time.Nanosecond)
 }
@@ -593,18 +583,21 @@ func durationMilliseconds(d time.Duration) int64 {
 	return int64(d / (time.Millisecond / time.Nanosecond))
 }
 
+
+
+
+
+
 // execEvalStmt evaluates the expression of an evaluation statement for the given time range.
 //
 // execEvalStmt 执行指定时间范围的表达式查询语句。
 //
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, storage.Warnings, error) {
 
-
-
 	prepareSpanTimer, ctxPrepare := query.stats.GetSpanTimer(ctx, stats.QueryPreparationTime, ng.metrics.queryPrepareTime)
 
+	// ???
 	mint := ng.findMinTime(s)
-
 
 	querier, err := query.queryable.Querier(ctxPrepare, timestamp.FromTime(mint), timestamp.FromTime(s.End))
 	if err != nil {
@@ -614,6 +607,7 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	defer querier.Close()
 
 
+	//
 	warnings, err := ng.populateSeries(ctxPrepare, querier, s)
 
 
@@ -633,10 +627,12 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	//
 	// This is executed as a range evaluation with one step.
 	//
-
+	//
+	//
 	if s.Start == s.End && s.Interval == 0 {
 
-		start := timeMilliseconds(s.Start)
+
+		start := timeMilliseconds(s.Start) // time.Time => millisecond
 
 		evaluator := &evaluator{
 			startTimestamp:      start,
@@ -703,6 +699,7 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	}
 
 
+
 	// Range evaluation.
 	evaluator := &evaluator{
 		startTimestamp:      timeMilliseconds(s.Start),
@@ -714,6 +711,8 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 		logger:              ng.logger,
 		lookbackDelta:       ng.lookbackDelta,
 	}
+
+
 
 	val, err := evaluator.Eval(s.Expr)
 	if err != nil {
@@ -733,6 +732,8 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	if err := contextDone(ctx, "expression evaluation"); err != nil {
 		return nil, warnings, err
 	}
+
+
 
 	// TODO(fabxc): where to ensure metric labels are a copy from the storage internals.
 	sortSpanTimer, _ := query.stats.GetSpanTimer(ctx, stats.ResultSortTime, ng.metrics.queryResultSort)
@@ -759,6 +760,13 @@ func (ng *Engine) cumulativeSubqueryOffset(path []parser.Node) time.Duration {
 	}
 	return subqOffset
 }
+
+
+
+
+
+
+
 
 func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 
@@ -818,7 +826,6 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 }
 
 func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s *parser.EvalStmt) (storage.Warnings, error) {
-
 
 	var (
 
@@ -1019,17 +1026,31 @@ func expandSeriesSet(ctx context.Context, it storage.SeriesSet) (res []storage.S
 	return res, it.Err()
 }
 
+
+
+
+
+
+
+
+
+
+
+
 // An evaluator evaluates given expressions over given fixed timestamps.
-//
 // It is attached to an engine through which it connects to a querier and reports errors.
-//
 // On timeout or cancellation of its context it terminates.
+//
+// evaluator 在固定的时间戳（毫秒）上计算表达式。
+// 它附在 engine 上，通过 engine 连接到 querier 并报告错误。
+// 在超时或取消时，它就终止了。
+//
 type evaluator struct {
 	ctx context.Context
 
-	startTimestamp int64 // Start time in milliseconds.
-	endTimestamp   int64 // End time in milliseconds.
-	interval       int64 // Interval in milliseconds.
+	startTimestamp int64 	// Start time in milliseconds.
+	endTimestamp   int64 	// End time in milliseconds.
+	interval       int64 	// Interval in milliseconds.
 
 	maxSamples          int
 	currentSamples      int
@@ -1059,7 +1080,6 @@ func (ev *evaluator) recover(errp *error) {
 		// Print the stack trace but do not inhibit the running application.
 		buf := make([]byte, 64<<10)
 		buf = buf[:runtime.Stack(buf, false)]
-
 		level.Error(ev.logger).Log("msg", "runtime panic in parser", "err", e, "stacktrace", string(buf))
 		*errp = errors.Wrap(err, "unexpected error")
 	} else {
@@ -1068,7 +1088,6 @@ func (ev *evaluator) recover(errp *error) {
 }
 
 func (ev *evaluator) Eval(expr parser.Expr) (v parser.Value, err error) {
-
 	defer ev.recover(&err)
 
 	return ev.eval(expr), nil
@@ -1284,18 +1303,23 @@ func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelec
 // eval evaluates the given expression as the given AST expression node requires.
 func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
-
 	// This is the top-level evaluation method.
 	// Thus, we check for timeout/cancellation here.
-
-
 	if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
 		ev.error(err)
 	}
 
+	//
 	numSteps := int((ev.endTimestamp-ev.startTimestamp)/ev.interval) + 1
 
+
+
+
+
+
 	switch e := expr.(type) {
+
+
 	case *parser.AggregateExpr:
 
 		unwrapParenExpr(&e.Param)
@@ -1315,13 +1339,16 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 
 	case *parser.Call:
+
 		call := FunctionCalls[e.Func.Name]
 
 		if e.Func.Name == "timestamp" {
+
 			// Matrix evaluation always returns the evaluation time,
-			// so this function needs special handling when given
-			// a vector selector.
+			// so this function needs special handling when given a vector selector.
 			vs, ok := e.Args[0].(*parser.VectorSelector)
+
+			//
 			if ok {
 				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
 					return call([]parser.Value{ev.vectorSelector(vs, enh.ts)}, e.Args, enh)
@@ -1389,23 +1416,40 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		for i, s := range selVS.Series {
 			points = points[:0]
 			it.Reset(s.Iterator())
+
+
+
+
 			ss := Series{
-				// For all range vector functions, the only change to the
-				// output labels is dropping the metric name so just do
-				// it once here.
+
+				// For all range vector functions, the only change to the output
+				// labels is dropping the metric name so just do it once here.
 				Metric: dropMetricName(selVS.Series[i].Labels()),
 				Points: getPointSlice(numSteps),
 			}
+
+
+
 			inMatrix[0].Metric = selVS.Series[i].Labels()
+
+
 			for ts, step := ev.startTimestamp, -1; ts <= ev.endTimestamp; ts += ev.interval {
+
 				step++
+
 				// Set the non-matrix arguments.
-				// They are scalar, so it is safe to use the step number
-				// when looking up the argument, as there will be no gaps.
+				//
+				// They are scalar, so it is safe to use the step number when looking up the argument,
+				// as there will be no gaps.
+
 				for j := range e.Args {
+
 					if j != matrixArgIndex {
+
 						otherInArgs[j][0].V = otherArgs[j][0].Points[step].V
+
 					}
+
 				}
 				maxt := ts - offset
 				mint := maxt - selRange
@@ -2207,6 +2251,8 @@ func vectorElemBinop(op parser.ItemType, lhs, rhs float64) (float64, bool) {
 	panic(errors.Errorf("operator %q not allowed for operations between Vectors", op))
 }
 
+
+
 type groupedAggregation struct {
 	labels      labels.Labels
 	value       float64
@@ -2216,12 +2262,27 @@ type groupedAggregation struct {
 	reverseHeap vectorByReverseValueHeap
 }
 
+
+
+
 // aggregation evaluates an aggregation operation on a Vector.
 //
+//
+// 聚合操作语法:
+// 	<aggr-op>([parameter,] <vector expression>) [without|by (<label list>)]
+//
+// 参数对应关系:
+// 	<aggr-op> : op
+//  parameter : param
+//  <vector expression> : vec
+//  without|by : without
+//  <label list> : grouping
 //
 func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without bool, param interface{}, vec Vector, enh *EvalNodeHelper) Vector {
 
 	result := map[uint64]*groupedAggregation{}
+
+	// 参数解析：只有 count_values，quantile，topk，bottomk 支持参数。
 	var k int64
 	if op == parser.TOPK || op == parser.BOTTOMK {
 		f := param.(float64)
@@ -2233,52 +2294,86 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			return Vector{}
 		}
 	}
+
 	var q float64
 	if op == parser.QUANTILE {
 		q = param.(float64)
 	}
+
 	var valueLabel string
 	if op == parser.COUNT_VALUES {
+		// count_values() 操作增加的附加标签名由参数指定
 		valueLabel = param.(string)
+		// 检查是否合法标签名
 		if !model.LabelName(valueLabel).IsValid() {
 			ev.errorf("invalid label name %q", valueLabel)
 		}
+		// by ?
 		if !without {
 			grouping = append(grouping, valueLabel)
 		}
 	}
 
+
+	// 对 grouping 进行排序，以便后续调用 metric.HashWithoutLabels() 和 metric.HashForLabels() 函数
 	sort.Strings(grouping)
+
 	lb := labels.NewBuilder(nil)
 	buf := make([]byte, 0, 1024)
+
+
+	// 遍历矢量数据 samples
 	for _, s := range vec {
+
+		// 取出当前 sample 的标签集
 		metric := s.Metric
 
+		// 如果是 count_values() 操作，则添加附加标签到当前 sample 上
 		if op == parser.COUNT_VALUES {
 			lb.Reset(metric)
+			// count_values() 操作增加的附加标签的值为样本值
 			lb.Set(valueLabel, strconv.FormatFloat(s.V, 'f', -1, 64))
+			// 重置标签集合
 			metric = lb.Labels()
 		}
 
 		var (
 			groupingKey uint64
 		)
+
+
+		// 计算聚合 key ，每个聚合结果由该聚合操作关联的 labels 唯一标识，这里的 hash 值是这组 labels 的代表，方便代码处理。
+
+
+		// without 操作，会移除 grouping 标签和 "__name__" 标签，计算 hash 值也要忽略它们:
 		if without {
+			// HashWithoutLabels 返回 ls 中与 names 不匹配的标签集合的 hash 值，注意，也会忽略 "__name__" 标签。
 			groupingKey, buf = metric.HashWithoutLabels(buf, grouping...)
+
+		// by 操作，只保留 grouping 标签，计算 hash 值仅需要参考它们:
 		} else {
+			// HashForLabels 返回 ls 中与 names 匹配的标签集合的 hash 值。
 			groupingKey, buf = metric.HashForLabels(buf, grouping...)
 		}
 
+
+
+		// 聚合结果保存在 result 中
 		group, ok := result[groupingKey]
+
 		// Add a new group if it doesn't exist.
 		if !ok {
+
+			// 保留标签集
 			var m labels.Labels
 
+			// 如果是 without 操作，需要移除 grouping 标签和 "__name__" 标签。
 			if without {
 				lb.Reset(metric)
 				lb.Del(grouping...)
 				lb.Del(labels.MetricName)
 				m = lb.Labels()
+			// 如果是 by 操作，需要移除 grouping 之外的标签，只保留 grouping 标签。
 			} else {
 				m = make(labels.Labels, 0, len(grouping))
 				for _, l := range metric {
@@ -2289,19 +2384,26 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 						}
 					}
 				}
+				// 确保标签有序
 				sort.Sort(m)
 			}
+
+
+			// 设置聚合结果的初始值
 			result[groupingKey] = &groupedAggregation{
 				labels:     m,
 				value:      s.V,
 				mean:       s.V,
 				groupCount: 1,
 			}
+
+
 			inputVecLen := int64(len(vec))
 			resultSize := k
 			if k > inputVecLen {
 				resultSize = inputVecLen
 			}
+
 			if op == parser.STDVAR || op == parser.STDDEV {
 				result[groupingKey].value = 0.0
 			} else if op == parser.TOPK || op == parser.QUANTILE {
@@ -2317,37 +2419,42 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 					Metric: s.Metric,
 				})
 			}
+
 			continue
 		}
 
+
+		// 开始执行聚合操作，将当前样本点 sample 聚合到 group 上。
+
 		switch op {
-		case parser.SUM:
+		case parser.SUM: 	// 累加
 			group.value += s.V
 
-		case parser.AVG:
+		case parser.AVG: 	// 均值
 			group.groupCount++
 			group.mean += (s.V - group.mean) / float64(group.groupCount)
 
-		case parser.MAX:
+		case parser.MAX:	// 最大值
 			if group.value < s.V || math.IsNaN(group.value) {
 				group.value = s.V
 			}
 
-		case parser.MIN:
+		case parser.MIN:	// 最小值
 			if group.value > s.V || math.IsNaN(group.value) {
 				group.value = s.V
 			}
 
-		case parser.COUNT, parser.COUNT_VALUES:
+		case parser.COUNT, parser.COUNT_VALUES:	// 样本数
 			group.groupCount++
 
-		case parser.STDVAR, parser.STDDEV:
+		case parser.STDVAR, parser.STDDEV:		// 标准差
 			group.groupCount++
 			delta := s.V - group.mean
 			group.mean += delta / float64(group.groupCount)
 			group.value += delta * (s.V - group.mean)
 
 		case parser.TOPK:
+			// 先判断要不要入堆，若需要则 pop + push
 			if int64(len(group.heap)) < k || group.heap[0].V < s.V || math.IsNaN(group.heap[0].V) {
 				if int64(len(group.heap)) == k {
 					heap.Pop(&group.heap)
@@ -2359,6 +2466,7 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			}
 
 		case parser.BOTTOMK:
+			// 先判断要不要入堆，若需要则 pop + push
 			if int64(len(group.reverseHeap)) < k || group.reverseHeap[0].V > s.V || math.IsNaN(group.reverseHeap[0].V) {
 				if int64(len(group.reverseHeap)) == k {
 					heap.Pop(&group.reverseHeap)
@@ -2369,7 +2477,7 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 				})
 			}
 
-		case parser.QUANTILE:
+		case parser.QUANTILE:	// 直接入堆
 			group.heap = append(group.heap, s)
 
 		default:
@@ -2377,8 +2485,15 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 		}
 	}
 
+
+
+
+
+
+
 	// Construct the result Vector from the aggregated groups.
 	for _, aggr := range result {
+
 		switch op {
 		case parser.AVG:
 			aggr.value = aggr.mean
@@ -2393,8 +2508,11 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			aggr.value = math.Sqrt(aggr.value / float64(aggr.groupCount))
 
 		case parser.TOPK:
+
 			// The heap keeps the lowest value on top, so reverse it.
 			sort.Sort(sort.Reverse(aggr.heap))
+
+			//
 			for _, v := range aggr.heap {
 				enh.out = append(enh.out, Sample{
 					Metric: v.Metric,
@@ -2425,6 +2543,7 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			Metric: aggr.labels,
 			Point:  Point{V: aggr.value},
 		})
+
 	}
 	return enh.out
 }

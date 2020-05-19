@@ -3,9 +3,12 @@
   <component name="ChangeListManager">
     <list default="true" id="efd9b49f-db94-488e-a981-c8b1771cd5e3" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/labels/labels.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/labels/labels.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/promql/engine.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/engine.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/promql/parser/ast.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/ast.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/lex.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/lex.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/promql/parser/parse.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/parse.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/promql/parser/printer.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/printer.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/api/v1/api.go" beforeDir="false" afterPath="$PROJECT_DIR$/web/api/v1/api.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -16,52 +19,19 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/query_logger.go">
+        <entry file="file://$PROJECT_DIR$/promql/functions.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-529">
-              <caret line="120" column="5" lean-forward="true" selection-start-line="120" selection-start-column="5" selection-end-line="120" selection-end-column="5" />
+            <state relative-caret-position="-326">
+              <caret line="797" selection-start-line="797" selection-end-line="797" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/parser/ast.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="294">
-              <caret line="323" column="40" lean-forward="true" selection-start-line="323" selection-start-column="40" selection-end-line="323" selection-end-column="40" />
-              <folding>
-                <element signature="e#609#752#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-905">
-              <caret line="126" column="4" selection-start-line="126" selection-start-column="4" selection-end-line="126" selection-end-column="4" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/value.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="423">
-              <caret line="300" column="5" lean-forward="true" selection-start-line="300" selection-start-column="5" selection-end-line="300" selection-end-column="5" />
-              <folding>
-                <element signature="e#609#874#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/promql/parser/parse.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="754">
-              <caret line="684" column="19" selection-start-line="684" selection-start-column="19" selection-end-line="684" selection-end-column="19" />
+            <state relative-caret-position="-2370">
+              <caret line="152" column="22" lean-forward="true" selection-start-line="152" selection-start-column="22" selection-end-line="152" selection-end-column="22" />
               <folding>
                 <element signature="e#609#838#0" expanded="true" />
               </folding>
@@ -69,49 +39,31 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/parser/parse_test.go">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/promql/engine.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
-              <caret line="202" column="28" lean-forward="true" selection-start-line="202" selection-start-column="28" selection-end-line="202" selection-end-column="28" />
+            <state relative-caret-position="484">
+              <caret line="2344" column="80" selection-start-line="2344" selection-start-column="80" selection-end-line="2344" selection-end-column="80" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/parser/printer.go">
+        <entry file="file://$PROJECT_DIR$/pkg/labels/labels.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1094">
-              <caret line="48" column="12" lean-forward="true" selection-start-line="48" selection-start-column="12" selection-end-line="48" selection-end-column="12" />
+            <state relative-caret-position="306">
+              <caret line="28" column="29" lean-forward="true" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/parser/lex_test.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
-              <caret line="689" lean-forward="true" selection-start-line="689" selection-end-line="689" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/parser/lex.go">
+        <entry file="file://$PROJECT_DIR$/promql/value.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="311">
-              <caret line="79" column="18" selection-start-line="79" selection-start-column="18" selection-end-line="79" selection-end-column="18" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/promql/parser/generated_parser.y.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="335">
-              <caret line="75" column="6" selection-start-line="75" selection-start-column="6" selection-end-line="75" selection-end-column="6" />
+              <caret line="97" column="4" selection-start-line="97" selection-start-column="4" selection-end-line="97" selection-end-column="4" />
               <folding>
-                <element signature="e#132#321#0" expanded="true" />
+                <element signature="e#609#874#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -121,7 +73,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>expr</find>
       <find>node</find>
       <find>yySymType</find>
       <find>aggregate_expr</find>
@@ -151,6 +102,7 @@
       <find>yylex</find>
       <find>newAggregateExpr</find>
       <find>addOffset</find>
+      <find>queryData</find>
     </findStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$/rules</dir>
@@ -170,7 +122,6 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/notifier/notifier.go" />
-        <option value="$PROJECT_DIR$/pkg/labels/labels.go" />
         <option value="$PROJECT_DIR$/config/config.go" />
         <option value="$PROJECT_DIR$/rules/recording.go" />
         <option value="$PROJECT_DIR$/pkg/rulefmt/rulefmt.go" />
@@ -190,14 +141,17 @@
         <option value="$PROJECT_DIR$/promql/parser/value.go" />
         <option value="$PROJECT_DIR$/promql/parser/generated_parser.y" />
         <option value="$PROJECT_DIR$/promql/value.go" />
-        <option value="$PROJECT_DIR$/promql/parser/printer.go" />
-        <option value="$PROJECT_DIR$/promql/engine.go" />
         <option value="$PROJECT_DIR$/promql/quantile.go" />
         <option value="$PROJECT_DIR$/promql/query_logger.go" />
         <option value="$PROJECT_DIR$/promql/test.go" />
+        <option value="$PROJECT_DIR$/promql/parser/printer.go" />
+        <option value="$PROJECT_DIR$/util/httputil/context.go" />
         <option value="$PROJECT_DIR$/promql/parser/lex.go" />
         <option value="$PROJECT_DIR$/promql/parser/ast.go" />
         <option value="$PROJECT_DIR$/promql/parser/parse.go" />
+        <option value="$PROJECT_DIR$/web/api/v1/api.go" />
+        <option value="$PROJECT_DIR$/pkg/labels/labels.go" />
+        <option value="$PROJECT_DIR$/promql/engine.go" />
       </list>
     </option>
   </component>
@@ -221,12 +175,6 @@
               <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
               <item name="prometheus" type="462c0819:PsiDirectoryNode" />
               <item name="promql" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
-              <item name="prometheus" type="462c0819:PsiDirectoryNode" />
-              <item name="promql" type="462c0819:PsiDirectoryNode" />
-              <item name="parser" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="prometheus" type="b2602c69:ProjectViewProjectNode" />
@@ -264,18 +212,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.TestTokenize in github.com/blastbao/prometheus/promql/parser">
-    <configuration name="TestLexer in github.com/blastbao/prometheus/promql/parser" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="prometheus" />
-      <working_directory value="$PROJECT_DIR$/promql/parser" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.com/blastbao/prometheus/promql/parser" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestLexer$" />
-      <method v="2" />
-    </configuration>
+  <component name="RunManager" selected="Go Test.TestQueryLogger_error in github.com/blastbao/prometheus/promql">
     <configuration name="TestLexerCase1 in github.com/blastbao/prometheus/promql/parser" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="prometheus" />
       <working_directory value="$PROJECT_DIR$/promql/parser" />
@@ -309,6 +246,17 @@
       <pattern value="^TestParser$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestQueryLogger_error in github.com/blastbao/prometheus/promql" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="prometheus" />
+      <working_directory value="$PROJECT_DIR$/promql" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/blastbao/prometheus/promql" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestQueryLogger_error$" />
+      <method v="2" />
+    </configuration>
     <configuration name="TestTokenize in github.com/blastbao/prometheus/promql/parser" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="prometheus" />
       <working_directory value="$PROJECT_DIR$/promql/parser" />
@@ -322,18 +270,15 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestQueryLogger_error in github.com/blastbao/prometheus/promql" />
         <item itemvalue="Go Test.TestTokenize in github.com/blastbao/prometheus/promql/parser" />
         <item itemvalue="Go Test.TestParser in github.com/blastbao/prometheus/promql/parser" />
         <item itemvalue="Go Test.TestParseExpressions in github.com/blastbao/prometheus/promql/parser" />
         <item itemvalue="Go Test.TestLexerCase1 in github.com/blastbao/prometheus/promql/parser" />
-        <item itemvalue="Go Test.TestLexer in github.com/blastbao/prometheus/promql/parser" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestLexerCase1_in_github_com_blastbao_prometheus_promql_parser - 2020.05.14 at 18h 59m 53s.xml">
-      <configuration name="TestLexerCase1 in github.com/blastbao/prometheus/promql/parser" configurationId="GoTestRunConfiguration" />
-    </history-entry>
     <history-entry file="TestParser_in_github_com_blastbao_prometheus_promql_parser - 2020.05.14 at 19h 03m 52s.xml">
       <configuration name="TestParser in github.com/blastbao/prometheus/promql/parser" configurationId="GoTestRunConfiguration" />
     </history-entry>
@@ -360,6 +305,9 @@
     </history-entry>
     <history-entry file="TestTokenize_in_github_com_blastbao_prometheus_promql_parser - 2020.05.18 at 11h 41m 19s.xml">
       <configuration name="TestTokenize in github.com/blastbao/prometheus/promql/parser" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="TestQueryLogger_error_in_github_com_blastbao_prometheus_promql - 2020.05.18 at 17h 04m 51s.xml">
+      <configuration name="TestQueryLogger_error in github.com/blastbao/prometheus/promql" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="ToolWindowManager">
@@ -396,45 +344,20 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/promql/parser/ast.go</url>
-          <line>227</line>
+          <line>238</line>
           <properties />
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/promql/engine.go</url>
+          <line>1347</line>
+          <properties />
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/software/go1.13.6/src/unicode/utf8/utf8.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
-          <caret line="197" column="23" selection-start-line="197" selection-start-column="5" selection-end-line="197" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/software/go1.13.6/src/strings/strings.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="318">
-          <caret line="107" column="5" selection-start-line="107" selection-start-column="5" selection-end-line="107" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/software/go1.13.6/src/builtin/builtin.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="284">
-          <caret line="89" column="75" lean-forward="true" selection-start-line="89" selection-start-column="75" selection-end-line="89" selection-end-column="75" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/fuzz-data/ParseMetric/corpus/exposition_formats_0">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cmd/promtool/unittest.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="14">
-          <caret line="424" column="36" selection-start-line="424" selection-start-column="21" selection-end-line="424" selection-end-column="36" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/go.mod" />
     <entry file="file://$PROJECT_DIR$/go.sum" />
     <entry file="file://$USER_HOME$/software/go1.13.6/src/reflect/deepequal.go">
@@ -535,37 +458,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/web/api/v1/api.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8092">
-          <caret line="517" column="32" selection-start-line="517" selection-start-column="32" selection-end-line="517" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/storage/interface.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="318">
-          <caret line="72" column="5" selection-start-line="72" selection-start-column="5" selection-end-line="72" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/engine_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="213">
-          <caret line="141" column="30" selection-start-line="141" selection-start-column="30" selection-end-line="141" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/functions.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3756">
-          <caret line="797" selection-start-line="797" selection-end-line="797" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/printer_test.go">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/promql/bench_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="198">
@@ -576,13 +468,6 @@
     <entry file="file://$PROJECT_DIR$/promql/promql_test.go">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/generated_parser.y">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="513">
-          <caret line="518" column="49" selection-start-line="518" selection-start-column="40" selection-end-line="518" selection-end-column="49" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/software/go1.13.6/src/fmt/print.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="318">
@@ -590,43 +475,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/value.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="799">
-          <caret line="47" lean-forward="true" selection-start-line="47" selection-end-line="47" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/functions.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="17" column="5" selection-start-line="17" selection-start-column="5" selection-end-line="17" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/engine.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="460">
-          <caret line="2449" column="1" lean-forward="true" selection-start-line="2449" selection-start-column="1" selection-end-line="2449" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/fuzz.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-494" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/promql/quantile.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="940">
           <caret line="207" selection-start-line="207" selection-end-line="207" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/promql/query_logger.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-529">
-          <caret line="120" column="5" lean-forward="true" selection-start-line="120" selection-start-column="5" selection-end-line="120" selection-end-column="5" />
         </state>
       </provider>
     </entry>
@@ -637,13 +489,48 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/promql/value.go">
+    <entry file="file://$PROJECT_DIR$/promql/parser/lex_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="423">
-          <caret line="300" column="5" lean-forward="true" selection-start-line="300" selection-start-column="5" selection-end-line="300" selection-end-column="5" />
-          <folding>
-            <element signature="e#609#874#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="17">
+          <caret line="689" lean-forward="true" selection-start-line="689" selection-end-line="689" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/engine_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="304">
+          <caret line="1219" column="21" selection-start-line="1219" selection-start-column="21" selection-end-line="1219" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/web/api/v1/api_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/util/httputil/context.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="462">
+          <caret line="47" column="29" lean-forward="true" selection-start-line="47" selection-start-column="29" selection-end-line="47" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/storage/interface.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="76" column="4" selection-start-line="76" selection-start-column="4" selection-end-line="76" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/query_logger.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="292">
+          <caret line="186" selection-start-line="186" selection-end-line="186" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/parser/printer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="431">
+          <caret line="44" column="28" lean-forward="true" selection-start-line="44" selection-start-column="28" selection-end-line="44" selection-end-column="28" />
         </state>
       </provider>
     </entry>
@@ -654,41 +541,77 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/printer.go">
+    <entry file="file://$PROJECT_DIR$/promql/parser/printer_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/parser/value.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1094">
-          <caret line="48" column="12" lean-forward="true" selection-start-line="48" selection-start-column="12" selection-end-line="48" selection-end-column="12" />
+        <state relative-caret-position="203">
+          <caret line="29" column="4" selection-start-line="29" selection-start-column="4" selection-end-line="29" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/lex_test.go">
+    <entry file="file://$PROJECT_DIR$/promql/parser/generated_parser.y">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="811">
+          <caret line="858" column="21" lean-forward="true" selection-start-line="858" selection-start-column="21" selection-end-line="858" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/parser/functions.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="17">
-          <caret line="689" lean-forward="true" selection-start-line="689" selection-end-line="689" />
+          <caret line="17" column="5" selection-start-line="17" selection-start-column="5" selection-end-line="17" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/promql/parser/generated_parser.y.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="335">
-          <caret line="75" column="6" selection-start-line="75" selection-start-column="6" selection-end-line="75" selection-end-column="6" />
+        <state relative-caret-position="18192">
+          <caret line="1082" column="53" lean-forward="true" selection-start-line="1082" selection-start-column="53" selection-end-line="1082" selection-end-column="53" />
           <folding>
             <element signature="e#132#321#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/software/go1.13.6/src/context/context.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="102" column="4" selection-start-line="102" selection-start-column="4" selection-end-line="102" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/promql/parser/lex.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
-          <caret line="79" column="18" selection-start-line="79" selection-start-column="18" selection-end-line="79" selection-end-column="18" />
+        <state relative-caret-position="-8294">
+          <caret line="74" lean-forward="true" selection-start-line="74" selection-end-line="74" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/fuzz.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1185" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cmd/promtool/unittest.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="215">
+          <caret line="424" column="26" lean-forward="true" selection-start-line="424" selection-start-column="26" selection-end-line="424" selection-end-column="26" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/web/api/v1/api.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="377">
+          <caret line="446" column="19" selection-start-line="446" selection-start-column="19" selection-end-line="446" selection-end-column="19" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/promql/parser/ast.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="294">
-          <caret line="323" column="40" lean-forward="true" selection-start-line="323" selection-start-column="40" selection-end-line="323" selection-end-column="40" />
+        <state relative-caret-position="17">
+          <caret line="95" column="5" lean-forward="true" selection-start-line="95" selection-start-column="5" selection-end-line="95" selection-end-column="5" />
           <folding>
             <element signature="e#609#752#0" expanded="true" />
           </folding>
@@ -697,11 +620,42 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/promql/parser/parse.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="754">
-          <caret line="684" column="19" selection-start-line="684" selection-start-column="19" selection-end-line="684" selection-end-column="19" />
+        <state relative-caret-position="-2370">
+          <caret line="152" column="22" lean-forward="true" selection-start-line="152" selection-start-column="22" selection-end-line="152" selection-end-column="22" />
           <folding>
             <element signature="e#609#838#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/functions.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-326">
+          <caret line="797" selection-start-line="797" selection-end-line="797" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/value.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="97" column="4" selection-start-line="97" selection-start-column="4" selection-end-line="97" selection-end-column="4" />
+          <folding>
+            <element signature="e#609#874#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pkg/labels/labels.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="28" column="29" lean-forward="true" selection-start-line="28" selection-start-column="19" selection-end-line="28" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/engine.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="484">
+          <caret line="2344" column="80" selection-start-line="2344" selection-start-column="80" selection-end-line="2344" selection-end-column="80" />
         </state>
       </provider>
     </entry>

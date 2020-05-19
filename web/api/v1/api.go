@@ -307,9 +307,14 @@ func (api *API) Register(r *route.Router) {
 
 }
 
+
+// 查询数据，用于按 json 序列化
 type queryData struct {
+	// 查询结果类型
 	ResultType parser.ValueType  `json:"resultType"`
+	// 查询结果
 	Result     parser.Value      `json:"result"`
+	// 查询统计信息
 	Stats      *stats.QueryStats `json:"stats,omitempty"`
 }
 
@@ -318,10 +323,14 @@ func (api *API) options(r *http.Request) apiFuncResult {
 }
 
 func (api *API) query(r *http.Request) apiFuncResult {
+
+	// 解析 time 参数，默认值为 time.Now()
 	ts, err := parseTimeParam(r, "time", api.now())
 	if err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
+
+	// 解析 timeout 参数，构造 ctx
 	ctx := r.Context()
 	if to := r.FormValue("timeout"); to != "" {
 		var cancel context.CancelFunc
@@ -330,30 +339,33 @@ func (api *API) query(r *http.Request) apiFuncResult {
 			err = errors.Wrapf(err, "invalid parameter 'timeout'")
 			return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 		}
-
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 
+	// 解析 query 参数，构造查询对象 qry
 	qry, err := api.QueryEngine.NewInstantQuery(api.Queryable, r.FormValue("query"), ts)
 	if err != nil {
 		err = errors.Wrapf(err, "invalid parameter 'query'")
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
 
+	// 执行查询
 	ctx = httputil.ContextFromRequest(ctx, r)
-
 	res := qry.Exec(ctx)
 	if res.Err != nil {
 		return apiFuncResult{nil, returnAPIError(res.Err), res.Warnings, qry.Close}
 	}
 
 	// Optional stats field in response if parameter "stats" is not empty.
+	//
+	// 是否需要返回查询统计信息
 	var qs *stats.QueryStats
 	if r.FormValue("stats") != "" {
 		qs = stats.NewQueryStats(qry.Stats())
 	}
 
+	// 构造返回数据
 	return apiFuncResult{&queryData{
 		ResultType: res.Value.Type(),
 		Result:     res.Value,
@@ -361,17 +373,33 @@ func (api *API) query(r *http.Request) apiFuncResult {
 	}, nil, res.Warnings, qry.Close}
 }
 
+
+
+// range query 是非常常见的一种 query ，看看它有哪些参数：
+
+// 	query=<string> : PromQL 表达式
+//	start=<rfc3339 | unix_timestamp> : 起始时间戳
+//	end=<rfc3339 | unix_timestamp> : 结束时间戳
+//	step=<duration | float> : 查询时间步长，也称作解析度（resolution），时间区间内每 step 执行一次
+//	timeout=<duration>: 执行超时，可选
+
+
 func (api *API) queryRange(r *http.Request) apiFuncResult {
+
+
 	start, err := parseTime(r.FormValue("start"))
 	if err != nil {
 		err = errors.Wrapf(err, "invalid parameter 'start'")
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
+
 	end, err := parseTime(r.FormValue("end"))
 	if err != nil {
 		err = errors.Wrapf(err, "invalid parameter 'end'")
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
+
+	// 参数校验
 	if end.Before(start) {
 		err := errors.New("end timestamp must not be before start time")
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
@@ -387,6 +415,7 @@ func (api *API) queryRange(r *http.Request) apiFuncResult {
 		err := errors.New("zero or negative query resolution step widths are not accepted. Try a positive integer")
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
+
 
 	// For safety, limit the number of returned points per timeseries.
 	// This is sufficient for 60s resolution for a week or 1h resolution for a year.
@@ -488,6 +517,9 @@ func (api *API) labelValues(r *http.Request) apiFuncResult {
 	return apiFuncResult{vals, nil, warnings, closer}
 }
 
+
+
+
 var (
 	minTime = time.Unix(math.MinInt64/1000+62135596801, 0).UTC()
 	maxTime = time.Unix(math.MaxInt64/1000-62135596801, 999999999).UTC()
@@ -496,22 +528,29 @@ var (
 	maxTimeFormatted = maxTime.Format(time.RFC3339Nano)
 )
 
+
 func (api *API) series(r *http.Request) apiFuncResult {
+
+
 	if err := r.ParseForm(); err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrapf(err, "error parsing form values")}, nil, nil}
 	}
+
 	if len(r.Form["match[]"]) == 0 {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.New("no match[] parameter provided")}, nil, nil}
 	}
+
 
 	start, err := parseTimeParam(r, "start", minTime)
 	if err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
+
 	end, err := parseTimeParam(r, "end", maxTime)
 	if err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
+
 
 	var matcherSets [][]*labels.Matcher
 	for _, s := range r.Form["match[]"] {
@@ -522,11 +561,13 @@ func (api *API) series(r *http.Request) apiFuncResult {
 		matcherSets = append(matcherSets, matchers)
 	}
 
+
 	q, err := api.Queryable.Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
 	if err != nil {
 		return apiFuncResult{nil, &apiError{errorExec, err}, nil, nil}
 	}
 	defer q.Close()
+
 
 	var sets []storage.SeriesSet
 	var warnings storage.Warnings
@@ -539,11 +580,17 @@ func (api *API) series(r *http.Request) apiFuncResult {
 		sets = append(sets, s)
 	}
 
+
 	set := storage.NewMergeSeriesSet(sets, storage.ChainedSeriesMerge)
+
 	metrics := []labels.Labels{}
+
+
 	for set.Next() {
 		metrics = append(metrics, set.At().Labels())
 	}
+
+
 	if set.Err() != nil {
 		return apiFuncResult{nil, &apiError{errorExec, set.Err()}, warnings, nil}
 	}
@@ -551,14 +598,18 @@ func (api *API) series(r *http.Request) apiFuncResult {
 	return apiFuncResult{metrics, nil, warnings, nil}
 }
 
+
 func (api *API) dropSeries(r *http.Request) apiFuncResult {
 	return apiFuncResult{nil, &apiError{errorInternal, errors.New("not implemented")}, nil, nil}
 }
 
+
 // Target has the information for one target.
 type Target struct {
+
 	// Labels before any processing.
 	DiscoveredLabels map[string]string `json:"discoveredLabels"`
+
 	// Any labels that are added to this target and its metrics.
 	Labels map[string]string `json:"labels"`
 
@@ -592,13 +643,17 @@ type GlobalURLOptions struct {
 }
 
 func getGlobalURL(u *url.URL, opts GlobalURLOptions) (*url.URL, error) {
+
 	host, port, err := net.SplitHostPort(u.Host)
+
 	if err != nil {
 		return u, err
 	}
 
 	for _, lhr := range LocalhostRepresentations {
+
 		if host == lhr {
+
 			_, ownPort, err := net.SplitHostPort(opts.ListenAddress)
 			if err != nil {
 				return u, err
@@ -633,6 +688,7 @@ func getGlobalURL(u *url.URL, opts GlobalURLOptions) (*url.URL, error) {
 }
 
 func (api *API) targets(r *http.Request) apiFuncResult {
+
 	sortKeys := func(targets map[string][]*scrape.Target) ([]string, int) {
 		var n int
 		keys := make([]string, 0, len(targets))
@@ -865,6 +921,7 @@ type metadata struct {
 }
 
 func (api *API) metricMetadata(r *http.Request) apiFuncResult {
+
 	metrics := map[string]map[metadata]struct{}{}
 
 	limit := -1
@@ -878,11 +935,18 @@ func (api *API) metricMetadata(r *http.Request) apiFuncResult {
 	metric := r.FormValue("metric")
 
 	for _, tt := range api.targetRetriever.TargetsActive() {
+
 		for _, t := range tt {
 
 			if metric == "" {
 				for _, mm := range t.MetadataList() {
-					m := metadata{Type: mm.Type, Help: mm.Help, Unit: mm.Unit}
+
+					m := metadata{
+						Type: mm.Type,
+						Help: mm.Help,
+						Unit: mm.Unit,
+					}
+
 					ms, ok := metrics[mm.Metric]
 
 					if !ok {

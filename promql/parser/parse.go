@@ -191,6 +191,9 @@ func ParseMetric(input string) (m labels.Labels, err error) {
 
 
 // ParseMetricSelector parses the provided textual metric selector into a list of label matchers.
+//
+//
+//
 func ParseMetricSelector(input string) (m []*labels.Matcher, err error) {
 	p := newParser(input)
 	defer parserPool.Put(p)
@@ -225,6 +228,7 @@ func newParser(input string) *parser {
 }
 
 // SequenceValue is an omittable value in a sequence of time series values.
+//
 //
 type SequenceValue struct {
 	Value   float64
@@ -284,9 +288,9 @@ func (p *parser) addParseErr(positionRange PositionRange, err error) {
 }
 
 // unexpected creates a parser error complaining about an unexpected lexer item.
-// The item that is presented as unexpected is always the last item produced
-// by the lexer.
+// The item that is presented as unexpected is always the last item produced by the lexer.
 func (p *parser) unexpected(context string, expected string) {
+
 	var errMsg strings.Builder
 
 	// Do not report lexer errors twice
@@ -588,13 +592,13 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 		// 检查表达式 n.Expr 是否是 "vector" 矢量类型
 		p.expectType(n.Expr, ValueTypeVector, "aggregation expression")
 
+		// 检查 TOPK/BOTTOMK/QUANTILE 的参数是否是 "scalar" 类型
 		if n.Op == TOPK || n.Op == BOTTOMK || n.Op == QUANTILE {
-			// 检查参数 n.Param 是否是 "scalar" 标量类型
 			p.expectType(n.Param, ValueTypeScalar, "aggregation parameter")
 		}
 
+		// 检查 COUNT_VALUES 的参数是否是 "string" 类型
 		if n.Op == COUNT_VALUES {
-			// 检查参数 n.Param 是否是 "string" 字符串类型
 			p.expectType(n.Param, ValueTypeString, "aggregation parameter")
 		}
 
@@ -631,7 +635,8 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 			p.addParseErrf(opRange(), "comparisons between scalars must use BOOL modifier")
 		}
 
-		// 如果是二元逻辑操作符，匹配模式不能是 one to one
+
+		// 二元逻辑操作符，只支持在向量和向量之间使用，匹配模式不能是 one to one
 		if n.Op.IsSetOperator() && n.VectorMatching.Card == CardOneToOne {
 			n.VectorMatching.Card = CardManyToMany
 		}
@@ -650,12 +655,10 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 			}
 		}
 
-
-		//
+		// 检查是否合法操作符
 		if !n.Op.IsOperator() {
 			p.addParseErrf(n.PositionRange(), "binary expression does not support operator %q", n.Op)
 		}
-
 
 		// 左 操作数/表达式 类型检查
  		if lt != ValueTypeScalar && lt != ValueTypeVector {
@@ -669,32 +672,28 @@ func (p *parser) checkAST(node Node) (typ ValueType) {
 
 
 		if (lt != ValueTypeVector || rt != ValueTypeVector) && n.VectorMatching != nil {
-			// 如果某个操作数（表达式）为标量
+			// 某个操作数（表达式）为标量
+
+
 			if len(n.VectorMatching.MatchingLabels) > 0 {
 				p.addParseErrf(n.PositionRange(), "vector matching only allowed between instant vectors")
 			}
 			n.VectorMatching = nil
 		} else {
+			// 两个操作数（表达式）均为矢量
 
-			// 两个操作数（表达式）均为矢量 	// Both operands are Vectors.
-
-
-			// 检查是否为二元逻辑操作符
+			// 二元逻辑操作符，只支持在向量和向量之间使用，且如果为 多对一/一对多 匹配模式，必须指定 n.VectorMatching 的 on 规则。
 			if n.Op.IsSetOperator() {
-
-				//
 				if n.VectorMatching.Card == CardOneToMany || n.VectorMatching.Card == CardManyToOne {
 					p.addParseErrf(n.PositionRange(), "no grouping allowed for %q operation", n.Op)
 				}
-
 				if n.VectorMatching.Card != CardManyToMany {
 					p.addParseErrf(n.PositionRange(), "set operations must always be many-to-many")
 				}
-
 			}
 		}
 
-
+		// 二元逻辑操作符，只支持在向量和向量之间使用
 		if (lt == ValueTypeScalar || rt == ValueTypeScalar) && n.Op.IsSetOperator() {
 			p.addParseErrf(n.PositionRange(), "set operator %q not allowed in binary scalar expression", n.Op)
 		}
@@ -940,10 +939,6 @@ func (p *parser) addOffset(e Node, offset time.Duration) {
 		p.addParseErrf(e.PositionRange(), "offset modifier must be preceded by an instant or range selector, but follows a %T instead", e)
 		return
 	}
-
-
-
-
 
 	// it is already ensured by parseDuration func that there never will be a zero offset modifier
 	if *offsetp != 0 {

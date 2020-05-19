@@ -204,6 +204,9 @@ type ParenExpr struct {
 }
 
 // StringLiteral represents a string.
+//
+// 文本串
+//
 type StringLiteral struct {
 	Val      string
 	PosRange PositionRange
@@ -211,10 +214,18 @@ type StringLiteral struct {
 
 // UnaryExpr represents a unary operation on another expression.
 // Currently unary operations are only supported for Scalars.
+//
+//
+//
 type UnaryExpr struct {
+
+	// 操作符
 	Op   ItemType
+
+	// 表达式
 	Expr Expr
 
+	//
 	StartPos Pos
 }
 
@@ -235,8 +246,12 @@ type VectorSelector struct {
 	PosRange PositionRange
 }
 
-// TestStmt is an internal helper statement that allows execution
-// of an arbitrary function during handling. It is used to test the Engine.
+// TestStmt is an internal helper statement that allows execution of an arbitrary function during handling.
+// It is used to test the Engine.
+//
+// TestStmt 是一个内部语句，允许在处理过程中执行任意函数。
+// TestStmt 是用来测试 Engine 的。
+//
 type TestStmt func(context.Context) error
 
 func (TestStmt) String() string { return "test statement" }
@@ -323,6 +338,8 @@ type VectorMatching struct {
 	//
 	// MatchingLabels 包含了定义一对向量元素的平等的标签。
 	MatchingLabels []string
+
+
 
 	// On includes the given label names from matching, rather than excluding them.
 	//

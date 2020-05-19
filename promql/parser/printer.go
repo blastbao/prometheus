@@ -165,22 +165,33 @@ func (node *UnaryExpr) String() string {
 }
 
 func (node *VectorSelector) String() string {
+
 	labelStrings := make([]string, 0, len(node.LabelMatchers)-1)
+
 	for _, matcher := range node.LabelMatchers {
+
 		// Only include the __name__ label if its equality matching and matches the name.
 		if matcher.Name == labels.MetricName && matcher.Type == labels.MatchEqual && matcher.Value == node.Name {
 			continue
 		}
+
+		// ...
 		labelStrings = append(labelStrings, matcher.String())
 	}
+
 	offset := ""
+
 	if node.Offset != time.Duration(0) {
 		offset = fmt.Sprintf(" offset %s", model.Duration(node.Offset))
 	}
 
+
 	if len(labelStrings) == 0 {
 		return fmt.Sprintf("%s%s", node.Name, offset)
 	}
+
 	sort.Strings(labelStrings)
+
+
 	return fmt.Sprintf("%s{%s}%s", node.Name, strings.Join(labelStrings, ","), offset)
 }
