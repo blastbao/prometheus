@@ -1630,8 +1630,10 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 				}
 				inMatrix[0].Points = points
 				enh.ts = ts
+
 				// Make the function call.
 				outVec := call(inArgs, e.Args, enh)
+
 				enh.out = outVec[:0]
 				if len(outVec) > 0 {
 					ss.Points = append(ss.Points, Point{V: outVec[0].Point.V, T: ts})
@@ -1706,19 +1708,21 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		return ev.eval(e.Expr)
 
 	case *parser.UnaryExpr:
-		mat := ev.eval(e.Expr).(Matrix)
+		// 执行表达式，获取返回值
+		matrix := ev.eval(e.Expr).(Matrix)
+		// 对返回的每个 point 的值取相反数
 		if e.Op == parser.SUB {
-			for i := range mat {
-				mat[i].Metric = dropMetricName(mat[i].Metric)
-				for j := range mat[i].Points {
-					mat[i].Points[j].V = -mat[i].Points[j].V
+			for i := range matrix {
+				matrix[i].Metric = dropMetricName(matrix[i].Metric)
+				for j := range matrix[i].Points {
+					matrix[i].Points[j].V = -matrix[i].Points[j].V
 				}
 			}
-			if mat.ContainsSameLabelset() {
+			if matrix.ContainsSameLabelset() {
 				ev.errorf("vector cannot contain metrics with the same labelset")
 			}
 		}
-		return mat
+		return matrix
 
 	case *parser.BinaryExpr:
 
@@ -1795,6 +1799,7 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			)
 		}
 
+
 	case *parser.NumberLiteral:
 		return ev.rangeEval(
 			func(v []parser.Value, enh *EvalNodeHelper) Vector {
@@ -1807,6 +1812,8 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 		checkForSeriesSetExpansion(ev.ctx, e)
 		mat := make(Matrix, 0, len(e.Series))
+
+
 		it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
 
 		for i, s := range e.Series {
@@ -1852,6 +1859,7 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 		offsetMillis := durationToInt64Millis(e.Offset)
 		rangeMillis := durationToInt64Millis(e.Range)
+
 		newEv := &evaluator{
 			endTimestamp:        ev.endTimestamp - offsetMillis,
 			interval:            ev.defaultEvalInterval,
@@ -2333,12 +2341,9 @@ func signatureFunc(on bool, names ...string) func(labels.Labels) uint64 {
 // binary operation and the matching options.
 func resultMetric(lhs, rhs labels.Labels, op parser.ItemType, matching *parser.VectorMatching, enh *EvalNodeHelper) labels.Labels {
 
-
-
 	if enh.resultMetric == nil {
 		enh.resultMetric = make(map[uint64]labels.Labels, len(enh.out))
 	}
-
 
 
 	// op and matching are always the same for a given node, so there's no need to include them in the hash key.
