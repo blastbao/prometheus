@@ -50,8 +50,10 @@ func NewBufferIterator(it chunkenc.Iterator, delta int64) *BufferedSeriesIterato
 	return bit
 }
 
-// Reset re-uses the buffer with a new iterator, resetting the buffered time
-// delta to its original value.
+// Reset re-uses the buffer with a new iterator,
+// resetting the buffered time delta to its original value.
+//
+//
 func (b *BufferedSeriesIterator) Reset(it chunkenc.Iterator) {
 	b.it = it
 	b.lastTime = math.MinInt64

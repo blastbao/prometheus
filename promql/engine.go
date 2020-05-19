@@ -1004,6 +1004,7 @@ func checkForSeriesSetExpansion(ctx context.Context, expr parser.Expr) {
 		checkForSeriesSetExpansion(ctx, e.VectorSelector)
 	case *parser.VectorSelector:
 		if e.Series == nil {
+			// 通过迭代器取出查询的时间序列
 			series, err := expandSeriesSet(ctx, e.UnexpandedSeriesSet)
 			if err != nil {
 				panic(err)
@@ -1015,6 +1016,7 @@ func checkForSeriesSetExpansion(ctx context.Context, expr parser.Expr) {
 }
 
 func expandSeriesSet(ctx context.Context, it storage.SeriesSet) (res []storage.Series, err error) {
+	// 遍历迭代器，取出查询结果，保存到 res 中
 	for it.Next() {
 		select {
 		case <-ctx.Done():
@@ -1174,57 +1176,38 @@ func (enh *EvalNodeHelper) signatureFunc(on bool, names ...string) func(labels.L
 //
 func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, exprs ...parser.Expr) Matrix {
 
-
 	// stepCnt := (endTs - startTs) / interval + 1
-
 	numSteps := int( (ev.endTimestamp - ev.startTimestamp) / ev.interval ) + 1
-
-
-
+	// 保存每个表达式的处理结果，这个变量内容后面可能会修改
 	matrixes := make([]Matrix, len(exprs))
-
+	// 保存每个表达式的处理结果，这个变量始终不变
 	origMatrixes := make([]Matrix, len(exprs))
-
+	// 保存 ev 在执行本次 rangeEval() 之前已经处理的样本数
 	originalNumSamples := ev.currentSamples
 
-
-	// 遍历表达式，逐个执行，执行结果保存在 matrixes 中。
+	// 遍历表达式列表，逐个执行，执行结果保存在 matrixes 中。
 	for i, expr := range exprs {
-
 		// Functions will take string arguments from the expressions, not the values.
 		if expr != nil && expr.Type() != parser.ValueTypeString {
 
 			// ev.currentSamples will be updated to the correct value within the ev.eval call.
-			//
 			// ev.currentSamples 将在 ev.eval 调用中被更新为正确的值。
-			//
-			//
-			//
+			// 调用 ev.eval(expr) 执行表达式 expr ，并加结果存储到 matrixes[i] 上。
 			matrixes[i] = ev.eval(expr).(Matrix)
 
 			// Keep a copy of the original point slices so that they can be returned to the pool.
-			//
-			// 把 matrixes[i] 保存到 origMatrixes[i] 上。
+			// 把 matrixes[i] 保存到 origMatrixes[i] 上，因为其后面会被修改。
 			origMatrixes[i] = make(Matrix, len(matrixes[i]))
 			copy(origMatrixes[i], matrixes[i])
 		}
 
+		// 至此，则当前表达式满足 "expr == nil" 或 "expr.Type() == parser.ValueTypeString"：
+		//	（1）如果 expr == nil，无需处理；
+		//	（2）如果 expr.Type() == parser.ValueTypeString，则 expr 为参数。
 	}
 
-	// 注意，
-	// 	Matrix => []Series =>
-	// 	Vector  => []Sample
-	//
-	// 所以，可以把 matrixes[i] 转换为 vectors[i]，
-	//
-
-
 	vectors := make([]Vector, len(exprs))    // Input vectors for the function.
-
-
-	//
 	args := make([]parser.Value, len(exprs)) // Argument to function.
-
 
 	// Create an output vector that is as big as the input matrix with the most time series.
 	biggestLen := 1
@@ -1239,16 +1222,23 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 		out: make(Vector, 0, biggestLen),
 	}
 
-	seriess := make(map[uint64]Series, biggestLen) // Output series by series hash.
-
 	tempNumSamples := ev.currentSamples
 
+	// 保存 hash(sample.labels) => series 的映射，所以 biggestLen 是标签集合的最大数目。
+	seriess := make(map[uint64]Series, biggestLen) // Output series by series hash.
 
+	// 逐个时间区间 [ ts, ts + interval ] 进行处理：
+	//
+	// (1) 检查 ctx 是否有效，因为是 for 循环，需要每轮处理前检查一下是否超时，避免阻塞太久。
+	// (2) 之前每个表达式的返回结果保存在 matrixes 中，对于表达式 exprs[i]，从其返回结果 matrixes[i] 中
+	//	   取出时间戳等于 ts 的样本点，汇总存储到 vectors[i] 中。
+	// (3) 将 vectors[i] 赋值给 args[i] ，这样 args[...] 便保存了每个 exprs 的结果
+	// (4) 得到 args 之后，调用 result = f(args, enh) 获取处理结果
+	// (5) 如果是 instant query ，就将 result 立即返回，函数结束
+	// (6) 如果是 range query ，就将 result 汇总到外层变量 seriess 中
+	// (7) 将 seriess 进行格式转换后，返回，函数结束。
 
 	for ts := ev.startTimestamp; ts <= ev.endTimestamp; ts += ev.interval {
-
-		// 当前时间区间 [ts, ts+interval]
-
 
 		// 检查是 ctx 已经结束
 		if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
@@ -1261,31 +1251,27 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 
 		// Gather input vectors for this timestamp.
 		//
-		// 处理表达式 i
+		// 处理表达式 i 的返回结果
 		for i := range exprs {
 
-			// 清空 vectors[i]
+			// 清空 vectors[i] ，用于存储 exprs[i] 的处理后结果
 			vectors[i] = vectors[i][:0]
 
-			// 遍历 matrixes[i]
+			// 遍历表达式 i 的查询结果 matrixes[i] ，它包含一组时序数据 seriess，
+			// 这里取出每个时序 series 中符合条件的 Point , 然后转换为 sample 存储到 vector[i] 中。
 			for j, series := range matrixes[i] {
 
-				// 遍历当前时序数据中的样本点
+				// 遍历当前时序数据中的 Points 样本点
 				for _, point := range series.Points {
 
-					// 如果当前样本点的时间恰好等于当前时间区间的起点
+					// 如果当前样本点 point 的时间恰好等于当前时间区间的起点，转换为 Sample 后添加到 vectors[i] 中
 					if point.T == ts {
 
-						//
 						if ev.currentSamples < ev.maxSamples {
-
 							vectors[i] = append(vectors[i], Sample{Metric: series.Metric, Point: point})
-
 							// Move input vectors forward so we don't have to re-scan the same past points at the next step.
 							matrixes[i][j].Points = series.Points[1:]
-
 							ev.currentSamples++
-
 						} else {
 							ev.error(ErrTooManySamples(env))
 						}
@@ -1297,6 +1283,7 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 				}
 			}
 
+			//
 			args[i] = vectors[i]
 		}
 
@@ -1323,37 +1310,55 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 
 		// When we reset currentSamples to tempNumSamples during the next iteration of the loop it also
 		// needs to include the samples from the result here, as they're still in memory.
+		//
+
 		tempNumSamples += len(result)
 
-
+		// 异常检查
 		if ev.currentSamples > ev.maxSamples {
 			ev.error(ErrTooManySamples(env))
 		}
 
-
 		// If this could be an instant query, shortcut so as not to change sort order.
+		//
+		// 如果 startTimestamp == endTimestamp，则为 instant query ，此时只执行一轮查询便返回，
+		// 不需要逐个时间区间进行查询并汇总。
+		// 对 result 进行转换后直接返回。
 		if ev.endTimestamp == ev.startTimestamp {
 
+			// 用于保存返回结果
 			matrix := make(Matrix, len(result))
 
-			for i, s := range result {
-				s.Point.T = ts
-				matrix[i] = Series{Metric: s.Metric, Points: []Point{s.Point}}
+			// 遍历函数 f() 的返回的样本结果
+			for i, sample := range result {
+				//（1）重置时间戳为 ts
+				sample.Point.T = ts
+				//（2） 由 sample 构造单样本的 Series 保存到 matrix[i] 上
+				matrix[i] = Series{
+					Metric: sample.Metric,
+					Points: []Point{ sample.Point },
+				}
 			}
 
+			// 更新样本总数
 			ev.currentSamples = originalNumSamples + matrix.TotalSamples()
 
+			// 返回 instant query 的结果
 			return matrix
 		}
 
 
 
 		// Add samples in output vector to output series.
+		//
+		// 遍历函数 f() 返回的样本，按标签集将 sample 存储到外层变量 seriess[ hash(sample.labels) ] 中聚合起来，
+		// 这样，seriess 会按标签集来汇总各个时间区间 [ ts, ts + interval ] 的查询结果。
 		for _, sample := range result {
 
-
+			// 计算当前样本 sample 的标签集的 hash 值
 			h := sample.Metric.Hash()
 
+			// 检查该 hash 值是否已存在关联的 Series 对象，若不存在则创建一个
 			ss, ok := seriess[h]
 			if !ok {
 				ss = Series{
@@ -1362,29 +1367,40 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 				}
 			}
 
+			// 重置样本的时间戳为 ts
 			sample.Point.T = ts
+			// 将样本 sample.Point 添加到其 hash 值关联的 Series 对象上
 			ss.Points = append(ss.Points, sample.Point)
+			// 保存/覆盖 Series
 			seriess[h] = ss
 		}
 
 	}
 
+
+
 	// Reuse the original point slices.
+	//
+	// 回收存储
 	for _, m := range origMatrixes {
 		for _, s := range m {
 			putPointSlice(s.Points)
 		}
 	}
 
+
 	// Assemble the output matrix.
 	// By the time we get here we know we don't have too many samples.
+	//
+	//
+	//
 	matrix := make(Matrix, 0, len(seriess))
 	for _, ss := range seriess {
 		matrix = append(matrix, ss)
 	}
 
+	//
 	ev.currentSamples = originalNumSamples + matrix.TotalSamples()
-
 
 	return matrix
 }
@@ -1438,28 +1454,29 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		// 聚合参数是由"()"括起来的，需要去除括号。
 		unwrapParenExpr(&e.Param)
 
+		// 如果 e.Param 是字符串类型，能直接取出该参数值 s.Val
 		if s, ok := e.Param.(*parser.StringLiteral); ok {
 			// 执行表达式 e.Expr，然后对结果进行聚合操作
 			return ev.rangeEval(
 				func(v []parser.Value, enh *EvalNodeHelper) Vector {
 					return ev.aggregation(e.Op, e.Grouping, e.Without, s.Val, v[0].(Vector), enh)
 				},
-				e.Expr,
+				e.Expr,	// v[0]
 			)
 		}
 
-		// 执行表达式 e.Param、e.Expr，然后对结果进行聚合操作
+		// 如果 e.Param 不是字符串类型，需要通过参数列表传递给 ev.rangeEval() ，其内部会进行求值。
 		return ev.rangeEval(
-
 			func(v []parser.Value, enh *EvalNodeHelper) Vector {
 				var param float64
+				// 如果 e.Param != nil ，需要从 args[0] 中取出参数 param
 				if e.Param != nil {
 					param = v[0].(Vector)[0].V
 				}
 				return ev.aggregation(e.Op, e.Grouping, e.Without, param, v[1].(Vector), enh)
 			},
-			e.Param,
-			e.Expr,
+			e.Param, 	// v[0]
+			e.Expr,		// v[1]
 		)
 
 
@@ -1564,6 +1581,8 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		enh := &EvalNodeHelper{out: make(Vector, 0, 1)}
 		// Process all the calls for one time series at a time.
 		it := storage.NewBuffer(selRange)
+
+
 		for i, s := range selVS.Series {
 			points = points[:0]
 			it.Reset(s.Iterator())
@@ -1958,7 +1977,6 @@ func putPointSlice(p []Point) {
 	pointPool.Put(p[:0])
 }
 
-
 // matrixSelector evaluates a *parser.MatrixSelector expression.
 func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 
@@ -1977,13 +1995,20 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 
 
 	it := storage.NewBuffer(durationMilliseconds(node.Range))
+
+	// VectorSelector 返回的时序数据
 	series := vs.Series
 
+	//
 	for i, s := range series {
+
+		//
 		if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
 			ev.error(err)
 		}
+
 		it.Reset(s.Iterator())
+
 		ss := Series{
 			Metric: series[i].Labels(),
 		}
@@ -1995,7 +2020,9 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 		} else {
 			putPointSlice(ss.Points)
 		}
+
 	}
+
 	return matrix
 }
 
@@ -2009,6 +2036,7 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 // points that fall into the [mint, maxt] range are retained; only points with later timestamps
 // are populated from the iterator.
 func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, maxt int64, out []Point) []Point {
+
 	if len(out) > 0 && out[len(out)-1].T >= mint {
 
 
@@ -2026,8 +2054,11 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		out = out[:len(out)-drop]
 		// Only append points with timestamps after the last timestamp we have.
 		mint = out[len(out)-1].T + 1
+
 	} else {
+
 		out = out[:0]
+
 	}
 
 	ok := it.Seek(maxt)
@@ -2533,7 +2564,7 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 	buf := make([]byte, 0, 1024)
 
 
-	// 遍历矢量数据 samples
+	// 遍历矢量数据 samples vector
 	for _, s := range vec {
 
 		// 取出当前 sample 的标签集
@@ -2552,8 +2583,10 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			groupingKey uint64
 		)
 
-
-		// 计算聚合 key ，每个聚合结果由该聚合操作关联的 labels 唯一标识，这里的 hash 值是这组 labels 的代表，方便代码处理。
+		// 计算聚合 key
+		//
+		// 具有相同 labels 集的 samples 的会聚合到同一个 key 下面进行聚合运算。
+		// 这里 hash 值是这组 labels 的代表，方便代码处理。
 
 
 		// without 操作，会移除 grouping 标签和 "__name__" 标签，计算 hash 值也要忽略它们:
@@ -2567,15 +2600,13 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			groupingKey, buf = metric.HashForLabels(buf, grouping...)
 		}
 
-
-
 		// 聚合结果保存在 result 中
 		group, ok := result[groupingKey]
 
 		// Add a new group if it doesn't exist.
 		if !ok {
 
-			// 保留标签集
+			// 需保留的标签集
 			var m labels.Labels
 
 			// 如果是 without 操作，需要移除 grouping 标签和 "__name__" 标签。
@@ -2635,7 +2666,7 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 		}
 
 
-		// 开始执行聚合操作，将当前样本点 sample 聚合到 group 上。
+		// 开始执行聚合操作，将当前样本点 sample 聚合到 result[groupingKey] 也即变量 group 上。
 
 		switch op {
 		case parser.SUM: 	// 累加
