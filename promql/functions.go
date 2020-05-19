@@ -798,6 +798,7 @@ func funcVector(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelpe
 
 // === label_join(vector model.ValVector, dest_labelname, separator, src_labelname...) Vector ===
 func funcLabelJoin(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+
 	var (
 		vector    = vals[0].(Vector)
 		dst       = args[1].(*parser.StringLiteral).Val
@@ -1035,6 +1036,7 @@ func (s *vectorByReverseValueHeap) Pop() interface{} {
 // createLabelsForAbsentFunction returns the labels that are uniquely and exactly matched
 // in a given expression. It is used in the absent functions.
 func createLabelsForAbsentFunction(expr parser.Expr) labels.Labels {
+
 	m := labels.Labels{}
 
 	var lm []*labels.Matcher

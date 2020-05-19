@@ -1046,6 +1046,7 @@ func expandSeriesSet(ctx context.Context, it storage.SeriesSet) (res []storage.S
 // 在超时或取消时，它就终止了。
 //
 type evaluator struct {
+
 	ctx context.Context
 
 	startTimestamp int64 	// Start time in milliseconds.
@@ -1089,7 +1090,6 @@ func (ev *evaluator) recover(errp *error) {
 
 func (ev *evaluator) Eval(expr parser.Expr) (v parser.Value, err error) {
 	defer ev.recover(&err)
-
 	return ev.eval(expr), nil
 }
 
@@ -1122,14 +1122,15 @@ type EvalNodeHelper struct {
 	rightSigs    map[uint64]Sample
 	matchedSigs  map[uint64]map[uint64]struct{}
 	resultMetric map[uint64]labels.Labels
-
 }
 
 // dropMetricName is a cached version of dropMetricName.
 func (enh *EvalNodeHelper) dropMetricName(l labels.Labels) labels.Labels {
+
 	if enh.dmn == nil {
 		enh.dmn = make(map[uint64]labels.Labels, len(enh.out))
 	}
+
 	h := l.Hash()
 	ret, ok := enh.dmn[h]
 	if ok {
@@ -1142,10 +1143,13 @@ func (enh *EvalNodeHelper) dropMetricName(l labels.Labels) labels.Labels {
 
 // signatureFunc is a cached version of signatureFunc.
 func (enh *EvalNodeHelper) signatureFunc(on bool, names ...string) func(labels.Labels) uint64 {
+
 	if enh.sigf == nil {
 		enh.sigf = make(map[uint64]uint64, len(enh.out))
 	}
+
 	f := signatureFunc(on, names...)
+
 	return func(l labels.Labels) uint64 {
 		h := l.Hash()
 		ret, ok := enh.sigf[h]
@@ -1156,35 +1160,73 @@ func (enh *EvalNodeHelper) signatureFunc(on bool, names ...string) func(labels.L
 		enh.sigf[h] = ret
 		return ret
 	}
+
 }
 
 // rangeEval evaluates the given expressions, and then for each step calls
-// the given function with the values computed for each expression at that
-// step.  The return value is the combination into time series of all the
-// function call results.
+// the given function with the values computed for each expression at that step.
+//
+// The return value is the combination into time series of all the function call results.
+//
+// rangeEval 评估给定的表达式，然后对每一步调用给定的函数，并在该步中计算出每个表达式的值。
+// 返回值是所有函数调用结果的组合成时间序列。
+//
+//
 func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, exprs ...parser.Expr) Matrix {
-	numSteps := int((ev.endTimestamp-ev.startTimestamp)/ev.interval) + 1
+
+
+	// stepCnt := (endTs - startTs) / interval + 1
+
+	numSteps := int( (ev.endTimestamp - ev.startTimestamp) / ev.interval ) + 1
+
+
+
 	matrixes := make([]Matrix, len(exprs))
+
 	origMatrixes := make([]Matrix, len(exprs))
+
 	originalNumSamples := ev.currentSamples
 
-	for i, e := range exprs {
-		// Functions will take string arguments from the expressions, not the values.
-		if e != nil && e.Type() != parser.ValueTypeString {
-			// ev.currentSamples will be updated to the correct value within the ev.eval call.
-			matrixes[i] = ev.eval(e).(Matrix)
 
-			// Keep a copy of the original point slices so that they
-			// can be returned to the pool.
+	// 遍历表达式，逐个执行，执行结果保存在 matrixes 中。
+	for i, expr := range exprs {
+
+		// Functions will take string arguments from the expressions, not the values.
+		if expr != nil && expr.Type() != parser.ValueTypeString {
+
+			// ev.currentSamples will be updated to the correct value within the ev.eval call.
+			//
+			// ev.currentSamples 将在 ev.eval 调用中被更新为正确的值。
+			//
+			//
+			//
+			matrixes[i] = ev.eval(expr).(Matrix)
+
+			// Keep a copy of the original point slices so that they can be returned to the pool.
+			//
+			// 把 matrixes[i] 保存到 origMatrixes[i] 上。
 			origMatrixes[i] = make(Matrix, len(matrixes[i]))
 			copy(origMatrixes[i], matrixes[i])
 		}
+
 	}
 
+	// 注意，
+	// 	Matrix => []Series =>
+	// 	Vector  => []Sample
+	//
+	// 所以，可以把 matrixes[i] 转换为 vectors[i]，
+	//
+
+
 	vectors := make([]Vector, len(exprs))    // Input vectors for the function.
+
+
+	//
 	args := make([]parser.Value, len(exprs)) // Argument to function.
-	// Create an output vector that is as big as the input matrix with
-	// the most time series.
+
+
+	// Create an output vector that is as big as the input matrix with the most time series.
 	biggestLen := 1
 	for i := range exprs {
 		vectors[i] = make(Vector, 0, len(matrixes[i]))
@@ -1192,67 +1234,126 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 			biggestLen = len(matrixes[i])
 		}
 	}
-	enh := &EvalNodeHelper{out: make(Vector, 0, biggestLen)}
+
+	enh := &EvalNodeHelper{
+		out: make(Vector, 0, biggestLen),
+	}
+
 	seriess := make(map[uint64]Series, biggestLen) // Output series by series hash.
+
 	tempNumSamples := ev.currentSamples
+
+
+
 	for ts := ev.startTimestamp; ts <= ev.endTimestamp; ts += ev.interval {
+
+		// 当前时间区间 [ts, ts+interval]
+
+
+		// 检查是 ctx 已经结束
 		if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
 			ev.error(err)
 		}
+
 		// Reset number of samples in memory after each timestamp.
 		ev.currentSamples = tempNumSamples
+
+
 		// Gather input vectors for this timestamp.
+		//
+		// 处理表达式 i
 		for i := range exprs {
+
+			// 清空 vectors[i]
 			vectors[i] = vectors[i][:0]
-			for si, series := range matrixes[i] {
+
+			// 遍历 matrixes[i]
+			for j, series := range matrixes[i] {
+
+				// 遍历当前时序数据中的样本点
 				for _, point := range series.Points {
+
+					// 如果当前样本点的时间恰好等于当前时间区间的起点
 					if point.T == ts {
+
+						//
 						if ev.currentSamples < ev.maxSamples {
+
 							vectors[i] = append(vectors[i], Sample{Metric: series.Metric, Point: point})
-							// Move input vectors forward so we don't have to re-scan the same
-							// past points at the next step.
-							matrixes[i][si].Points = series.Points[1:]
+
+							// Move input vectors forward so we don't have to re-scan the same past points at the next step.
+							matrixes[i][j].Points = series.Points[1:]
+
 							ev.currentSamples++
+
 						} else {
 							ev.error(ErrTooManySamples(env))
 						}
+
 					}
+
 					break
+
 				}
 			}
+
 			args[i] = vectors[i]
 		}
+
+
+
+
+
 		// Make the function call.
+		//
+		// 执行函数调用 f()
 		enh.ts = ts
 		result := f(args, enh)
+
+
+		// 检查返回结果是否包含重复的 Metric
 		if result.ContainsSameLabelset() {
 			ev.errorf("vector cannot contain metrics with the same labelset")
 		}
-		enh.out = result[:0] // Reuse result vector.
 
+		//
+		enh.out = result[:0] // Reuse result vector.
 		ev.currentSamples += len(result)
+
+
 		// When we reset currentSamples to tempNumSamples during the next iteration of the loop it also
 		// needs to include the samples from the result here, as they're still in memory.
 		tempNumSamples += len(result)
+
 
 		if ev.currentSamples > ev.maxSamples {
 			ev.error(ErrTooManySamples(env))
 		}
 
+
 		// If this could be an instant query, shortcut so as not to change sort order.
 		if ev.endTimestamp == ev.startTimestamp {
-			mat := make(Matrix, len(result))
+
+			matrix := make(Matrix, len(result))
+
 			for i, s := range result {
 				s.Point.T = ts
-				mat[i] = Series{Metric: s.Metric, Points: []Point{s.Point}}
+				matrix[i] = Series{Metric: s.Metric, Points: []Point{s.Point}}
 			}
-			ev.currentSamples = originalNumSamples + mat.TotalSamples()
-			return mat
+
+			ev.currentSamples = originalNumSamples + matrix.TotalSamples()
+
+			return matrix
 		}
+
+
 
 		// Add samples in output vector to output series.
 		for _, sample := range result {
+
+
 			h := sample.Metric.Hash()
+
 			ss, ok := seriess[h]
 			if !ok {
 				ss = Series{
@@ -1260,11 +1361,12 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 					Points: getPointSlice(numSteps),
 				}
 			}
+
 			sample.Point.T = ts
 			ss.Points = append(ss.Points, sample.Point)
 			seriess[h] = ss
-
 		}
+
 	}
 
 	// Reuse the original point slices.
@@ -1273,30 +1375,42 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 			putPointSlice(s.Points)
 		}
 	}
-	// Assemble the output matrix. By the time we get here we know we don't have too many samples.
-	mat := make(Matrix, 0, len(seriess))
+
+	// Assemble the output matrix.
+	// By the time we get here we know we don't have too many samples.
+	matrix := make(Matrix, 0, len(seriess))
 	for _, ss := range seriess {
-		mat = append(mat, ss)
+		matrix = append(matrix, ss)
 	}
-	ev.currentSamples = originalNumSamples + mat.TotalSamples()
-	return mat
+
+	ev.currentSamples = originalNumSamples + matrix.TotalSamples()
+
+
+	return matrix
 }
 
-// evalSubquery evaluates given SubqueryExpr and returns an equivalent
-// evaluated MatrixSelector in its place. Note that the Name and LabelMatchers are not set.
+
+// evalSubquery evaluates given SubqueryExpr and returns an equivalent evaluated MatrixSelector in its place.
+//
+// Note that the Name and LabelMatchers are not set.
 func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelector {
+
 	val := ev.eval(subq).(Matrix)
+
 	vs := &parser.VectorSelector{
 		Offset: subq.Offset,
 		Series: make([]storage.Series, 0, len(val)),
 	}
+
 	ms := &parser.MatrixSelector{
 		Range:          subq.Range,
 		VectorSelector: vs,
 	}
+
 	for _, s := range val {
 		vs.Series = append(vs.Series, NewStorageSeries(s))
 	}
+
 	return ms
 }
 
@@ -1319,33 +1433,48 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 	switch e := expr.(type) {
 
-
 	case *parser.AggregateExpr:
 
+		// 聚合参数是由"()"括起来的，需要去除括号。
 		unwrapParenExpr(&e.Param)
+
 		if s, ok := e.Param.(*parser.StringLiteral); ok {
-			return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-				return ev.aggregation(e.Op, e.Grouping, e.Without, s.Val, v[0].(Vector), enh)
-			}, e.Expr)
+			// 执行表达式 e.Expr，然后对结果进行聚合操作
+			return ev.rangeEval(
+				func(v []parser.Value, enh *EvalNodeHelper) Vector {
+					return ev.aggregation(e.Op, e.Grouping, e.Without, s.Val, v[0].(Vector), enh)
+				},
+				e.Expr,
+			)
 		}
 
-		return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-			var param float64
-			if e.Param != nil {
-				param = v[0].(Vector)[0].V
-			}
-			return ev.aggregation(e.Op, e.Grouping, e.Without, param, v[1].(Vector), enh)
-		}, e.Param, e.Expr)
+		// 执行表达式 e.Param、e.Expr，然后对结果进行聚合操作
+		return ev.rangeEval(
+
+			func(v []parser.Value, enh *EvalNodeHelper) Vector {
+				var param float64
+				if e.Param != nil {
+					param = v[0].(Vector)[0].V
+				}
+				return ev.aggregation(e.Op, e.Grouping, e.Without, param, v[1].(Vector), enh)
+			},
+			e.Param,
+			e.Expr,
+		)
 
 
 	case *parser.Call:
 
+		// 根据函数名检出函数对象
 		call := FunctionCalls[e.Func.Name]
 
+		//
 		if e.Func.Name == "timestamp" {
 
 			// Matrix evaluation always returns the evaluation time,
 			// so this function needs special handling when given a vector selector.
+
+			// Matrix 评估总是返回评估时间，所以当给定一个向量选择器时，"timestamp" 函数需要特殊处理，
 			vs, ok := e.Args[0].(*parser.VectorSelector)
 
 			//
@@ -1356,44 +1485,66 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			}
 		}
 
+
 		// Check if the function has a matrix argument.
+
 		var matrixArgIndex int
 		var matrixArg bool
+
+		// 遍历函数参数
 		for i := range e.Args {
+
+			// 去除"()"
 			unwrapParenExpr(&e.Args[i])
 			a := e.Args[i]
+
+			// 检查参数类型
+			//（1）查询
 			if _, ok := a.(*parser.MatrixSelector); ok {
 				matrixArgIndex = i
 				matrixArg = true
 				break
 			}
-			// parser.SubqueryExpr can be used in place of parser.MatrixSelector.
-			if subq, ok := a.(*parser.SubqueryExpr); ok {
+			// （2）子查询，将 parser.SubqueryExpr 替换为 parser.MatrixSelector
+			if subq, ok := a.(*parser.SubqueryExpr); ok { 	// parser.SubqueryExpr can be used in place of parser.MatrixSelector.
 				matrixArgIndex = i
 				matrixArg = true
-				// Replacing parser.SubqueryExpr with parser.MatrixSelector.
-				e.Args[i] = ev.evalSubquery(subq)
+				e.Args[i] = ev.evalSubquery(subq) 			// Replacing parser.SubqueryExpr with parser.MatrixSelector.
 				break
 			}
+			// （3）其它
 		}
+
+		// 参数中不含有查询操作，则直接调用 call
 		if !matrixArg {
+
 			// Does not have a matrix argument.
-			return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-				return call(v, e.Args, enh)
-			}, e.Args...)
+			return ev.rangeEval(
+				func(v []parser.Value, enh *EvalNodeHelper) Vector {
+					return call(v, e.Args, enh)
+				},
+				e.Args...,
+			)
 		}
+
+
+		// 否则，需要先执行查询操作
 
 		inArgs := make([]parser.Value, len(e.Args))
 		// Evaluate any non-matrix arguments.
 		otherArgs := make([]Matrix, len(e.Args))
 		otherInArgs := make([]Vector, len(e.Args))
+
+		// 遍历函数参数
 		for i, e := range e.Args {
+			//
 			if i != matrixArgIndex {
 				otherArgs[i] = ev.eval(e).(Matrix)
 				otherInArgs[i] = Vector{Sample{}}
 				inArgs[i] = otherInArgs[i]
 			}
 		}
+
 
 		sel := e.Args[matrixArgIndex].(*parser.MatrixSelector)
 		selVS := sel.VectorSelector.(*parser.VectorSelector)
@@ -1551,52 +1702,94 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		return mat
 
 	case *parser.BinaryExpr:
+
 		switch lt, rt := e.LHS.Type(), e.RHS.Type(); {
+
 		case lt == parser.ValueTypeScalar && rt == parser.ValueTypeScalar:
-			return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-				val := scalarBinop(e.Op, v[0].(Vector)[0].Point.V, v[1].(Vector)[0].Point.V)
-				return append(enh.out, Sample{Point: Point{V: val}})
-			}, e.LHS, e.RHS)
+
+			return ev.rangeEval(
+				func(v []parser.Value, enh *EvalNodeHelper) Vector {
+					val := scalarBinop(e.Op, v[0].(Vector)[0].Point.V, v[1].(Vector)[0].Point.V)
+					return append(enh.out, Sample{Point: Point{V: val}})
+				},
+				e.LHS,
+				e.RHS,
+			)
+
 		case lt == parser.ValueTypeVector && rt == parser.ValueTypeVector:
+
 			switch e.Op {
+
 			case parser.LAND:
-				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-					return ev.VectorAnd(v[0].(Vector), v[1].(Vector), e.VectorMatching, enh)
-				}, e.LHS, e.RHS)
+				return ev.rangeEval(
+					func(v []parser.Value, enh *EvalNodeHelper) Vector {
+						return ev.VectorAnd(v[0].(Vector), v[1].(Vector), e.VectorMatching, enh)
+					},
+					e.LHS,
+					e.RHS,
+				)
 			case parser.LOR:
-				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-					return ev.VectorOr(v[0].(Vector), v[1].(Vector), e.VectorMatching, enh)
-				}, e.LHS, e.RHS)
+
+				return ev.rangeEval(
+					func(v []parser.Value, enh *EvalNodeHelper) Vector {
+						return ev.VectorOr(v[0].(Vector), v[1].(Vector), e.VectorMatching, enh)
+					},
+					e.LHS,
+					e.RHS,
+				)
+
 			case parser.LUNLESS:
-				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-					return ev.VectorUnless(v[0].(Vector), v[1].(Vector), e.VectorMatching, enh)
-				}, e.LHS, e.RHS)
+				return ev.rangeEval(
+					func(v []parser.Value, enh *EvalNodeHelper) Vector {
+						return ev.VectorUnless(v[0].(Vector), v[1].(Vector), e.VectorMatching, enh)
+					},
+					e.LHS,
+					e.RHS,
+				)
 			default:
-				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-					return ev.VectorBinop(e.Op, v[0].(Vector), v[1].(Vector), e.VectorMatching, e.ReturnBool, enh)
-				}, e.LHS, e.RHS)
+				return ev.rangeEval(
+					func(v []parser.Value, enh *EvalNodeHelper) Vector {
+						return ev.VectorBinop(e.Op, v[0].(Vector), v[1].(Vector), e.VectorMatching, e.ReturnBool, enh)
+					},
+					e.LHS,
+					e.RHS,
+				)
 			}
 
 		case lt == parser.ValueTypeVector && rt == parser.ValueTypeScalar:
-			return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-				return ev.VectorscalarBinop(e.Op, v[0].(Vector), Scalar{V: v[1].(Vector)[0].Point.V}, false, e.ReturnBool, enh)
-			}, e.LHS, e.RHS)
+
+			return ev.rangeEval(
+				func(v []parser.Value, enh *EvalNodeHelper) Vector {
+					return ev.VectorscalarBinop(e.Op, v[0].(Vector), Scalar{V: v[1].(Vector)[0].Point.V}, false, e.ReturnBool, enh)
+				},
+				e.LHS,
+				e.RHS,
+			)
 
 		case lt == parser.ValueTypeScalar && rt == parser.ValueTypeVector:
-			return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-				return ev.VectorscalarBinop(e.Op, v[1].(Vector), Scalar{V: v[0].(Vector)[0].Point.V}, true, e.ReturnBool, enh)
-			}, e.LHS, e.RHS)
+			return ev.rangeEval(
+				func(v []parser.Value, enh *EvalNodeHelper) Vector {
+					return ev.VectorscalarBinop(e.Op, v[1].(Vector), Scalar{V: v[0].(Vector)[0].Point.V}, true, e.ReturnBool, enh)
+				},
+				e.LHS,
+				e.RHS,
+			)
 		}
 
 	case *parser.NumberLiteral:
-		return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-			return append(enh.out, Sample{Point: Point{V: e.Val}})
-		})
+		return ev.rangeEval(
+			func(v []parser.Value, enh *EvalNodeHelper) Vector {
+				return append(enh.out, Sample{Point: Point{V: e.Val}})
+			},
+		)
 
 	case *parser.VectorSelector:
+
+
 		checkForSeriesSetExpansion(ev.ctx, e)
 		mat := make(Matrix, 0, len(e.Series))
 		it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
+
 		for i, s := range e.Series {
 
 			it.Reset(s.Iterator())
@@ -1625,15 +1818,19 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			}
 
 		}
+
 		return mat
 
 	case *parser.MatrixSelector:
+
 		if ev.startTimestamp != ev.endTimestamp {
 			panic(errors.New("cannot do range evaluation of matrix selector"))
 		}
 		return ev.matrixSelector(e)
 
+
 	case *parser.SubqueryExpr:
+
 		offsetMillis := durationToInt64Millis(e.Offset)
 		rangeMillis := durationToInt64Millis(e.Range)
 		newEv := &evaluator{
@@ -1661,8 +1858,12 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		res := newEv.eval(e.Expr)
 		ev.currentSamples = newEv.currentSamples
 		return res
+
 	case *parser.StringLiteral:
-		return String{V: e.Val, T: ev.startTimestamp}
+		return String{
+			V: e.Val,
+			T: ev.startTimestamp,
+		}
 	}
 
 	panic(errors.Errorf("unhandled expression of type: %T", expr))
@@ -1709,7 +1910,9 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 
 // vectorSelectorSingle evaluates a instant vector for the iterator of one time series.
 func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, node *parser.VectorSelector, ts int64) (int64, float64, bool) {
+
 	refTime := ts - durationMilliseconds(node.Offset)
+
 	var t int64
 	var v float64
 
@@ -1720,9 +1923,11 @@ func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, no
 		}
 	}
 
+
 	if ok {
 		t, v = it.Values()
 	}
+
 
 	if !ok || t > refTime {
 		t, v, ok = it.PeekBack(1)
@@ -1730,9 +1935,11 @@ func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, no
 			return 0, 0, false
 		}
 	}
+
 	if value.IsStaleNaN(v) {
 		return 0, 0, false
 	}
+
 	return t, v, true
 }
 
@@ -2032,21 +2239,25 @@ func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *
 
 		} else {
 
-
-
-
 			// In many-to-one matching the grouping labels have to ensure a unique metric for the result Vector.
 			//
 			// Check whether those labels have already been added for the same matching labels.
+
 			insertSig := metric.Hash()
 
 			if !exists {
+
 				insertedSigs = map[uint64]struct{}{}
 				matchedSigs[sig] = insertedSigs
+
 			} else if _, duplicate := insertedSigs[insertSig]; duplicate {
+
 				ev.errorf("multiple matches for labels: grouping labels must ensure unique matches")
+
 			}
+
 			insertedSigs[insertSig] = struct{}{}
+
 		}
 
 		enh.out = append(enh.out, Sample{
@@ -2486,11 +2697,6 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 	}
 
 
-
-
-
-
-
 	// Construct the result Vector from the aggregated groups.
 	for _, aggr := range result {
 
@@ -2543,8 +2749,9 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 			Metric: aggr.labels,
 			Point:  Point{V: aggr.value},
 		})
-
 	}
+
+
 	return enh.out
 }
 
