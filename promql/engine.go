@@ -1003,14 +1003,18 @@ func checkForSeriesSetExpansion(ctx context.Context, expr parser.Expr) {
 	case *parser.MatrixSelector:
 		checkForSeriesSetExpansion(ctx, e.VectorSelector)
 	case *parser.VectorSelector:
+
 		if e.Series == nil {
+
 			// 通过迭代器取出查询的时间序列
 			series, err := expandSeriesSet(ctx, e.UnexpandedSeriesSet)
+
 			if err != nil {
 				panic(err)
 			} else {
 				e.Series = series
 			}
+
 		}
 	}
 }
@@ -1143,8 +1147,12 @@ func (enh *EvalNodeHelper) dropMetricName(l labels.Labels) labels.Labels {
 	return ret
 }
 
+
 // signatureFunc is a cached version of signatureFunc.
+//
+//
 func (enh *EvalNodeHelper) signatureFunc(on bool, names ...string) func(labels.Labels) uint64 {
+
 
 	if enh.sigf == nil {
 		enh.sigf = make(map[uint64]uint64, len(enh.out))
@@ -1407,24 +1415,30 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 
 
 // evalSubquery evaluates given SubqueryExpr and returns an equivalent evaluated MatrixSelector in its place.
-//
 // Note that the Name and LabelMatchers are not set.
+//
+// evalSubquery 评估给定的 SubqueryExpr 表达式，并返回一个等价的 MatrixSelector 来代替它。
+// 注意，没有设置 VectorSelector 中的 Name 和 LabelMatchers 。
 func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelector {
 
-	val := ev.eval(subq).(Matrix)
+	// 评估子表达式，得到返回值 matrix
+	matrix := ev.eval(subq).(Matrix)
 
+	// 构造 VectorSelector
 	vs := &parser.VectorSelector{
 		Offset: subq.Offset,
-		Series: make([]storage.Series, 0, len(val)),
+		Series: make([]storage.Series, 0, len(matrix)),
 	}
 
+	// 构造 MatrixSelector
 	ms := &parser.MatrixSelector{
 		Range:          subq.Range,
 		VectorSelector: vs,
 	}
 
-	for _, s := range val {
-		vs.Series = append(vs.Series, NewStorageSeries(s))
+	// 把查询结果 matrix 中的 series 从 promql.Series 转换为 storage.Series 对象，填充到 VectorSelector.Series[] 中。
+	for _, series := range matrix {
+		vs.Series = append(vs.Series, NewStorageSeries(series))
 	}
 
 	return ms
@@ -1482,19 +1496,15 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 	case *parser.Call:
 
+
 		// 根据函数名检出函数对象
 		call := FunctionCalls[e.Func.Name]
 
-		//
-		if e.Func.Name == "timestamp" {
 
+		if e.Func.Name == "timestamp" {
 			// Matrix evaluation always returns the evaluation time,
 			// so this function needs special handling when given a vector selector.
-
-			// Matrix 评估总是返回评估时间，所以当给定一个向量选择器时，"timestamp" 函数需要特殊处理，
 			vs, ok := e.Args[0].(*parser.VectorSelector)
-
-			//
 			if ok {
 				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
 					return call([]parser.Value{ev.vectorSelector(vs, enh.ts)}, e.Args, enh)
@@ -1502,39 +1512,41 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			}
 		}
 
-
 		// Check if the function has a matrix argument.
+		//
+		// 检查函数 function 是否包含 MatrixSelector 类型参数。
 
 		var matrixArgIndex int
 		var matrixArg bool
 
-		// 遍历函数参数
+		// 遍历函数参数列表
 		for i := range e.Args {
 
 			// 去除"()"
 			unwrapParenExpr(&e.Args[i])
+
+			// 取出当前参数
 			a := e.Args[i]
 
 			// 检查参数类型
-			//（1）查询
+			//（1）检查参数是否是 MatrixSelector 类型
 			if _, ok := a.(*parser.MatrixSelector); ok {
 				matrixArgIndex = i
 				matrixArg = true
 				break
 			}
-			// （2）子查询，将 parser.SubqueryExpr 替换为 parser.MatrixSelector
+			// （2）检查参数是否是 SubqueryExpr 类型，若是，则将 parser.SubqueryExpr 替换为 parser.MatrixSelector
 			if subq, ok := a.(*parser.SubqueryExpr); ok { 	// parser.SubqueryExpr can be used in place of parser.MatrixSelector.
 				matrixArgIndex = i
 				matrixArg = true
 				e.Args[i] = ev.evalSubquery(subq) 			// Replacing parser.SubqueryExpr with parser.MatrixSelector.
 				break
 			}
-			// （3）其它
+			// （3）其它类型，不予处理
 		}
 
-		// 参数中不含有查询操作，则直接调用 call
+		// 参数中不含有 MatrixSelector 查询，则直接调用 call
 		if !matrixArg {
-
 			// Does not have a matrix argument.
 			return ev.rangeEval(
 				func(v []parser.Value, enh *EvalNodeHelper) Vector {
@@ -1545,62 +1557,93 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		}
 
 
-		// 否则，需要先执行查询操作
 
+		// 否则，参数中含有 MatrixSelector 查询（只有一个？假设只有一个...），其下标为 matrixArgIndex 。
+
+
+
+
+		// 函数参数
 		inArgs := make([]parser.Value, len(e.Args))
+
 		// Evaluate any non-matrix arguments.
 		otherArgs := make([]Matrix, len(e.Args))
 		otherInArgs := make([]Vector, len(e.Args))
 
+
 		// 遍历函数参数
 		for i, e := range e.Args {
-			//
+			// 如果参数 i 不是 MatrixSelector 查询，就直接调用 ev.eval(e) 来评估它，得到结果后存到 otherArgs[i] 上，
 			if i != matrixArgIndex {
 				otherArgs[i] = ev.eval(e).(Matrix)
-				otherInArgs[i] = Vector{Sample{}}
+				otherInArgs[i] = Vector{ Sample{} }
 				inArgs[i] = otherInArgs[i]
 			}
 		}
 
 
-		sel := e.Args[matrixArgIndex].(*parser.MatrixSelector)
-		selVS := sel.VectorSelector.(*parser.VectorSelector)
+		// 取出 e.Args[matrixArgIndex]
+		matrixSel := e.Args[matrixArgIndex].(*parser.MatrixSelector)
+		// 取出 e.Args[matrixArgIndex].VectorSelector
+		vectorSel := matrixSel.VectorSelector.(*parser.VectorSelector)
+		checkForSeriesSetExpansion(ev.ctx, matrixSel)
 
-		checkForSeriesSetExpansion(ev.ctx, sel)
-		mat := make(Matrix, 0, len(selVS.Series)) // Output matrix.
-		offset := durationMilliseconds(selVS.Offset)
-		selRange := durationMilliseconds(sel.Range)
+		// offset
+		offset := durationMilliseconds(vectorSel.Offset)
+		// range
+		selRange := durationMilliseconds(matrixSel.Range)
+		// step
 		stepRange := selRange
 		if stepRange > ev.interval {
 			stepRange = ev.interval
 		}
+
 		// Reuse objects across steps to save memory allocations.
-		points := getPointSlice(16)
+		//
+		// 跨 steps 重用对象，减少内存分配。
+
 		inMatrix := make(Matrix, 1)
 		inArgs[matrixArgIndex] = inMatrix
-		enh := &EvalNodeHelper{out: make(Vector, 0, 1)}
+		enh := &EvalNodeHelper{
+			out: make(Vector, 0, 1),
+		}
+
+
+
+
 		// Process all the calls for one time series at a time.
+		//
+
+
 		it := storage.NewBuffer(selRange)
 
+		// Output matrix.
+		matrix := make(Matrix, 0, len(vectorSel.Series))
+		points := getPointSlice(16)
 
-		for i, s := range selVS.Series {
+
+
+		for _, series := range vectorSel.Series {
+
+			// 重置样本缓存
 			points = points[:0]
-			it.Reset(s.Iterator())
 
+			// 重置迭代器，用于遍历当前 series 的样本数据
+			it.Reset(series.Iterator())
 
-
-
+			//
 			ss := Series{
-
 				// For all range vector functions, the only change to the output
 				// labels is dropping the metric name so just do it once here.
-				Metric: dropMetricName(selVS.Series[i].Labels()),
+				Metric: dropMetricName(series.Labels()),
 				Points: getPointSlice(numSteps),
 			}
 
 
 
-			inMatrix[0].Metric = selVS.Series[i].Labels()
+			inMatrix[0].Metric = series.Labels()
+
+
 
 
 			for ts, step := ev.startTimestamp, -1; ts <= ev.endTimestamp; ts += ev.interval {
@@ -1608,42 +1651,72 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 				step++
 
 				// Set the non-matrix arguments.
+				// They are scalar, so it is safe to use the step number when looking up the argument, as there will be no gaps.
 				//
-				// They are scalar, so it is safe to use the step number when looking up the argument,
-				// as there will be no gaps.
+				// 设置非矩阵参数。
+				// 它们是标量的，所以在查询参数时使用步数是安全的，因为不会有空隙。
+
+
+				// otherArgs[i] 上存储了 e.Args[i] 的评估结果，该结果是 Matrix 类型，也即包含一组 series 。
+				//
+				// otherArgs[j][0] 为 e.Args[i] 评估后得到的第一组 series ，也可能只有一组 series 返回。
+				//
+				// otherArgs[j][0].Points[step] 为取出 series 时序中的第 step 个样本。
+
 
 				for j := range e.Args {
-
+					// 对于非 MatrixSelector 类型参数，直接取出对应的样本值
 					if j != matrixArgIndex {
-
 						otherInArgs[j][0].V = otherArgs[j][0].Points[step].V
-
 					}
-
 				}
+
+
+				// 查询时间区间 [mint, maxt]
 				maxt := ts - offset
 				mint := maxt - selRange
+
 				// Evaluate the matrix selector for this series for this step.
+				//
+				//
 				points = ev.matrixIterSlice(it, mint, maxt, points)
 				if len(points) == 0 {
 					continue
 				}
+
+
 				inMatrix[0].Points = points
 				enh.ts = ts
 
-				// Make the function call.
-				outVec := call(inArgs, e.Args, enh)
 
+				// Make the function call.
+				//
+				// 函数调用
+				// 	inArgs: 输入参数
+				// 	e.Args: 一般用不到
+				// 	enh: 输出
+				outVec := call(inArgs, e.Args, enh)
 				enh.out = outVec[:0]
+
+
 				if len(outVec) > 0 {
-					ss.Points = append(ss.Points, Point{V: outVec[0].Point.V, T: ts})
+					ss.Points = append(ss.Points,
+						Point{
+							V: outVec[0].Point.V,
+							T: ts,
+						},
+					)
 				}
+
 				// Only buffer stepRange milliseconds from the second step on.
 				it.ReduceDelta(stepRange)
 			}
+
+
 			if len(ss.Points) > 0 {
+
 				if ev.currentSamples < ev.maxSamples {
-					mat = append(mat, ss)
+					matrix = append(matrix, ss)
 					ev.currentSamples += len(ss.Points)
 				} else {
 					ev.error(ErrTooManySamples(env))
@@ -1651,6 +1724,8 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			} else {
 				putPointSlice(ss.Points)
 			}
+
+
 		}
 
 		putPointSlice(points)
@@ -1661,55 +1736,81 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		// So far, the matrix contains multiple series.
 		//
 		// The following code will create a new series with values of 1 for the timestamps where no series has value.
+		//
+		//
+		//
+		// absent_over_time 函数返回 0 或 1 个 series 。
+		//
+		// 到目前为止， matrix 中包含多个 series 。
+		//
+		// 下面的代码为
+		//
+		// 将为没有系列值的时间戳创建一个新的系列，其值为1。
+		//
 		if e.Func.Name == "absent_over_time" {
+
 
 			steps := int(1 + (ev.endTimestamp-ev.startTimestamp)/ev.interval)
 
+
 			// Iterate once to look for a complete series.
-			for _, s := range mat {
-				if len(s.Points) == steps {
+			//
+			// 迭代一次，寻找一个完整的 series 。
+			for _, series := range matrix {
+				if len(series.Points) == steps {
 					return Matrix{}
 				}
 			}
 
 			found := map[int64]struct{}{}
 
-			for i, s := range mat {
-				for _, p := range s.Points {
-					found[p.T] = struct{}{}
+			for i, series := range matrix {
+
+				for _, point := range series.Points {
+					found[point.T] = struct{}{}
 				}
+
 				if i > 0 && len(found) == steps {
 					return Matrix{}
 				}
+
 			}
 
-			newp := make([]Point, 0, steps-len(found))
+			points := make([]Point, 0, steps-len(found))
 			for ts := ev.startTimestamp; ts <= ev.endTimestamp; ts += ev.interval {
 				if _, ok := found[ts]; !ok {
-					newp = append(newp, Point{T: ts, V: 1})
+					points = append(points,
+						Point{
+							T: ts,
+							V: 1,
+						},
+					)
 				}
 			}
 
-			return Matrix{
+			return Matrix {
 				Series{
 					Metric: createLabelsForAbsentFunction(e.Args[0]),
-					Points: newp,
+					Points: points,
 				},
 			}
 		}
 
-		if mat.ContainsSameLabelset() {
+		if matrix.ContainsSameLabelset() {
 			ev.errorf("vector cannot contain metrics with the same labelset")
 		}
 
-		return mat
+		return matrix
+
 
 	case *parser.ParenExpr:
 		return ev.eval(e.Expr)
 
 	case *parser.UnaryExpr:
+
 		// 执行表达式，获取返回值
 		matrix := ev.eval(e.Expr).(Matrix)
+
 		// 对返回的每个 point 的值取相反数
 		if e.Op == parser.SUB {
 			for i := range matrix {
@@ -1810,11 +1911,15 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 	case *parser.VectorSelector:
 
 
+		//
 		checkForSeriesSetExpansion(ev.ctx, e)
+
 		mat := make(Matrix, 0, len(e.Series))
 
 
 		it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
+
+
 
 		for i, s := range e.Series {
 
@@ -1915,22 +2020,32 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 
 	it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
 
+
 	for i, s := range node.Series {
 
 		it.Reset(s.Iterator())
 
 		t, v, ok := ev.vectorSelectorSingle(it, node, ts)
 		if ok {
-			vec = append(vec, Sample{
-				Metric: node.Series[i].Labels(),
-				Point:  Point{V: v, T: t},
-			})
+
+			vec = append(vec,
+				Sample{
+					Metric: node.Series[i].Labels(),
+					Point:  Point{
+								V: v,
+								T: t,
+							},
+				},
+			)
+
 			ev.currentSamples++
+
 		}
 
 		if ev.currentSamples >= ev.maxSamples {
 			ev.error(ErrTooManySamples(env))
 		}
+
 	}
 	return vec
 }
@@ -1950,11 +2065,9 @@ func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, no
 		}
 	}
 
-
 	if ok {
 		t, v = it.Values()
 	}
-
 
 	if !ok || t > refTime {
 		t, v, ok = it.PeekBack(1)
@@ -2043,11 +2156,12 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 // Any such points falling before mint are discarded;
 // points that fall into the [mint, maxt] range are retained; only points with later timestamps
 // are populated from the iterator.
+//
+//
 func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, maxt int64, out []Point) []Point {
 
+	// 如果 out 中有 Point 位于 [mint, maxt] 区间，需要移除 out 中那些 < mint 的 Points 。
 	if len(out) > 0 && out[len(out)-1].T >= mint {
-
-
 		// There is an overlap between previous and current ranges, retain common points.
 		//
 		// In most such cases:
@@ -2055,20 +2169,27 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		//   (b) the number of samples is relatively small.
 		//
 		// so a linear search will be as fast as a binary search.
+
+		//（1）确定 out 中 < mint 的样本数
 		var drop int
 		for drop = 0; out[drop].T < mint; drop++ {
 		}
+
+		//（2）从 out 中移除这些样本，使 out 中只包含 >= mint 的样本
 		copy(out, out[drop:])
 		out = out[:len(out)-drop]
+
+
 		// Only append points with timestamps after the last timestamp we have.
+		//
+		//（3）更新 mint 的值
 		mint = out[len(out)-1].T + 1
 
 	} else {
-
 		out = out[:0]
-
 	}
 
+	// 查找 >= maxt 的样本点
 	ok := it.Seek(maxt)
 	if !ok {
 		if it.Err() != nil {
@@ -2076,34 +2197,69 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		}
 	}
 
+	// buffer 中保存 < maxt 的样本点
 	buf := it.Buffer()
+
+	// 遍历这些 < maxt 的样本点，如果其 <= mint ，则添加到 out 中
 	for buf.Next() {
+
 		t, v := buf.At()
+
 		if value.IsStaleNaN(v) {
 			continue
 		}
+
 		// Values in the buffer are guaranteed to be smaller than maxt.
 		if t >= mint {
+
 			if ev.currentSamples >= ev.maxSamples {
 				ev.error(ErrTooManySamples(env))
 			}
-			out = append(out, Point{T: t, V: v})
+
+			out = append(out,
+				Point{
+					T: t,
+					V: v,
+				},
+			)
 			ev.currentSamples++
 		}
+
 	}
+
+
 	// The seeked sample might also be in the range.
+
 	if ok {
+
 		t, v := it.Values()
+
 		if t == maxt && !value.IsStaleNaN(v) {
+
+
 			if ev.currentSamples >= ev.maxSamples {
 				ev.error(ErrTooManySamples(env))
 			}
-			out = append(out, Point{T: t, V: v})
+
+
+			out = append(out,
+				Point{
+					T: t,
+					V: v,
+				},
+			)
 			ev.currentSamples++
+
 		}
 	}
+
 	return out
 }
+
+
+
+
+
 
 func (ev *evaluator) VectorAnd(lhs, rhs Vector, matching *parser.VectorMatching, enh *EvalNodeHelper) Vector {
 
@@ -2153,9 +2309,12 @@ func (ev *evaluator) VectorOr(lhs, rhs Vector, matching *parser.VectorMatching, 
 }
 
 func (ev *evaluator) VectorUnless(lhs, rhs Vector, matching *parser.VectorMatching, enh *EvalNodeHelper) Vector {
+
 	if matching.Card != parser.CardManyToMany {
 		panic("set operations must only use many-to-many matching")
 	}
+
+
 	sigf := enh.signatureFunc(matching.On, matching.MatchingLabels...)
 
 	rightSigs := map[uint64]struct{}{}
@@ -2324,13 +2483,10 @@ func signatureFunc(on bool, names ...string) func(labels.Labels) uint64 {
 		}
 	}
 
-
 	return func(lset labels.Labels) uint64 {
 		h, _ := lset.HashWithoutLabels(make([]byte, 0, 1024), names...)
 		return h
 	}
-
-
 }
 
 

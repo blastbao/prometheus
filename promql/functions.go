@@ -138,7 +138,9 @@ func funcDelta(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper
 
 // === rate(node parser.ValueTypeMatrix) Vector ===
 func funcRate(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+
 	return extrapolatedRate(vals, args, enh, true, true)
+
 }
 
 // === increase(node parser.ValueTypeMatrix) Vector ===
@@ -1033,36 +1035,47 @@ func (s *vectorByReverseValueHeap) Pop() interface{} {
 	return el
 }
 
-// createLabelsForAbsentFunction returns the labels that are uniquely and exactly matched
-// in a given expression. It is used in the absent functions.
+// createLabelsForAbsentFunction returns the labels that are uniquely and exactly matched in a given expression.
+//
+// It is used in the absent functions.
 func createLabelsForAbsentFunction(expr parser.Expr) labels.Labels {
 
-	m := labels.Labels{}
+	labelSet := labels.Labels{}
 
-	var lm []*labels.Matcher
+	// 根据 Selector 类型确定 matchers
+	var matchers []*labels.Matcher
 	switch n := expr.(type) {
 	case *parser.VectorSelector:
-		lm = n.LabelMatchers
+		matchers = n.LabelMatchers
 	case *parser.MatrixSelector:
-		lm = n.VectorSelector.(*parser.VectorSelector).LabelMatchers
+		matchers = n.VectorSelector.(*parser.VectorSelector).LabelMatchers
 	default:
-		return m
+		return labelSet
 	}
+
 
 	empty := []string{}
-	for _, ma := range lm {
-		if ma.Name == labels.MetricName {
+
+
+	for _, matcher := range matchers {
+
+		// 忽略 "__name__" 标签
+		if matcher.Name == labels.MetricName {
 			continue
 		}
-		if ma.Type == labels.MatchEqual && !m.Has(ma.Name) {
-			m = labels.NewBuilder(m).Set(ma.Name, ma.Value).Labels()
+
+		// 只添加 "=" 标签
+		if matcher.Type == labels.MatchEqual && !labelSet.Has(matcher.Name) {
+			labelSet = labels.NewBuilder(labelSet).Set(matcher.Name, matcher.Value).Labels()
 		} else {
-			empty = append(empty, ma.Name)
+			empty = append(empty, matcher.Name)
 		}
 	}
 
+	// 移除其余标签
 	for _, v := range empty {
-		m = labels.NewBuilder(m).Del(v).Labels()
+		labelSet = labels.NewBuilder(labelSet).Del(v).Labels()
 	}
-	return m
+
+	return labelSet
 }

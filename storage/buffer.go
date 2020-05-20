@@ -40,11 +40,14 @@ func NewBuffer(delta int64) *BufferedSeriesIterator {
 
 // NewBufferIterator returns a new iterator that buffers the values within the
 // time range of the current element and the duration of delta before.
+//
 func NewBufferIterator(it chunkenc.Iterator, delta int64) *BufferedSeriesIterator {
+
 	bit := &BufferedSeriesIterator{
 		buf:   newSampleRing(delta, 16),
 		delta: delta,
 	}
+
 	bit.Reset(it)
 
 	return bit
@@ -83,6 +86,7 @@ func (b *BufferedSeriesIterator) Buffer() chunkenc.Iterator {
 
 // Seek advances the iterator to the element at time t or greater.
 func (b *BufferedSeriesIterator) Seek(t int64) bool {
+
 	t0 := t - b.buf.delta
 
 	// If the delta would cause us to seek backwards,

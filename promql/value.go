@@ -178,13 +178,23 @@ func (m Matrix) Len() int           { return len(m) }
 func (m Matrix) Less(i, j int) bool { return labels.Compare(m[i].Metric, m[j].Metric) < 0 }
 func (m Matrix) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 
+
+
 // ContainsSameLabelset checks if a matrix has samples with the same labelset
-// Such a behavior is semantically undefined
+// Such a behavior is semantically undefined.
+//
 // https://github.com/blastbao/prometheus/issues/4562
+//
+//
+//
+//
 func (m Matrix) ContainsSameLabelset() bool {
 	l := make(map[uint64]struct{}, len(m))
+	// 遍历 Matrix 的各个 series ，检查是否有重复的 series 。
 	for _, ss := range m {
+		// 计算当前 series 的 hash(labels)
 		hash := ss.Metric.Hash()
+		// 如果当前 hash 已存在，则包含重复 series
 		if _, ok := l[hash]; ok {
 			return true
 		}

@@ -338,12 +338,18 @@ func (s errSeriesSet) Err() error { return s.err }
 
 
 // Series exposes a single time series and allows iterating over samples.
+//
+// Series 导出了一个 series ，并允许对其上样本进行迭代。
 type Series interface {
 
 	// Labels returns the complete set of labels identifying the series.
+	//
+	// Labels 返回识别该 series 的完整标签集。
 	Labels
 
 	// Iterator returns a new iterator of the data of the series.
+	//
+	// Iterator 返回该 series 的一个新的迭代器。
 	SampleIteratable
 }
 
