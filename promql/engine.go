@@ -841,13 +841,13 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 	)
 
 
-	// parser.Inspect() 调用 parser.Walk() 深度优先遍历 AST ，在深搜过程中，会对每个 node 调用 f 进行处理。
+	// parser.Inspect() 调用 parser.Walk() 深度优先遍历 AST ，在深搜过程中，会对每个 node 调用 f() 进行处理。
 	parser.Inspect(
 
 		// 根 node
 		s.Expr,
 
-		// f
+		// f()
 		func(node parser.Node, path []parser.Node) error {
 
 			var set storage.SeriesSet

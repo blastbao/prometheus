@@ -2,13 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="efd9b49f-db94-488e-a981-c8b1771cd5e3" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/promql/engine.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/engine.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/functions.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/functions.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/parser/ast.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/parser/ast.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/promql/value.go" beforeDir="false" afterPath="$PROJECT_DIR$/promql/value.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/buffer.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/buffer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/storage/interface.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/interface.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -36,11 +30,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/promql/engine.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="544">
-              <caret line="608" lean-forward="true" selection-start-line="608" selection-end-line="608" />
+            <state relative-caret-position="313">
+              <caret line="1009" column="63" selection-start-line="1009" selection-start-column="63" selection-end-line="1009" selection-end-column="63" />
             </state>
           </provider>
         </entry>
@@ -57,8 +51,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/storage/interface.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="508">
-              <caret line="397" column="4" selection-start-line="397" selection-start-column="4" selection-end-line="397" selection-end-column="4" />
+            <state relative-caret-position="311">
+              <caret line="305" column="5" selection-start-line="305" selection-start-column="5" selection-end-line="305" selection-end-column="5" />
             </state>
           </provider>
         </entry>
@@ -81,11 +75,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/promql/parser/ast.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="311">
-              <caret line="246" column="4" selection-start-line="246" selection-start-column="4" selection-end-line="246" selection-end-column="4" />
+              <caret line="244" column="4" selection-start-line="244" selection-start-column="4" selection-end-line="244" selection-end-column="4" />
               <folding>
                 <element signature="e#609#752#0" expanded="true" />
               </folding>
@@ -196,8 +190,8 @@
         <option value="$PROJECT_DIR$/promql/parser/ast.go" />
         <option value="$PROJECT_DIR$/storage/interface.go" />
         <option value="$PROJECT_DIR$/storage/buffer.go" />
-        <option value="$PROJECT_DIR$/promql/engine.go" />
         <option value="$PROJECT_DIR$/promql/functions.go" />
+        <option value="$PROJECT_DIR$/promql/engine.go" />
       </list>
     </option>
   </component>
@@ -656,23 +650,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/promql/parser/ast.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="311">
-          <caret line="246" column="4" selection-start-line="246" selection-start-column="4" selection-end-line="246" selection-end-column="4" />
-          <folding>
-            <element signature="e#609#752#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/storage/interface.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="508">
-          <caret line="397" column="4" selection-start-line="397" selection-start-column="4" selection-end-line="397" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/storage/buffer.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="311">
@@ -701,10 +678,27 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/storage/interface.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="305" column="5" selection-start-line="305" selection-start-column="5" selection-end-line="305" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/promql/engine.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="544">
-          <caret line="608" lean-forward="true" selection-start-line="608" selection-end-line="608" />
+        <state relative-caret-position="313">
+          <caret line="1009" column="63" selection-start-line="1009" selection-start-column="63" selection-end-line="1009" selection-end-column="63" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/promql/parser/ast.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="311">
+          <caret line="244" column="4" selection-start-line="244" selection-start-column="4" selection-end-line="244" selection-end-column="4" />
+          <folding>
+            <element signature="e#609#752#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
