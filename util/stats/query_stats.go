@@ -20,21 +20,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// QueryTiming identifies the code area or functionality in which time is spent
-// during a query.
+// QueryTiming identifies the code area or functionality in which time is spent during a query.
+//
+// QueryTiming 标识了在查询过程中某个 '代码段' 或 '函数' 的执行时间。
 type QueryTiming int
 
 // Query timings.
 const (
-	EvalTotalTime QueryTiming = iota
-	ResultSortTime
-	QueryPreparationTime
-	InnerEvalTime
-	ExecQueueTime
-	ExecTotalTime
+	EvalTotalTime        QueryTiming = iota // eval 总时间
+	ResultSortTime                          // 结果排序时间
+	QueryPreparationTime                    // 查询准备时间
+	InnerEvalTime                           // 内部 eval 时间
+	ExecQueueTime                           // Exec queue wait time
+	ExecTotalTime                           // Exec total time
 )
 
 // Return a string representation of a QueryTiming identifier.
+//
+// 返回 QueryTiming 标识符的字符串表示。
+//
 func (s QueryTiming) String() string {
 	switch s {
 	case EvalTotalTime:
@@ -55,6 +59,9 @@ func (s QueryTiming) String() string {
 }
 
 // SpanOperation returns a string representation of a QueryTiming span operation.
+//
+// SpanOperation 返回 QueryTiming 的 span 操作的字符串表示。
+//
 func (s QueryTiming) SpanOperation() string {
 	switch s {
 	case EvalTotalTime:
@@ -85,15 +92,18 @@ type queryTimings struct {
 }
 
 // QueryStats currently only holding query timings.
+//
+//
 type QueryStats struct {
 	Timings queryTimings `json:"timings,omitempty"`
 }
 
-// NewQueryStats makes a QueryStats struct with all QueryTimings found in the
-// given TimerGroup.
+// NewQueryStats makes a QueryStats struct with all QueryTimings found in the given TimerGroup.
 func NewQueryStats(tg *QueryTimers) *QueryStats {
+
 	var qt queryTimings
 
+	// 遍历所有定时器，将数据汇总到 qt 中
 	for s, timer := range tg.TimerGroup.timers {
 		switch s {
 		case EvalTotalTime:
@@ -111,7 +121,11 @@ func NewQueryStats(tg *QueryTimers) *QueryStats {
 		}
 	}
 
-	qs := QueryStats{Timings: qt}
+	// 封装 qt 并返回
+	qs := QueryStats{
+		Timings: qt,
+	}
+
 	return &qs
 }
 
@@ -124,32 +138,36 @@ type SpanTimer struct {
 }
 
 func NewSpanTimer(ctx context.Context, operation string, timer *Timer, observers ...prometheus.Observer) (*SpanTimer, context.Context) {
+	// 创建&启动 span
 	span, ctx := opentracing.StartSpanFromContext(ctx, operation)
+	// 启动定时器
 	timer.Start()
-
 	return &SpanTimer{
-		timer:     timer,
-		observers: observers,
-
-		span: span,
+		timer:     timer,		// 定时器
+		observers: observers,	// 监控上报
+		span:      span,		// span
 	}, ctx
 }
 
 func (s *SpanTimer) Finish() {
+	// 停止计时器
 	s.timer.Stop()
+	// 停止 span
 	s.span.Finish()
-
+	// 上报执行时间
 	for _, obs := range s.observers {
 		obs.Observe(s.timer.ElapsedTime().Seconds())
 	}
 }
 
 type QueryTimers struct {
-	*TimerGroup
+	*TimerGroup // map[string]*Timer
 }
 
 func NewQueryTimers() *QueryTimers {
-	return &QueryTimers{NewTimerGroup()}
+	return &QueryTimers{
+		NewTimerGroup(),
+	}
 }
 
 func (qs *QueryTimers) GetSpanTimer(ctx context.Context, qt QueryTiming, observers ...prometheus.Observer) (*SpanTimer, context.Context) {

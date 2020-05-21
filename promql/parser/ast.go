@@ -266,22 +266,22 @@ func (TestStmt) PositionRange() PositionRange {
 	}
 }
 
-func (e *AggregateExpr) 	Type() ValueType  	{ return ValueTypeVector }
-func (e *Call) 				Type() ValueType	{ return e.Func.ReturnType }
-func (e *MatrixSelector) 	Type() ValueType 	{ return ValueTypeMatrix }
-func (e *SubqueryExpr) 		Type() ValueType  	{ return ValueTypeMatrix }
-func (e *NumberLiteral) 	Type() ValueType  	{ return ValueTypeScalar }
-func (e *ParenExpr) 		Type() ValueType  	{ return e.Expr.Type() }
-func (e *StringLiteral) 	Type() ValueType  	{ return ValueTypeString }
-func (e *UnaryExpr) 		Type() ValueType  	{ return e.Expr.Type() }
-func (e *VectorSelector) 	Type() ValueType 	{ return ValueTypeVector }
+func (e *AggregateExpr) 	Type() ValueType  	{ return ValueTypeVector }		// 矢量
+func (e *Call) 				Type() ValueType	{ return e.Func.ReturnType }	// 函数返回值类型
+func (e *MatrixSelector) 	Type() ValueType 	{ return ValueTypeMatrix }		// 矩阵
+func (e *SubqueryExpr) 		Type() ValueType  	{ return ValueTypeMatrix }		// 矩阵
+func (e *NumberLiteral) 	Type() ValueType  	{ return ValueTypeScalar }		// 标量
+func (e *ParenExpr) 		Type() ValueType  	{ return e.Expr.Type() }		// 表达式类型
+func (e *StringLiteral) 	Type() ValueType  	{ return ValueTypeString }		// 字符串
+func (e *UnaryExpr) 		Type() ValueType  	{ return e.Expr.Type() }		// 表达式类型
+func (e *VectorSelector) 	Type() ValueType 	{ return ValueTypeVector }		// 矢量
 func (e *BinaryExpr) 		Type() ValueType 	{
 	// 二元运算的 left 和 right 都是标量，则结果是标量
 	if e.LHS.Type() == ValueTypeScalar && e.RHS.Type() == ValueTypeScalar {
-		return ValueTypeScalar
+		return ValueTypeScalar	// 标量
 	}
 	// 否则，结果是矢量
-	return ValueTypeVector
+	return ValueTypeVector		// 矢量
 }
 
 func (*AggregateExpr) 	expr()  {}
@@ -330,6 +330,9 @@ func (vmc VectorMatchCardinality) String() string {
 //  2. one to many
 // 	3. many to one
 //  4. many to many
+//
+//
+//
 type VectorMatching struct {
 
 	// The cardinality of the two Vectors.
@@ -339,9 +342,7 @@ type VectorMatching struct {
 
 	// MatchingLabels contains the labels which define equality of a pair of elements from the Vectors.
 	//
-	// MatchingLabels 包含了定义一对向量元素的平等的标签。
 	MatchingLabels []string
-
 
 
 	// On includes the given label names from matching, rather than excluding them.
@@ -449,10 +450,6 @@ func Children(node Node) []Node {
 	//
 	// 由于某些原因，使用 switch 的性能明显优于 interface 的性能。
 	//
-
-
-
-
 	switch n := node.(type) {
 
 	case *EvalStmt:
@@ -514,7 +511,7 @@ func Children(node Node) []Node {
 
 // PositionRange describes a position in the input string of the parser.
 //
-// PositionRange 描述的输入字符串的位置。
+// PositionRange 描述在输入字符串的位置。
 //
 type PositionRange struct {
 	Start Pos
@@ -524,6 +521,10 @@ type PositionRange struct {
 
 // mergeRanges is a helper function to merge the PositionRanges of two Nodes.
 // Note that the arguments must be in the same order as they occur in the input string.
+//
+// mergeRanges 是一个帮助函数，用于合并两个节点的 PositionRanges 。
+// 注意，参数的顺序必须与输入字符串中出现的顺序相同。
+//
 func mergeRanges(first Node, last Node) PositionRange {
 	return PositionRange{
 		Start: first.PositionRange().Start,

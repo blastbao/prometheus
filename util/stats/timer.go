@@ -20,13 +20,18 @@ import (
 	"time"
 )
 
+
+
 // A Timer that can be started and stopped and accumulates the total time it
 // was running (the time between Start() and Stop()).
+//
+// 一个可以启动和停止的定时器，可以累积运行的总时间，即在 Start() 和 Stop () 之间的时间。
+//
 type Timer struct {
 	name     fmt.Stringer
 	created  int
 	start    time.Time
-	duration time.Duration
+	duration time.Duration	// 运行在 Start() 和 Stop () 之间的时间
 }
 
 // Start the timer.
@@ -62,27 +67,35 @@ type TimerGroup struct {
 
 // NewTimerGroup constructs a new TimerGroup.
 func NewTimerGroup() *TimerGroup {
-	return &TimerGroup{timers: map[fmt.Stringer]*Timer{}}
+	return &TimerGroup{
+		timers: map[fmt.Stringer]*Timer{},
+	}
 }
 
 // GetTimer gets (and creates, if necessary) the Timer for a given code section.
 func (t *TimerGroup) GetTimer(name fmt.Stringer) *Timer {
+
 	if timer, exists := t.timers[name]; exists {
 		return timer
 	}
+
 	timer := &Timer{
 		name:    name,
 		created: len(t.timers),
 	}
 	t.timers[name] = timer
+
 	return timer
 }
+
 
 // Timers is a slice of Timer pointers that implements Len and Swap from
 // sort.Interface.
 type Timers []*Timer
 
-type byCreationTimeSorter struct{ Timers }
+type byCreationTimeSorter struct{
+	Timers
+}
 
 // Len implements sort.Interface.
 func (t Timers) Len() int {

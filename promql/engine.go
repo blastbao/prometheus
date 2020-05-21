@@ -202,6 +202,7 @@ func (q *query) Cancel() {
 
 // Close implements the Query interface.
 func (q *query) Close() {
+	// 遍历返回结果，逐个回收字节切片
 	for _, s := range q.matrix {
 		putPointSlice(s.Points)
 	}
@@ -268,6 +269,7 @@ type EngineOpts struct {
 // Engine 处理查询的整个生命周期。
 //
 // It is connected to a querier.
+// 它会作为 query 结构体的成员。
 type Engine struct {
 	logger             log.Logger
 	metrics            *engineMetrics
@@ -391,7 +393,8 @@ func (ng *Engine) SetQueryLogger(l QueryLogger) {
 	defer ng.queryLoggerLock.Unlock()
 
 	if ng.queryLogger != nil {
-		// An error closing the old file descriptor should not make reload fail; only log a warning.
+		// An error closing the old file descriptor should not make reload fail;
+		// only log a warning.
 		err := ng.queryLogger.Close()
 		if err != nil {
 			level.Warn(ng.logger).Log("msg", "Error while closing the previous query log file", "err", err)
@@ -486,7 +489,7 @@ func (ng *Engine) newTestQuery(f func(context.Context) error) Query {
 // At this point per query only one EvalStmt is evaluated.
 // Alert and record statements are not handled by the Engine.
 //
-//
+// 调用 execEvalStmt 。
 //
 func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage.Warnings, err error) {
 
@@ -525,6 +528,7 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 				}
 			}
 
+			// 日志打印
 			if err := l.Log(f...); err != nil {
 				ng.metrics.queryLogFailures.Inc()
 				level.Error(ng.logger).Log("msg", "can't log query", "err", err)
@@ -533,10 +537,13 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 		ng.queryLoggerLock.RUnlock()
 	}()
 
+
 	// statistics
 	execSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.ExecTotalTime)
 	defer execSpanTimer.Finish()
+
 	queueSpanTimer, _ := q.stats.GetSpanTimer(ctx, stats.ExecQueueTime, ng.metrics.queryQueueTime)
+
 
 	// Log query in active log.
 	// The active log guarantees that we don't run over MaxConcurrent queries.
@@ -548,20 +555,25 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 		}
 		defer ng.activeQueryTracker.Delete(queryIndex)
 	}
+
 	queueSpanTimer.Finish()
 
 	// Cancel when execution is done or an error was raised.
 	defer q.cancel()
 
+
 	const env = "query execution"
+
 
 	evalSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.EvalTotalTime)
 	defer evalSpanTimer.Finish()
+
 
 	// The base context might already be canceled on the first iteration (e.g. during shutdown).
 	if err := contextDone(ctx, env); err != nil {
 		return nil, nil, err
 	}
+
 
 	switch s := q.Statement().(type) {
 	case *parser.EvalStmt:
@@ -569,6 +581,7 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 	case parser.TestStmt:
 		return nil, nil, s(ctx)
 	}
+
 
 	panic(errors.Errorf("promql.Engine.exec: unhandled statement of type %T", q.Statement()))
 }
@@ -590,7 +603,7 @@ func durationMilliseconds(d time.Duration) int64 {
 
 // execEvalStmt evaluates the expression of an evaluation statement for the given time range.
 //
-// execEvalStmt 执行指定时间范围的表达式查询语句。
+// execEvalStmt 执行指定时间范围的表达式查询语句，先后调用 populateSeries 和 Eval 。
 //
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, storage.Warnings, error) {
 
@@ -628,9 +641,8 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	// This is executed as a range evaluation with one step.
 	//
 	//
-	//
+	// 即时查询。
 	if s.Start == s.End && s.Interval == 0 {
-
 
 		start := timeMilliseconds(s.Start) // time.Time => millisecond
 
@@ -711,7 +723,6 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 		logger:              ng.logger,
 		lookbackDelta:       ng.lookbackDelta,
 	}
-
 
 
 	val, err := evaluator.Eval(s.Expr)
@@ -825,6 +836,10 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 	return s.Start.Add(-maxOffset)
 }
 
+
+// 把相关的时间序列值都 populate 到相关的 node 上面去,即从 storage 把原始数值都查出来
+//     => querier.Select(params, n.LabelMatchers...)
+// 注意，在所有 Expr 中只有 VectorSelector 和 MatrixSelector 能存时间序列值。
 func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s *parser.EvalStmt) (storage.Warnings, error) {
 
 	var (
@@ -984,13 +999,19 @@ func extractFuncFromPath(path []parser.Node) string {
 }
 
 // extractGroupsFromPath parses vector outer function and extracts grouping information if by or without was used.
+//
+// extractGroupsFromPath 解析上层 *AggregateExpr 类型 node ，如果使用了 by 或 without，则提取 grouping 信息。
+//
 func extractGroupsFromPath(p []parser.Node) (bool, []string) {
 
 	if len(p) == 0 {
 		return false, nil
 	}
 
+	// 检查 path 最后的 node
 	switch n := p[len(p)-1].(type) {
+
+	// 若为聚合表达式，返回 by/without 和 grouping 信息
 	case *parser.AggregateExpr:
 		return !n.Without, n.Grouping
 	}
@@ -998,23 +1019,20 @@ func extractGroupsFromPath(p []parser.Node) (bool, []string) {
 	return false, nil
 }
 
+// 检查 expr 类型，若是 MatrixSelector 或 VectorSelector 类型，则通过 e.UnexpandedSeriesSet 取出查询结果，保存到 e.Series 中
 func checkForSeriesSetExpansion(ctx context.Context, expr parser.Expr) {
 	switch e := expr.(type) {
 	case *parser.MatrixSelector:
 		checkForSeriesSetExpansion(ctx, e.VectorSelector)
 	case *parser.VectorSelector:
-
 		if e.Series == nil {
-
 			// 通过迭代器取出查询的时间序列
 			series, err := expandSeriesSet(ctx, e.UnexpandedSeriesSet)
-
 			if err != nil {
 				panic(err)
 			} else {
 				e.Series = series
 			}
-
 		}
 	}
 }
@@ -1102,35 +1120,52 @@ func (ev *evaluator) Eval(expr parser.Expr) (v parser.Value, err error) {
 
 // EvalNodeHelper stores extra information and caches for evaluating a single node across steps.
 //
+// EvalNodeHelper 存储了额外信息和用于跨 steps 评估节点的的缓存数据。
 //
 type EvalNodeHelper struct {
+
+
 
 	// Evaluation timestamp.
 	ts int64
 
+
+
 	// Vector that can be used for output.
 	out Vector
+
+
 
 	// Caches.
 	// dropMetricName and label_*.
 	dmn map[uint64]labels.Labels
 
+
 	// signatureFunc.
 	sigf map[uint64]uint64
+
 
 	// funcHistogramQuantile.
 	signatureToMetricWithBuckets map[uint64]*metricWithBuckets
 
+
+
 	// label_replace.
 	regex *regexp.Regexp
+
+
 
 	// For binary vector matching.
 	rightSigs    map[uint64]Sample
 	matchedSigs  map[uint64]map[uint64]struct{}
 	resultMetric map[uint64]labels.Labels
+
+
 }
 
 // dropMetricName is a cached version of dropMetricName.
+//
+//
 func (enh *EvalNodeHelper) dropMetricName(l labels.Labels) labels.Labels {
 
 	if enh.dmn == nil {
@@ -1507,7 +1542,7 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			vs, ok := e.Args[0].(*parser.VectorSelector)
 			if ok {
 				return ev.rangeEval(func(v []parser.Value, enh *EvalNodeHelper) Vector {
-					return call([]parser.Value{ev.vectorSelector(vs, enh.ts)}, e.Args, enh)
+					return call([]parser.Value{ ev.vectorSelector(vs, enh.ts) }, e.Args, enh)
 				})
 			}
 		}
@@ -1686,6 +1721,8 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 
 				inMatrix[0].Points = points
+
+				// 设置区间起点
 				enh.ts = ts
 
 
@@ -2010,14 +2047,15 @@ func durationToInt64Millis(d time.Duration) int64 {
 // vectorSelector evaluates a *parser.VectorSelector expression.
 func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vector {
 
-
+	// 检查 node 类型，若是 MatrixSelector 或 VectorSelector 类型，
+	// 则通过 node.UnexpandedSeriesSet 取出查询结果，保存到 node.Series 中
 	checkForSeriesSetExpansion(ev.ctx, node)
 
 	var (
 		vec = make(Vector, 0, len(node.Series))
 	)
 
-
+	//
 	it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
 
 
@@ -2331,7 +2369,12 @@ func (ev *evaluator) VectorUnless(lhs, rhs Vector, matching *parser.VectorMatchi
 }
 
 // VectorBinop evaluates a binary operation between two Vectors, excluding set operators.
+//
+//
+//
 func (ev *evaluator) VectorBinop(op parser.ItemType, lhs, rhs Vector, matching *parser.VectorMatching, returnBool bool, enh *EvalNodeHelper) Vector {
+
+
 
 	if matching.Card == parser.CardManyToMany {
 		panic("many-to-many only allowed for set operators")
@@ -2625,6 +2668,7 @@ func scalarBinop(op parser.ItemType, lhs, rhs float64) float64 {
 
 // vectorElemBinop evaluates a binary operation between two Vector elements.
 func vectorElemBinop(op parser.ItemType, lhs, rhs float64) (float64, bool) {
+
 	switch op {
 	case parser.ADD:
 		return lhs + rhs, true
@@ -2957,6 +3001,7 @@ func btos(b bool) float64 {
 
 // shouldDropMetricName returns whether the metric name should be dropped in the result of the op operation.
 //
+//  shouldDropMetricName 返回是否应该从操作结果中移除 "__name__" 标签。
 //
 func shouldDropMetricName(op parser.ItemType) bool {
 	switch op {
@@ -2968,6 +3013,9 @@ func shouldDropMetricName(op parser.ItemType) bool {
 }
 
 // NewOriginContext returns a new context with data about the origin attached.
+//
+// NewOriginContext 返回一个新的 context ，在原始 ctx 上添加原始查询的数据。
+//
 func NewOriginContext(ctx context.Context, data map[string]interface{}) context.Context {
 	return context.WithValue(ctx, queryOrigin{}, data)
 }
@@ -2977,6 +3025,9 @@ func formatDate(t time.Time) string {
 }
 
 // unwrapParenExpr does the AST equivalent of removing parentheses around a expression.
+//
+// unwrapParenExpr 的作用相当于在 AST 中删除了表达式周围的小括号。
+//
 func unwrapParenExpr(e *parser.Expr) {
 	for {
 		if p, ok := (*e).(*parser.ParenExpr); ok {

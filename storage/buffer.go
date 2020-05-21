@@ -22,10 +22,13 @@ import (
 
 
 // BufferedSeriesIterator wraps an iterator with a look-back buffer.
+//
+// BufferedSeriesIterator 把支持 look-back 的 buffer 和迭代器封装到一起。
+//
 type BufferedSeriesIterator struct {
-	it    chunkenc.Iterator
-	buf   *sampleRing
-	delta int64
+	it    chunkenc.Iterator	// 迭代器
+	buf   *sampleRing		// 环形缓冲
+	delta int64				//
 
 	lastTime int64
 	ok       bool
@@ -34,17 +37,21 @@ type BufferedSeriesIterator struct {
 // NewBuffer returns a new iterator that buffers the values within the time range
 // of the current element and the duration of delta before, initialized with an
 // empty iterator. Use Reset() to set an actual iterator to be buffered.
+//
+//
 func NewBuffer(delta int64) *BufferedSeriesIterator {
 	return NewBufferIterator(chunkenc.NewNopIterator(), delta)
 }
+
 
 // NewBufferIterator returns a new iterator that buffers the values within the
 // time range of the current element and the duration of delta before.
 //
 func NewBufferIterator(it chunkenc.Iterator, delta int64) *BufferedSeriesIterator {
 
+
 	bit := &BufferedSeriesIterator{
-		buf:   newSampleRing(delta, 16),
+		buf:   newSampleRing(delta, 16), // 环形缓冲大小默认为 16
 		delta: delta,
 	}
 
@@ -59,8 +66,8 @@ func NewBufferIterator(it chunkenc.Iterator, delta int64) *BufferedSeriesIterato
 //
 func (b *BufferedSeriesIterator) Reset(it chunkenc.Iterator) {
 	b.it = it
-	b.lastTime = math.MinInt64
-	b.ok = true
+	b.lastTime = math.MinInt64 	// int64 最小值
+	b.ok = true					//
 	b.buf.reset()
 	b.buf.delta = b.delta
 	it.Next()
@@ -145,9 +152,11 @@ func (b *BufferedSeriesIterator) Err() error {
 	return b.it.Err()
 }
 
+
+// 样本
 type sample struct {
-	t int64
-	v float64
+	t int64		// 时间戳，ms
+	v float64	// 值
 }
 
 func (s sample) T() int64 {
@@ -158,13 +167,16 @@ func (s sample) V() float64 {
 	return s.v
 }
 
+
+
 type sampleRing struct {
+
 	delta int64
 
-	buf []sample // lookback buffer
-	i   int      // position of most recent element in ring buffer
-	f   int      // position of first element in ring buffer
-	l   int      // number of elements in buffer
+	buf  []sample // lookback buffer
+	tail int      // tail 		// position of most recent element in ring buffer
+	head int      // head 		// position of first element in ring buffer
+	l    int      // count 		// number of elements in buffer
 
 	it sampleRingIterator
 }
@@ -178,8 +190,8 @@ func newSampleRing(delta int64, sz int) *sampleRing {
 
 func (r *sampleRing) reset() {
 	r.l = 0
-	r.i = -1
-	r.f = 0
+	r.tail = -1
+	r.head = 0
 }
 
 // Returns the current iterator. Invalidates previously returned iterators.
@@ -212,7 +224,7 @@ func (it *sampleRingIterator) At() (int64, float64) {
 }
 
 func (r *sampleRing) at(i int) (int64, float64) {
-	j := (r.f + i) % len(r.buf)
+	j := (r.head + i) % len(r.buf)
 	s := r.buf[j]
 	return s.t, s.v
 }
@@ -223,29 +235,29 @@ func (r *sampleRing) add(t int64, v float64) {
 	// Grow the ring buffer if it fits no more elements.
 	if l == r.l {
 		buf := make([]sample, 2*l)
-		copy(buf[l+r.f:], r.buf[r.f:])
-		copy(buf, r.buf[:r.f])
+		copy(buf[l+r.head:], r.buf[r.head:])
+		copy(buf, r.buf[:r.head])
 
 		r.buf = buf
-		r.i = r.f
-		r.f += l
+		r.tail = r.head
+		r.head += l
 		l = 2 * l
 	} else {
-		r.i++
-		if r.i >= l {
-			r.i -= l
+		r.tail++
+		if r.tail >= l {
+			r.tail -= l
 		}
 	}
 
-	r.buf[r.i] = sample{t: t, v: v}
+	r.buf[r.tail] = sample{t: t, v: v}
 	r.l++
 
 	// Free head of the buffer of samples that just fell out of the range.
 	tmin := t - r.delta
-	for r.buf[r.f].t < tmin {
-		r.f++
-		if r.f >= l {
-			r.f -= l
+	for r.buf[r.head].t < tmin {
+		r.head++
+		if r.head >= l {
+			r.head -= l
 		}
 		r.l--
 	}
@@ -265,11 +277,11 @@ func (r *sampleRing) reduceDelta(delta int64) bool {
 
 	// Free head of the buffer of samples that just fell out of the range.
 	l := len(r.buf)
-	tmin := r.buf[r.i].t - delta
-	for r.buf[r.f].t < tmin {
-		r.f++
-		if r.f >= l {
-			r.f -= l
+	tmin := r.buf[r.tail].t - delta
+	for r.buf[r.head].t < tmin {
+		r.head++
+		if r.head >= l {
+			r.head -= l
 		}
 		r.l--
 	}
@@ -288,14 +300,14 @@ func (r *sampleRing) nthLast(n int) (int64, float64, bool) {
 func (r *sampleRing) samples() []sample {
 	res := make([]sample, r.l)
 
-	var k = r.f + r.l
+	var k = r.head + r.l
 	var j int
 	if k > len(r.buf) {
 		k = len(r.buf)
-		j = r.l - k + r.f
+		j = r.l - k + r.head
 	}
 
-	n := copy(res, r.buf[r.f:k])
+	n := copy(res, r.buf[r.head:k])
 	copy(res[n:], r.buf[:j])
 
 	return res
