@@ -260,9 +260,8 @@ type EngineOpts struct {
 	Timeout            time.Duration
 	ActiveQueryTracker *ActiveQueryTracker
 
-
 	// LookbackDelta determines the time since the last sample after which a time series is considered stale.
-	LookbackDelta time.Duration
+	LookbackDelta time.Duration	// default 5m
 }
 
 // Engine handles the lifetime of queries from beginning to end.
@@ -278,7 +277,7 @@ type Engine struct {
 	activeQueryTracker *ActiveQueryTracker
 	queryLogger        QueryLogger
 	queryLoggerLock    sync.RWMutex
-	lookbackDelta      time.Duration
+	lookbackDelta      time.Duration	// default 5m
 }
 
 // NewEngine returns a new engine.
@@ -393,8 +392,7 @@ func (ng *Engine) SetQueryLogger(l QueryLogger) {
 	defer ng.queryLoggerLock.Unlock()
 
 	if ng.queryLogger != nil {
-		// An error closing the old file descriptor should not make reload fail;
-		// only log a warning.
+		// An error closing the old file descriptor should not make reload fail; only log a warning.
 		err := ng.queryLogger.Close()
 		if err != nil {
 			level.Warn(ng.logger).Log("msg", "Error while closing the previous query log file", "err", err)
@@ -541,9 +539,7 @@ func (ng *Engine) exec(ctx context.Context, q *query) (v parser.Value, w storage
 	// statistics
 	execSpanTimer, ctx := q.stats.GetSpanTimer(ctx, stats.ExecTotalTime)
 	defer execSpanTimer.Finish()
-
 	queueSpanTimer, _ := q.stats.GetSpanTimer(ctx, stats.ExecQueueTime, ng.metrics.queryQueueTime)
-
 
 	// Log query in active log.
 	// The active log guarantees that we don't run over MaxConcurrent queries.
@@ -1073,15 +1069,15 @@ type evaluator struct {
 
 	ctx context.Context
 
-	startTimestamp int64 	// Start time in milliseconds.
-	endTimestamp   int64 	// End time in milliseconds.
-	interval       int64 	// Interval in milliseconds.
+	startTimestamp int64 				// Start time in milliseconds.
+	endTimestamp   int64 				// End time in milliseconds.
+	interval       int64 				// Interval in milliseconds.
 
-	maxSamples          int
-	currentSamples      int
-	defaultEvalInterval int64
-	logger              log.Logger
-	lookbackDelta       time.Duration
+	maxSamples          int				//
+	currentSamples      int				//
+	defaultEvalInterval int64			//
+	logger              log.Logger		//
+	lookbackDelta       time.Duration 	// default 5m
 }
 
 
@@ -2063,6 +2059,7 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 
 		it.Reset(s.Iterator())
 
+
 		t, v, ok := ev.vectorSelectorSingle(it, node, ts)
 		if ok {
 
@@ -2091,29 +2088,37 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 // vectorSelectorSingle evaluates a instant vector for the iterator of one time series.
 func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, node *parser.VectorSelector, ts int64) (int64, float64, bool) {
 
-	refTime := ts - durationMilliseconds(node.Offset)
+
+	startTs := ts - durationMilliseconds(node.Offset)
+
+
 
 	var t int64
 	var v float64
 
-	ok := it.Seek(refTime)
+
+	// 把 [ startTs - delta, startTs ] 的数据读到 it.buf 中
+	ok := it.Seek(startTs)
 	if !ok {
 		if it.Err() != nil {
 			ev.error(it.Err())
 		}
 	}
 
+	// 若有数据可读，则取出当前样本 sample < ts, value >
 	if ok {
 		t, v = it.Values()
 	}
 
-	if !ok || t > refTime {
+
+	if !ok || t > startTs {
 		t, v, ok = it.PeekBack(1)
-		if !ok || t < refTime-durationMilliseconds(ev.lookbackDelta) {
+		if !ok || t < startTs - durationMilliseconds(ev.lookbackDelta) {
 			return 0, 0, false
 		}
 	}
 
+	// 检查是否是被标记删除的数据
 	if value.IsStaleNaN(v) {
 		return 0, 0, false
 	}
@@ -2136,6 +2141,8 @@ func putPointSlice(p []Point) {
 	pointPool.Put(p[:0])
 }
 
+
+
 // matrixSelector evaluates a *parser.MatrixSelector expression.
 func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 
@@ -2151,7 +2158,6 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 		mint   = maxt - durationMilliseconds(node.Range)
 		matrix = make(Matrix, 0, len(vs.Series))
 	)
-
 
 	it := storage.NewBuffer(durationMilliseconds(node.Range))
 
@@ -2200,6 +2206,7 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 
 	// 如果 out 中有 Point 位于 [mint, maxt] 区间，需要移除 out 中那些 < mint 的 Points 。
 	if len(out) > 0 && out[len(out)-1].T >= mint {
+
 		// There is an overlap between previous and current ranges, retain common points.
 		//
 		// In most such cases:
@@ -2208,26 +2215,27 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		//
 		// so a linear search will be as fast as a binary search.
 
-		//（1）确定 out 中 < mint 的样本数
+		//（1）确定 out 中 T < mint 的样本数
 		var drop int
 		for drop = 0; out[drop].T < mint; drop++ {
 		}
 
-		//（2）从 out 中移除这些样本，使 out 中只包含 >= mint 的样本
+		//（2）从 out 中移除这些样本，使 out 中只包含 T >= mint 的样本
 		copy(out, out[drop:])
 		out = out[:len(out)-drop]
 
 
 		// Only append points with timestamps after the last timestamp we have.
 		//
-		//（3）更新 mint 的值
+		//（3）更新 mint 的值，其值为 out 中最后的样本的 T
 		mint = out[len(out)-1].T + 1
 
 	} else {
 		out = out[:0]
 	}
 
-	// 查找 >= maxt 的样本点
+
+	// 查找 T >= maxt 的样本点
 	ok := it.Seek(maxt)
 	if !ok {
 		if it.Err() != nil {
