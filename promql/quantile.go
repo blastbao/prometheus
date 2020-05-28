@@ -68,12 +68,18 @@ type metricWithBuckets struct {
 //
 // If q>1, +Inf is returned.
 func bucketQuantile(q float64, buckets buckets) float64 {
+
+	// 负无穷
 	if q < 0 {
 		return math.Inf(-1)
 	}
+
+	// 正无穷
 	if q > 1 {
 		return math.Inf(+1)
 	}
+
+	// 排序后，如果最后一个元素不是正无穷，返回 N/A
 	sort.Sort(buckets)
 	if !math.IsInf(buckets[len(buckets)-1].upperBound, +1) {
 		return math.NaN()
@@ -95,11 +101,16 @@ func bucketQuantile(q float64, buckets buckets) float64 {
 	if b == 0 && buckets[0].upperBound <= 0 {
 		return buckets[0].upperBound
 	}
+
+
+	// 查找 q 前后 buckets ，根据前后 bucket 来线性内插，相比 rate 中比较复杂的线性外插，内插要简单一些。
+
 	var (
 		bucketStart float64
 		bucketEnd   = buckets[b].upperBound
 		count       = buckets[b].count
 	)
+
 	if b > 0 {
 		bucketStart = buckets[b-1].upperBound
 		count -= buckets[b-1].count

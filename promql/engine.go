@@ -388,6 +388,7 @@ func NewEngine(opts EngineOpts) *Engine {
 
 // SetQueryLogger sets the query logger.
 func (ng *Engine) SetQueryLogger(l QueryLogger) {
+
 	ng.queryLoggerLock.Lock()
 	defer ng.queryLoggerLock.Unlock()
 
@@ -599,15 +600,21 @@ func durationMilliseconds(d time.Duration) int64 {
 
 // execEvalStmt evaluates the expression of an evaluation statement for the given time range.
 //
-// execEvalStmt 执行指定时间范围的表达式查询语句，先后调用 populateSeries 和 Eval 。
+// execEvalStmt 执行表达式 s 的查询，先后调用 populateSeries 和 Eval 。
+//
+//
+//
+//
 //
 func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.EvalStmt) (parser.Value, storage.Warnings, error) {
 
+	// 准备执行阶段 —— 开始
 	prepareSpanTimer, ctxPrepare := query.stats.GetSpanTimer(ctx, stats.QueryPreparationTime, ng.metrics.queryPrepareTime)
 
-	// ???
-	mint := ng.findMinTime(s)
+	// 根据表达式 s 的 offset 和 s.Start 确定新的查询时间区间起点 mint，从而将查询区间由 [s.Start, s.End] 修正为 [mint, s.End]
+ 	mint := ng.findMinTime(s)
 
+	// 根据新区间 [mint, s.End] 构造 storage 查询器 querier
 	querier, err := query.queryable.Querier(ctxPrepare, timestamp.FromTime(mint), timestamp.FromTime(s.End))
 	if err != nil {
 		prepareSpanTimer.Finish()
@@ -615,20 +622,17 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	}
 	defer querier.Close()
 
-
-	//
+	// 通过 querier 把数据从 storage 中读取出来存储到 s 的各个子节点上（保存到 UnexpandedSeriesSet 字段上）。
 	warnings, err := ng.populateSeries(ctxPrepare, querier, s)
 
-
+	// 准备执行阶段 —— 结束
 	prepareSpanTimer.Finish()
-
 
 	if err != nil {
 		return nil, warnings, err
 	}
 
-
-
+	// 开始执行阶段 —— 开始
 	evalSpanTimer, ctxInnerEval := query.stats.GetSpanTimer(ctx, stats.InnerEvalTime, ng.metrics.queryInnerEval)
 
 
@@ -636,8 +640,8 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 	//
 	// This is executed as a range evaluation with one step.
 	//
-	//
 	// 即时查询。
+
 	if s.Start == s.End && s.Interval == 0 {
 
 		start := timeMilliseconds(s.Start) // time.Time => millisecond
@@ -709,6 +713,9 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 
 
 	// Range evaluation.
+	//
+	// 区间查询。
+
 	evaluator := &evaluator{
 		startTimestamp:      timeMilliseconds(s.Start),
 		endTimestamp:        timeMilliseconds(s.End),
@@ -720,30 +727,29 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 		lookbackDelta:       ng.lookbackDelta,
 	}
 
-
 	val, err := evaluator.Eval(s.Expr)
 	if err != nil {
 		return nil, warnings, err
 	}
 
+	// 开始执行阶段 —— 结束
 	evalSpanTimer.Finish()
 
+
+	// 结果处理
 	mat, ok := val.(Matrix)
 	if !ok {
 		panic(errors.Errorf("promql.Engine.exec: invalid expression type %q", val.Type()))
 	}
 
-
 	query.matrix = mat
-
 	if err := contextDone(ctx, "expression evaluation"); err != nil {
 		return nil, warnings, err
 	}
 
-
-
 	// TODO(fabxc): where to ensure metric labels are a copy from the storage internals.
 	sortSpanTimer, _ := query.stats.GetSpanTimer(ctx, stats.ResultSortTime, ng.metrics.queryResultSort)
+	// 结果排序（快排）
 	sort.Sort(mat)
 	sortSpanTimer.Finish()
 
@@ -752,13 +758,14 @@ func (ng *Engine) execEvalStmt(ctx context.Context, query *query, s *parser.Eval
 
 // cumulativeSubqueryOffset returns the sum of range and offset of all subqueries in the path.
 //
-// 确保最终的 timeRange 能够覆盖整个搜索路径的所有上层子查询。
+// 个人理解：
+// 	如果上层父查询指定了 offset 和 range，那么对应的查询偏移应该是 offset + range，也即查询起点是 now() - (offset+range) 。
+// 	如果下层子查询也指定了 offset 和 range，那么它应该基于父查询的起点，继续增加偏移量，如此递归，不断累加，最终会算出一个累加后的最大偏移量。
+
 func (ng *Engine) cumulativeSubqueryOffset(path []parser.Node) time.Duration {
 
 	var subqOffset time.Duration
 
-	// 遍历搜索路径上所以的上层子查询，每个子查询有独立的 timeRange 和 timeOffset ，
-	// 这里累加所有子查询的  timeRange 和 timeOffset 。
 	for _, node := range path {
 		switch n := node.(type) {
 		case *parser.SubqueryExpr:
@@ -773,8 +780,10 @@ func (ng *Engine) cumulativeSubqueryOffset(path []parser.Node) time.Duration {
 
 
 
-
-
+// 个人理解：
+//
+// 如果上层父查询指定了 offset 和 range，那么对应的查询偏移应该是 offset + range，也即查询起点是 now() - (offset+range) 。
+// 如果下层子查询也指定了 offset 和 range，那么它应该基于父查询的起点，继续增加偏移量，如此递归，不断累加，最终会算出一个累加后的最大偏移量。
 func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 
 
@@ -789,11 +798,8 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 		// f(node, path) error
 		func(node parser.Node, path []parser.Node) error {
 
-
-			//
+			// 计算 root => node 的 path 上，所有子查询的 range + offset 的累加值
 			subqOffset := ng.cumulativeSubqueryOffset(path)
-
-
 
 
 			switch n := node.(type) {
@@ -801,13 +807,15 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 			// foo{bar="baz"}
 			case *parser.VectorSelector:
 
+
+				// 更新最大查询偏移
 				if maxOffset < ng.lookbackDelta + subqOffset {
 					maxOffset = ng.lookbackDelta + subqOffset
 				}
 
 				m := n.Offset + ng.lookbackDelta + subqOffset
 
-				if m > maxOffset {
+				if maxOffset < m {
 					maxOffset = m
 				}
 
@@ -820,7 +828,7 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 
 				m := n.VectorSelector.(*parser.VectorSelector).Offset + n.Range + subqOffset
 
-				if m > maxOffset {
+				if maxOffset < m {
 					maxOffset = m
 				}
 			}
@@ -829,6 +837,7 @@ func (ng *Engine) findMinTime(s *parser.EvalStmt) time.Time {
 		},
 	)
 
+	// 计算出整个查询路径的最大偏移量之后，在 start 的基础上，减去这个偏移，即为新的查询起点。
 	return s.Start.Add(-maxOffset)
 }
 
@@ -843,9 +852,6 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 		// Whenever a MatrixSelector is evaluated, evalRange is set to the corresponding range.
 		// The evaluation of the VectorSelector inside then evaluates the given range and unsets the variable.
 		//
-		// 当执行 MatrixSelector 时，evaluationRange 设置为相应的时间范围。
-		// 当执行 MatrixSelector 内含的 VectorSelector 时，这个时间范围被忽略？
-
 		evalRange time.Duration
 		warnings  storage.Warnings
 		err       error
@@ -899,6 +905,9 @@ func (ng *Engine) populateSeries(ctx context.Context, querier storage.Querier, s
 
 			// foo{bar="baz"}
 			case *parser.VectorSelector:
+
+
+
 
 				if evalRange == 0 {
 
@@ -1015,7 +1024,10 @@ func extractGroupsFromPath(p []parser.Node) (bool, []string) {
 	return false, nil
 }
 
-// 检查 expr 类型，若是 MatrixSelector 或 VectorSelector 类型，则通过 e.UnexpandedSeriesSet 取出查询结果，保存到 e.Series 中
+// 检查 expr 类型，若是 MatrixSelector 或 VectorSelector 类型，
+// 则通过 e.UnexpandedSeriesSet 取出查询结果，这个结果是在 Engine.populateSeries() 中填入的，
+// 取出查询结果后转存到 e.Series 中
+
 func checkForSeriesSetExpansion(ctx context.Context, expr parser.Expr) {
 	switch e := expr.(type) {
 	case *parser.MatrixSelector:
@@ -1133,7 +1145,10 @@ type EvalNodeHelper struct {
 
 
 	// Caches.
+	//
 	// dropMetricName and label_*.
+	//
+	//
 	dmn map[uint64]labels.Labels
 
 
@@ -1161,18 +1176,24 @@ type EvalNodeHelper struct {
 
 // dropMetricName is a cached version of dropMetricName.
 //
-//
+// 移除 l 中的 "__name__" 标签
 func (enh *EvalNodeHelper) dropMetricName(l labels.Labels) labels.Labels {
 
+	// 缓存结构为空则初始化
 	if enh.dmn == nil {
 		enh.dmn = make(map[uint64]labels.Labels, len(enh.out))
 	}
 
+	// 如果 l 已经缓存，就直接返回缓存数据
 	h := l.Hash()
 	ret, ok := enh.dmn[h]
 	if ok {
 		return ret
 	}
+
+	// 否则:
+	// (1) 移除 l 中的 "__name__" 标签
+	// (2) 缓存 l
 	ret = dropMetricName(l)
 	enh.dmn[h] = ret
 	return ret
@@ -1192,6 +1213,7 @@ func (enh *EvalNodeHelper) signatureFunc(on bool, names ...string) func(labels.L
 	f := signatureFunc(on, names...)
 
 	return func(l labels.Labels) uint64 {
+
 		h := l.Hash()
 		ret, ok := enh.sigf[h]
 		if ok {
@@ -1226,24 +1248,32 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 
 	// 遍历表达式列表，逐个执行，执行结果保存在 matrixes 中。
 	for i, expr := range exprs {
+
 		// Functions will take string arguments from the expressions, not the values.
+		//
+		//
 		if expr != nil && expr.Type() != parser.ValueTypeString {
 
 			// ev.currentSamples will be updated to the correct value within the ev.eval call.
+			//
 			// ev.currentSamples 将在 ev.eval 调用中被更新为正确的值。
+			//
 			// 调用 ev.eval(expr) 执行表达式 expr ，并加结果存储到 matrixes[i] 上。
 			matrixes[i] = ev.eval(expr).(Matrix)
 
 			// Keep a copy of the original point slices so that they can be returned to the pool.
+			//
 			// 把 matrixes[i] 保存到 origMatrixes[i] 上，因为其后面会被修改。
+			//
 			origMatrixes[i] = make(Matrix, len(matrixes[i]))
 			copy(origMatrixes[i], matrixes[i])
 		}
 
 		// 至此，则当前表达式满足 "expr == nil" 或 "expr.Type() == parser.ValueTypeString"：
 		//	（1）如果 expr == nil，无需处理；
-		//	（2）如果 expr.Type() == parser.ValueTypeString，则 expr 为参数。
+		//	（2）如果 expr.Type() == parser.ValueTypeString，则 expr 为参数，也不需处理。
 	}
+
 
 	vectors := make([]Vector, len(exprs))    // Input vectors for the function.
 	args := make([]parser.Value, len(exprs)) // Argument to function.
@@ -1265,6 +1295,7 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 
 	// 保存 hash(sample.labels) => series 的映射，所以 biggestLen 是标签集合的最大数目。
 	seriess := make(map[uint64]Series, biggestLen) // Output series by series hash.
+
 
 	// 逐个时间区间 [ ts, ts + interval ] 进行处理：
 	//
@@ -1325,9 +1356,6 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 			//
 			args[i] = vectors[i]
 		}
-
-
-
 
 
 		// Make the function call.
@@ -1427,7 +1455,6 @@ func (ev *evaluator) rangeEval(f func([]parser.Value, *EvalNodeHelper) Vector, e
 		}
 	}
 
-
 	// Assemble the output matrix.
 	// By the time we get here we know we don't have too many samples.
 	//
@@ -1478,18 +1505,16 @@ func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelec
 // eval evaluates the given expression as the given AST expression node requires.
 func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
+
+
 	// This is the top-level evaluation method.
 	// Thus, we check for timeout/cancellation here.
 	if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
 		ev.error(err)
 	}
 
-	//
+	// 将查询区间按 interval 分组，总的组数为 numSteps
 	numSteps := int((ev.endTimestamp-ev.startTimestamp)/ev.interval) + 1
-
-
-
-
 
 
 	switch e := expr.(type) {
@@ -1684,7 +1709,7 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 				// Set the non-matrix arguments.
 				// They are scalar, so it is safe to use the step number when looking up the argument, as there will be no gaps.
 				//
-				// 设置非矩阵参数。
+				// 设置 non-matrix 参数。
 				// 它们是标量的，所以在查询参数时使用步数是安全的，因为不会有空隙。
 
 
@@ -1706,6 +1731,8 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 				// 查询时间区间 [mint, maxt]
 				maxt := ts - offset
 				mint := maxt - selRange
+
+
 
 				// Evaluate the matrix selector for this series for this step.
 				//
@@ -1943,28 +1970,35 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 	case *parser.VectorSelector:
 
-
-		//
+		// 将原始时序数据保存到 e.Series 中
 		checkForSeriesSetExpansion(ev.ctx, e)
 
+		// 为每个时序数据保存处理结果
 		mat := make(Matrix, 0, len(e.Series))
 
-
+		// 创建一个具有 5m 环形缓存的迭代器
 		it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
 
-
-
+		// e.Series 中保存了原始时序数据集，逐个处理
 		for i, s := range e.Series {
 
+			// 设置迭代器
 			it.Reset(s.Iterator())
 
+			// 保存当前时序数据的处理结果
 			ss := Series{
 				Metric: e.Series[i].Labels(),
-				Points: getPointSlice(numSteps),
+				Points: getPointSlice(numSteps), // 分配 ss.Points
 			}
 
+			// 从每个子区间 [ts, ts+interval] 中选择一个合适的样本点，插入到 ss.Points 中。
 			for ts := ev.startTimestamp; ts <= ev.endTimestamp; ts += ev.interval {
+
+
+				// vectorSelectorSingle() 返回 it 中首个 "时间戳 >= (ts - e.Offset)" 的样本点，作为当前区间的代表点。
 				_, v, ok := ev.vectorSelectorSingle(it, e, ts)
+
+				// 若存在，则用值 v 和 ts 构造 Point 插入到结果集 ss.Points 中
 				if ok {
 					if ev.currentSamples < ev.maxSamples {
 						ss.Points = append(ss.Points, Point{V: v, T: ts})
@@ -1975,10 +2009,11 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 				}
 			}
 
+			// 把这组代表点作为当前时序数据 s 的处理结果，存储到 mat 中
 			if len(ss.Points) > 0 {
 				mat = append(mat, ss)
 			} else {
-				putPointSlice(ss.Points)
+				putPointSlice(ss.Points) 	// 回收 ss.Points
 			}
 
 		}
@@ -1987,9 +2022,11 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 	case *parser.MatrixSelector:
 
+
 		if ev.startTimestamp != ev.endTimestamp {
 			panic(errors.New("cannot do range evaluation of matrix selector"))
 		}
+
 		return ev.matrixSelector(e)
 
 
@@ -2047,22 +2084,27 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 	// 则通过 node.UnexpandedSeriesSet 取出查询结果，保存到 node.Series 中
 	checkForSeriesSetExpansion(ev.ctx, node)
 
+
 	var (
 		vec = make(Vector, 0, len(node.Series))
 	)
 
-	//
+
+	// 创建一个具有 5m 环形缓存的迭代器
 	it := storage.NewBuffer(durationMilliseconds(ev.lookbackDelta))
 
 
+	// 遍历所有查询返回的时序数据
 	for i, s := range node.Series {
 
+		// 设置迭代器
 		it.Reset(s.Iterator())
 
-
+		// 返回时间戳 >= ts 的样本点 sample(ts, value)
 		t, v, ok := ev.vectorSelectorSingle(it, node, ts)
-		if ok {
 
+		if ok {
+			// 将 sample 添加到 vec 中
 			vec = append(vec,
 				Sample{
 					Metric: node.Series[i].Labels(),
@@ -2072,9 +2114,7 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 							},
 				},
 			)
-
 			ev.currentSamples++
-
 		}
 
 		if ev.currentSamples >= ev.maxSamples {
@@ -2086,18 +2126,20 @@ func (ev *evaluator) vectorSelector(node *parser.VectorSelector, ts int64) Vecto
 }
 
 // vectorSelectorSingle evaluates a instant vector for the iterator of one time series.
+//
+// ts 代表查询区间 range 的起点，node.Offset 代表查询时间偏移，所以真实时间起点应该是 ts - node.Offset
+//
+// vectorSelectorSingle() 返回 it 中第一个 时间戳 >= ts - node.Offset 的样本点。
+//
 func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, node *parser.VectorSelector, ts int64) (int64, float64, bool) {
 
-
 	startTs := ts - durationMilliseconds(node.Offset)
-
-
 
 	var t int64
 	var v float64
 
-
-	// 把 [ startTs - delta, startTs ] 的数据读到 it.buf 中
+	// 把 [ startTs - delta, startTs ] 的数据读到 it.buf 中，delta 是 it 环形缓冲的大小，默认 5m。
+	// 然后把迭代器的指针指向首个时间戳大于等于 startTs 的元素。
 	ok := it.Seek(startTs)
 	if !ok {
 		if it.Err() != nil {
@@ -2105,11 +2147,10 @@ func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, no
 		}
 	}
 
-	// 若有数据可读，则取出当前样本 sample < ts, value >
+	// 若有数据可读，则取出当前样本 sample(ts, value)
 	if ok {
 		t, v = it.Values()
 	}
-
 
 	if !ok || t > startTs {
 		t, v, ok = it.PeekBack(1)
@@ -2123,6 +2164,7 @@ func (ev *evaluator) vectorSelectorSingle(it *storage.BufferedSeriesIterator, no
 		return 0, 0, false
 	}
 
+	// 返回当前样本
 	return t, v, true
 }
 
@@ -2147,36 +2189,51 @@ func putPointSlice(p []Point) {
 func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 
 
+
+	// 将原始时序数据保存到 vs.Series 中
 	checkForSeriesSetExpansion(ev.ctx, node)
-
-
 	vs := node.VectorSelector.(*parser.VectorSelector)
 
 	var (
+
+		// 时间偏移量（正或负）
 		offset = durationMilliseconds(vs.Offset)
+
+		// 根据 startTimestamp 和 offset 确定查询时间区间的右边界
 		maxt   = ev.startTimestamp - offset
+
+		// 根据查询时间区间右边界 maxt 和 range 确定左边界 mint
 		mint   = maxt - durationMilliseconds(node.Range)
+
+		// 用于保存结果
 		matrix = make(Matrix, 0, len(vs.Series))
 	)
 
+
+	// 创建一个具有 node.Range 大小环形缓存的迭代器。
+	//
+	// 这里参数是 node.Range 而不是默认的 5m ，是因为这里需要按区间 [mint, maxt] 来查询，
+	// 区间大小为 maxt - mint == node.Range ， 当 it.Seek(maxt) 之后，在 it.Buf 中正好
+	// 缓存了整个区间内的数据，只需要读取出来就可以了，详情参考 ev.matrixIterSlice() 内部逻辑。
 	it := storage.NewBuffer(durationMilliseconds(node.Range))
 
-	// VectorSelector 返回的时序数据
-	series := vs.Series
 
-	//
+	// 遍历 VectorSelector 返回的时序数据
+	series := vs.Series
 	for i, s := range series {
 
-		//
 		if err := contextDone(ev.ctx, "expression evaluation"); err != nil {
 			ev.error(err)
 		}
 
+		// 设置迭代器
 		it.Reset(s.Iterator())
 
+		// 构造结果集
 		ss := Series{
 			Metric: series[i].Labels(),
 		}
+
 
 		ss.Points = ev.matrixIterSlice(it, mint, maxt, getPointSlice(16))
 
@@ -2202,10 +2259,17 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 // are populated from the iterator.
 //
 //
+//
+//
+//
+//
+//
 func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, maxt int64, out []Point) []Point {
+
 
 	// 如果 out 中有 Point 位于 [mint, maxt] 区间，需要移除 out 中那些 < mint 的 Points 。
 	if len(out) > 0 && out[len(out)-1].T >= mint {
+
 
 		// There is an overlap between previous and current ranges, retain common points.
 		//
@@ -2231,11 +2295,20 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		mint = out[len(out)-1].T + 1
 
 	} else {
+
 		out = out[:0]
+
 	}
 
 
-	// 查找 T >= maxt 的样本点
+
+	// ********* 主流程 *********
+
+	//
+
+
+	// 查找 it 中首个 T >= maxt 的样本点
+
 	ok := it.Seek(maxt)
 	if !ok {
 		if it.Err() != nil {
@@ -2243,10 +2316,10 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		}
 	}
 
-	// buffer 中保存 < maxt 的样本点
+	// buffer 中保存了 < maxt 的样本点
 	buf := it.Buffer()
 
-	// 遍历这些 < maxt 的样本点，如果其 <= mint ，则添加到 out 中
+	// 遍历这些 < maxt 的样本点，如果遇到 >= mint 的样本点，就添加到 out 中
 	for buf.Next() {
 
 		t, v := buf.At()
@@ -2272,7 +2345,6 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 		}
 
 	}
-
 
 	// The seeked sample might also be in the range.
 
@@ -2639,6 +2711,8 @@ func (ev *evaluator) VectorscalarBinop(op parser.ItemType, lhs Vector, rhs Scala
 	return enh.out
 }
 
+
+// 移除 "__name__" 标签
 func dropMetricName(l labels.Labels) labels.Labels {
 	return labels.NewBuilder(l).Del(labels.MetricName).Labels()
 }
@@ -2828,6 +2902,8 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 				lb.Del(grouping...)
 				lb.Del(labels.MetricName)
 				m = lb.Labels()
+
+
 			// 如果是 by 操作，需要移除 grouping 之外的标签，只保留 grouping 标签。
 			} else {
 				m = make(labels.Labels, 0, len(grouping))
@@ -2942,6 +3018,8 @@ func (ev *evaluator) aggregation(op parser.ItemType, grouping []string, without 
 
 
 	// Construct the result Vector from the aggregated groups.
+	//
+	//
 	for _, aggr := range result {
 
 		switch op {
@@ -3032,9 +3110,10 @@ func formatDate(t time.Time) string {
 	return t.UTC().Format("2006-01-02T15:04:05.000Z07:00")
 }
 
+
 // unwrapParenExpr does the AST equivalent of removing parentheses around a expression.
 //
-// unwrapParenExpr 的作用相当于在 AST 中删除了表达式周围的小括号。
+// unwrapParenExpr 的作用相当于在 AST 中删除了表达式 e 周围的小括号（如果有的话）。
 //
 func unwrapParenExpr(e *parser.Expr) {
 	for {

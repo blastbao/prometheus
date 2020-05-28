@@ -93,7 +93,7 @@ func (b *BufferedSeriesIterator) Buffer() chunkenc.Iterator {
 
 // Seek advances the iterator to the element at time t or greater.
 //
-//
+// Seek() 把迭代器的指针指向首个时间戳大于等于 t 的元素。
 func (b *BufferedSeriesIterator) Seek(t int64) bool {
 
 	// 确定时间区间下界

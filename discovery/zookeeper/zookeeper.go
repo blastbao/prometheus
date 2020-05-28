@@ -126,8 +126,9 @@ func NewServersetDiscovery(conf *ServersetSDConfig, logger log.Logger) (*Discove
 	return NewDiscovery(conf.Servers, time.Duration(conf.Timeout), conf.Paths, logger, parseServersetMember)
 }
 
-// NewDiscovery returns a new discovery along Zookeeper parses with
-// the given parse function.
+
+
+// NewDiscovery returns a new discovery along Zookeeper parses with the given parse function.
 func NewDiscovery(
 	srvs []string,
 	timeout time.Duration,
@@ -135,19 +136,30 @@ func NewDiscovery(
 	logger log.Logger,
 	pf func(data []byte, path string) (model.LabelSet, error),
 ) (*Discovery, error) {
+
+
 	if logger == nil {
 		logger = log.NewNopLogger()
 	}
 
+
+	// 建立连接
 	conn, _, err := zk.Connect(
-		srvs, timeout,
-		func(c *zk.Conn) {
-			c.SetLogger(treecache.NewZookeeperLogger(logger))
-		})
+						srvs,
+						timeout,
+						func(c *zk.Conn) {
+							c.SetLogger(treecache.NewZookeeperLogger(logger))
+						},
+					)
+
 	if err != nil {
 		return nil, err
 	}
+
+
+
 	updates := make(chan treecache.ZookeeperTreeCacheEvent)
+
 	sd := &Discovery{
 		conn:    conn,
 		updates: updates,
@@ -155,29 +167,39 @@ func NewDiscovery(
 		parse:   pf,
 		logger:  logger,
 	}
+
 	for _, path := range paths {
 		pathUpdate := make(chan treecache.ZookeeperTreeCacheEvent)
 		sd.pathUpdates = append(sd.pathUpdates, pathUpdate)
 		sd.treeCaches = append(sd.treeCaches, treecache.NewZookeeperTreeCache(conn, path, pathUpdate, logger))
 	}
+
 	return sd, nil
 }
 
 // Run implements the Discoverer interface.
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
+
+
 	defer func() {
+
 		for _, tc := range d.treeCaches {
 			tc.Stop()
 		}
+
 		for _, pathUpdate := range d.pathUpdates {
 			// Drain event channel in case the treecache leaks goroutines otherwise.
 			for range pathUpdate {
 			}
 		}
+
 		d.conn.Close()
+
 	}()
 
+
 	for _, pathUpdate := range d.pathUpdates {
+
 		go func(update chan treecache.ZookeeperTreeCacheEvent) {
 			for event := range update {
 				select {
@@ -187,16 +209,21 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 				}
 			}
 		}(pathUpdate)
+
 	}
 
+
 	for {
+
 		select {
 		case <-ctx.Done():
 			return
 		case event := <-d.updates:
+
 			tg := &targetgroup.Group{
 				Source: event.Path,
 			}
+
 			if event.Data != nil {
 				labelSet, err := d.parse(*event.Data, event.Path)
 				if err == nil {
@@ -208,11 +235,13 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 			} else {
 				delete(d.sources, event.Path)
 			}
+
 			select {
 			case <-ctx.Done():
 				return
 			case ch <- []*targetgroup.Group{tg}:
 			}
+
 		}
 	}
 }
@@ -238,6 +267,7 @@ type serversetEndpoint struct {
 }
 
 func parseServersetMember(data []byte, path string) (model.LabelSet, error) {
+
 	member := serversetMember{}
 
 	if err := json.Unmarshal(data, &member); err != nil {
@@ -246,21 +276,14 @@ func parseServersetMember(data []byte, path string) (model.LabelSet, error) {
 
 	labels := model.LabelSet{}
 	labels[serversetPathLabel] = model.LabelValue(path)
-	labels[model.AddressLabel] = model.LabelValue(
-		net.JoinHostPort(member.ServiceEndpoint.Host, fmt.Sprintf("%d", member.ServiceEndpoint.Port)))
-
+	labels[model.AddressLabel] = model.LabelValue(net.JoinHostPort(member.ServiceEndpoint.Host, fmt.Sprintf("%d", member.ServiceEndpoint.Port)))
 	labels[serversetEndpointLabelPrefix+"_host"] = model.LabelValue(member.ServiceEndpoint.Host)
 	labels[serversetEndpointLabelPrefix+"_port"] = model.LabelValue(fmt.Sprintf("%d", member.ServiceEndpoint.Port))
-
 	for name, endpoint := range member.AdditionalEndpoints {
 		cleanName := model.LabelName(strutil.SanitizeLabelName(name))
-		labels[serversetEndpointLabelPrefix+"_host_"+cleanName] = model.LabelValue(
-			endpoint.Host)
-		labels[serversetEndpointLabelPrefix+"_port_"+cleanName] = model.LabelValue(
-			fmt.Sprintf("%d", endpoint.Port))
-
+		labels[serversetEndpointLabelPrefix+"_host_"+cleanName] = model.LabelValue(endpoint.Host)
+		labels[serversetEndpointLabelPrefix+"_port_"+cleanName] = model.LabelValue(fmt.Sprintf("%d", endpoint.Port))
 	}
-
 	labels[serversetStatusLabel] = model.LabelValue(member.Status)
 	labels[serversetShardLabel] = model.LabelValue(strconv.Itoa(member.Shard))
 
@@ -280,6 +303,7 @@ type nerveMember struct {
 }
 
 func parseNerveMember(data []byte, path string) (model.LabelSet, error) {
+
 	member := nerveMember{}
 	err := json.Unmarshal(data, &member)
 	if err != nil {
@@ -288,9 +312,7 @@ func parseNerveMember(data []byte, path string) (model.LabelSet, error) {
 
 	labels := model.LabelSet{}
 	labels[nervePathLabel] = model.LabelValue(path)
-	labels[model.AddressLabel] = model.LabelValue(
-		net.JoinHostPort(member.Host, fmt.Sprintf("%d", member.Port)))
-
+	labels[model.AddressLabel] = model.LabelValue(net.JoinHostPort(member.Host, fmt.Sprintf("%d", member.Port)))
 	labels[nerveEndpointLabelPrefix+"_host"] = model.LabelValue(member.Host)
 	labels[nerveEndpointLabelPrefix+"_port"] = model.LabelValue(fmt.Sprintf("%d", member.Port))
 	labels[nerveEndpointLabelPrefix+"_name"] = model.LabelValue(member.Name)

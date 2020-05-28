@@ -56,7 +56,16 @@ func funcTime(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper)
 // It calculates the rate (allowing for counter resets if isCounter is true),
 // extrapolates if the first/last sample is close to the boundary, and returns
 // the result as either per-second (if isRate is true) or overall.
+//
+//
+//
+// 特别提一下此处的两个参数 isCounter 和 isRate，其中 isCounter=true 说明数据需要保证单调递增，
+// 当 Counter 的客户端重启后，数据会归零，出现非单调递增的数据，那么 isCounter 可以控制是否对该数据进行修正；
+// isRate=true 用来对数据做采样范围内的均值，其结果表征当前时间点一秒内的采样值增量（秒级别增量）。
+//
 func extrapolatedRate(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper, isCounter bool, isRate bool) Vector {
+
+
 	ms := args[0].(*parser.MatrixSelector)
 	vs := ms.VectorSelector.(*parser.VectorSelector)
 
@@ -66,62 +75,87 @@ func extrapolatedRate(vals []parser.Value, args parser.Expressions, enh *EvalNod
 		rangeEnd   = enh.ts - durationMilliseconds(vs.Offset)
 	)
 
-	// No sense in trying to compute a rate without at least two points. Drop
-	// this Vector element.
+
+	// No sense in trying to compute a rate without at least two points. Drop this Vector element.
 	if len(samples.Points) < 2 {
 		return enh.out
 	}
+
 	var (
 		counterCorrection float64
 		lastValue         float64
 	)
+
+
 	for _, sample := range samples.Points {
+
+		// 如果是 counter，数据要求满足单调递增，此处计算修正值
 		if isCounter && sample.V < lastValue {
 			counterCorrection += lastValue
 		}
 		lastValue = sample.V
 	}
+
+	// resultValue 是估算后的结果数据，此处为修正后的 "尾 - 头"
 	resultValue := lastValue - samples.Points[0].V + counterCorrection
 
-	// Duration between first/last samples and boundary of range.
-	durationToStart := float64(samples.Points[0].T-rangeStart) / 1000
-	durationToEnd := float64(rangeEnd-samples.Points[len(samples.Points)-1].T) / 1000
 
+	// Duration between first/last samples and boundary of range.
+	//
+	// durationToStart 是 range 内首个采样点距离 range 开头的时间间隔
+	durationToStart := float64(samples.Points[0].T-rangeStart) / 1000
+	// durationToStart 是 range 内最后采样点距离 range 末尾的时间间隔
+	durationToEnd := float64(rangeEnd-samples.Points[len(samples.Points)-1].T) / 1000
+	// sampledInterval 是 range 内首、尾采样点的时间间隔
 	sampledInterval := float64(samples.Points[len(samples.Points)-1].T-samples.Points[0].T) / 1000
+	// averageDurationBetweenSamples 是 range 内的平均采样点时间间隔
 	averageDurationBetweenSamples := sampledInterval / float64(len(samples.Points)-1)
 
+
 	if isCounter && resultValue > 0 && samples.Points[0].V >= 0 {
-		// Counters cannot be negative. If we have any slope at
-		// all (i.e. resultValue went up), we can extrapolate
-		// the zero point of the counter. If the duration to the
-		// zero point is shorter than the durationToStart, we
-		// take the zero point as the start of the series,
-		// thereby avoiding extrapolation to negative counter
-		// values.
+
+		// Counters cannot be negative.
+		// If we have any slope at all (i.e. resultValue went up),
+		// we can extrapolate the zero point of the counter.
+		// If the duration to the zero point is shorter than the durationToStart,
+		// we take the zero point as the start of the series,
+		// thereby avoiding extrapolation to negative counter values.
+
 		durationToZero := sampledInterval * (samples.Points[0].V / resultValue)
+
+		// 如果 range 超过了首尾连线向左延伸的零值，就取零值时间点为新的range开始时间点距离
 		if durationToZero < durationToStart {
 			durationToStart = durationToZero
 		}
 	}
 
+
 	// If the first/last samples are close to the boundaries of the range,
 	// extrapolate the result. This is as we expect that another sample
 	// will exist given the spacing between samples we've seen thus far,
 	// with an allowance for noise.
+	//
 	extrapolationThreshold := averageDurationBetweenSamples * 1.1
+	// extrapolateToInterval 是用来估计目标点值的横轴长度，下面会据此适当延伸采样点之间的范围
 	extrapolateToInterval := sampledInterval
+
 
 	if durationToStart < extrapolationThreshold {
 		extrapolateToInterval += durationToStart
 	} else {
 		extrapolateToInterval += averageDurationBetweenSamples / 2
 	}
+
 	if durationToEnd < extrapolationThreshold {
 		extrapolateToInterval += durationToEnd
 	} else {
 		extrapolateToInterval += averageDurationBetweenSamples / 2
 	}
+
+	// 最终根据线性外插求得当前时间点的估算值
 	resultValue = resultValue * (extrapolateToInterval / sampledInterval)
+
+	// 如果是 rate 就还需要将该估算值用采样点包含的秒数平均
 	if isRate {
 		resultValue = resultValue / ms.Range.Seconds()
 	}
@@ -523,16 +557,13 @@ func funcAbsentOverTime(vals []parser.Value, args parser.Expressions, enh *EvalN
 
 
 func simpleFunc(vals []parser.Value, enh *EvalNodeHelper, f func(float64) float64) Vector {
-
-	for _, el := range vals[0].(Vector) {
-
+	for _, sample := range vals[0].(Vector) {
+		// 将数据转换后存储到 enh.out 中
 		enh.out = append(enh.out, Sample{
-			Metric: enh.dropMetricName(el.Metric),
-			Point:  Point{V: f(el.V)},
+			Metric: enh.dropMetricName(sample.Metric),	// 移除 sample.Metric 中的 "__name__" 标签
+			Point:  Point{V: f(sample.V)},				// 取出 sample.V 样本值，调用 f() 处理下
 		})
-
 	}
-
 	return enh.out
 }
 
