@@ -1503,6 +1503,9 @@ func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelec
 }
 
 // eval evaluates the given expression as the given AST expression node requires.
+//
+//
+// 
 func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 
@@ -2022,7 +2025,6 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 	case *parser.MatrixSelector:
 
-
 		if ev.startTimestamp != ev.endTimestamp {
 			panic(errors.New("cannot do range evaluation of matrix selector"))
 		}
@@ -2188,8 +2190,6 @@ func putPointSlice(p []Point) {
 // matrixSelector evaluates a *parser.MatrixSelector expression.
 func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 
-
-
 	// 将原始时序数据保存到 vs.Series 中
 	checkForSeriesSetExpansion(ev.ctx, node)
 	vs := node.VectorSelector.(*parser.VectorSelector)
@@ -2209,16 +2209,14 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 		matrix = make(Matrix, 0, len(vs.Series))
 	)
 
-
 	// 创建一个具有 node.Range 大小环形缓存的迭代器。
 	//
 	// 这里参数是 node.Range 而不是默认的 5m ，是因为这里需要按区间 [mint, maxt] 来查询，
 	// 区间大小为 maxt - mint == node.Range ， 当 it.Seek(maxt) 之后，在 it.Buf 中正好
-	// 缓存了整个区间内的数据，只需要读取出来就可以了，详情参考 ev.matrixIterSlice() 内部逻辑。
+	// 缓存了整个 node.Range 区间（左闭右开）内的数据，只需要读取出来就可以了，详情参考 ev.matrixIterSlice() 内部逻辑。
 	it := storage.NewBuffer(durationMilliseconds(node.Range))
 
-
-	// 遍历 VectorSelector 返回的时序数据
+	// 遍历 VectorSelector 返回的时序，取出 [mint, maxt] 区间内的样本数据，存储到 matrix[...] 中。
 	series := vs.Series
 	for i, s := range series {
 
@@ -2234,13 +2232,14 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 			Metric: series[i].Labels(),
 		}
 
+		// 通过 it 读取出 [mint, maxt] 区间内的样本数据，写入到 out 中。
+		ss.Points = ev.matrixIterSlice(it, mint, maxt, getPointSlice(16)) // 分配 ss.Points
 
-		ss.Points = ev.matrixIterSlice(it, mint, maxt, getPointSlice(16))
-
+		// 保存结果
 		if len(ss.Points) > 0 {
 			matrix = append(matrix, ss)
 		} else {
-			putPointSlice(ss.Points)
+			putPointSlice(ss.Points) // 释放 ss.Points
 		}
 
 	}
@@ -2261,7 +2260,7 @@ func (ev *evaluator) matrixSelector(node *parser.MatrixSelector) Matrix {
 //
 //
 //
-//
+// 通过 it 读取出 [mint, maxt] 区间内的样本数据，写入到 out 中，并返回 out 。
 //
 //
 func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, maxt int64, out []Point) []Point {
@@ -2304,37 +2303,35 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 
 	// ********* 主流程 *********
 
-	//
+	// it 的缓冲区大小是 node.Range ，当 it.Seek(maxt) 之后，
+	// 在 it.Buf 中正好缓存了 [mint, maxt) 区间内的数据，
 
 
-	// 查找 it 中首个 T >= maxt 的样本点
 
+	// 调用 it.Seek(maxt) 把 it 的指针指向首个 T >= maxt 的样本点
 	ok := it.Seek(maxt)
-	if !ok {
+	if !ok { // Seek 出错，意味着已无数据可读，记录错误，但不返回
 		if it.Err() != nil {
 			ev.error(it.Err())
 		}
 	}
 
-	// buffer 中保存了 < maxt 的样本点
+	// it.buffer 中保存了 [mint, maxt) 区间内的样本数据
 	buf := it.Buffer()
 
-	// 遍历这些 < maxt 的样本点，如果遇到 >= mint 的样本点，就添加到 out 中
+	// 遍历 [mint, maxt] 区间内的样本点，将满足 T >= mint 的样本点添加到 out 中
 	for buf.Next() {
-
+		// 取当前样本
 		t, v := buf.At()
-
+		// 忽略失效样本
 		if value.IsStaleNaN(v) {
 			continue
 		}
-
 		// Values in the buffer are guaranteed to be smaller than maxt.
 		if t >= mint {
-
 			if ev.currentSamples >= ev.maxSamples {
 				ev.error(ErrTooManySamples(env))
 			}
-
 			out = append(out,
 				Point{
 					T: t,
@@ -2343,23 +2340,17 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 			)
 			ev.currentSamples++
 		}
-
 	}
 
 	// The seeked sample might also be in the range.
 
+	// 若 Seek() 成功，意味着 it 中尚有数据，则查看当前样本 T 是否为 maxt，若等于则也需要添加到 out 中。
 	if ok {
-
 		t, v := it.Values()
-
 		if t == maxt && !value.IsStaleNaN(v) {
-
-
 			if ev.currentSamples >= ev.maxSamples {
 				ev.error(ErrTooManySamples(env))
 			}
-
-
 			out = append(out,
 				Point{
 					T: t,
@@ -2367,7 +2358,6 @@ func (ev *evaluator) matrixIterSlice(it *storage.BufferedSeriesIterator, mint, m
 				},
 			)
 			ev.currentSamples++
-
 		}
 	}
 

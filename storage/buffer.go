@@ -108,6 +108,7 @@ func (b *BufferedSeriesIterator) Seek(t int64) bool {
 		b.buf.reset()
 		b.ok = b.it.Seek(t0)
 		if !b.ok {
+			// 报错：已无数据可读
 			return false
 		}
 		b.lastTime, _ = b.Values()
@@ -143,7 +144,7 @@ func (b *BufferedSeriesIterator) Next() bool {
 		return false
 	}
 
-	// 从 it 中取当前元素，塞入 buf 中。
+	// 从 it 中取当前元素，塞入缓存 buf 中。
 	b.buf.add(b.it.At())
 
 	// 从 it 读取下个元素
