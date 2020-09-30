@@ -1505,7 +1505,7 @@ func (ev *evaluator) evalSubquery(subq *parser.SubqueryExpr) *parser.MatrixSelec
 // eval evaluates the given expression as the given AST expression node requires.
 //
 //
-// 
+//
 func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 
@@ -1653,6 +1653,8 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 		selRange := durationMilliseconds(matrixSel.Range)
 		// step
 		stepRange := selRange
+
+
 		if stepRange > ev.interval {
 			stepRange = ev.interval
 		}
@@ -1684,7 +1686,7 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 
 		for _, series := range vectorSel.Series {
 
-			// 重置样本缓存
+			// 重置缓存
 			points = points[:0]
 
 			// 重置迭代器，用于遍历当前 series 的样本数据
@@ -2048,18 +2050,24 @@ func (ev *evaluator) eval(expr parser.Expr) parser.Value {
 			lookbackDelta:       ev.lookbackDelta,
 		}
 
+		// 如果 step 不为 0 ，就将其赋值给 interval 。
 		if e.Step != 0 {
 			newEv.interval = durationToInt64Millis(e.Step)
 		}
 
 		// Start with the first timestamp after (ev.startTimestamp - offset - range)
 		// that is aligned with the step (multiple of 'newEv.interval').
+		//
+		// 将查询的起始时间 startTs - (offset + range) 按 interval(step) 对齐。
 		newEv.startTimestamp = newEv.interval * ((ev.startTimestamp - offsetMillis - rangeMillis) / newEv.interval)
 		if newEv.startTimestamp < (ev.startTimestamp - offsetMillis - rangeMillis) {
-			newEv.startTimestamp += newEv.interval
+			newEv.startTimestamp += newEv.interval // 修正一下
 		}
 
+		// 执行表达式
 		res := newEv.eval(e.Expr)
+
+
 		ev.currentSamples = newEv.currentSamples
 		return res
 

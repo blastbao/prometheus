@@ -682,7 +682,7 @@ label_match_list: label_match_list COMMA label_matcher
 
 // $1 表示右边的第一个标记的值
 // $2 表示右边的第二个标记的值，依次类推。
-// $$ 表示规约后的值。
+// $$ 表示规约后的值，因前面定义了 "%type <matcher> label_matcher"，所以 label_matcher 规约后的值会自动填充到 union.matcher 字段上，并返回 union 对象。
 
 // error 表示 yacc 在分析 label_matcher 推导出的句型时，遇到语法错误时跳过出错的部分，继续分析（也会打印语法错误信息）。
 
@@ -714,6 +714,13 @@ label_matcher   : IDENTIFIER match_op STRING
 /*
  * Metric descriptions.
  */
+
+
+//
+//
+//
+// 前面定义了 "%type <labels> metric" ，所以规约后的值会自动设置到 yyVAL.labels 字段上。
+
 
 metric          : metric_identifier label_set
                     {
